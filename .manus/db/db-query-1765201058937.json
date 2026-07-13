@@ -1,0 +1,50 @@
+{
+  "query": "SELECT id, packageType, status, isActive, totalHours, usedHours, DATE_FORMAT(startDate, '%d/%m/%Y') as startDate, DATE_FORMAT(endDate, '%d/%m/%Y') as endDate FROM packages WHERE residentId = 30001 ORDER BY createdAt",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT id, packageType, status, isActive, totalHours, usedHours, DATE_FORMAT(startDate, '%d/%m/%Y') as startDate, DATE_FORMAT(endDate, '%d/%m/%Y') as endDate FROM packages WHERE residentId = 30001 ORDER BY createdAt",
+  "rows": [
+    {
+      "id": "540006",
+      "packageType": "15h_8w",
+      "status": "active",
+      "isActive": "1",
+      "totalHours": "901",
+      "usedHours": "901",
+      "startDate": "08/12/2025",
+      "endDate": "02/02/2026"
+    },
+    {
+      "id": "540007",
+      "packageType": "15h_8w",
+      "status": "pending",
+      "isActive": "1",
+      "totalHours": "900",
+      "usedHours": "0",
+      "startDate": "NULL",
+      "endDate": "NULL"
+    },
+    {
+      "id": "540008",
+      "packageType": "15h_8w",
+      "status": "pending",
+      "isActive": "0",
+      "totalHours": "900",
+      "usedHours": "0",
+      "startDate": "NULL",
+      "endDate": "NULL"
+    },
+    {
+      "id": "540009",
+      "packageType": "30h_8w",
+      "status": "pending",
+      "isActive": "0",
+      "totalHours": "1800",
+      "usedHours": "0",
+      "startDate": "NULL",
+      "endDate": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tpackageType\tstatus\tisActive\ttotalHours\tusedHours\tstartDate\tendDate\n540006\t15h_8w\tactive\t1\t901\t901\t08/12/2025\t02/02/2026\n540007\t15h_8w\tpending\t1\t900\t0\tNULL\tNULL\n540008\t15h_8w\tpending\t0\t900\t0\tNULL\tNULL\n540009\t30h_8w\tpending\t0\t1800\t0\tNULL\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 58
+}

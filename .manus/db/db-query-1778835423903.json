@@ -1,0 +1,14 @@
+{
+  "query": "SELECT id, paymentLinks FROM atelierSettings LIMIT 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT id, paymentLinks FROM atelierSettings LIMIT 1;",
+  "rows": [
+    {
+      "id": "1",
+      "paymentLinks": "{\"links\":[{\"label\":\"Libre accès 15h / 8 semaines\",\"url\":\"https://www.atourdebras-atelier.com/_paylink/AZ1CtmLm\"},{\"label\":\"Libre accès 30h / 8 semaines\",\"url\":\"https://www.atourdebras-atelier.com/_paylink/AZ1CukqY\"},{\"label\":\"Libre accès 15h / 4 semaines\",\"url\":\"https://www.atourdebras-atelier.com/_paylink/AZ1Cu7PY\"},{\"label\":\"Libre accès 30h / 4 semaines\",\"url\":\"https://www.atourdebras-atelier.com/_paylink/AZ1CvG0H\"}]}"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tpaymentLinks\n1\t{\"links\":[{\"label\":\"Libre accès 15h / 8 semaines\",\"url\":\"https://www.atourdebras-atelier.com/_paylink/AZ1CtmLm\"},{\"label\":\"Libre accès 30h / 8 semaines\",\"url\":\"https://www.atourdebras-atelier.com/_paylink/AZ1CukqY\"},{\"label\":\"Libre accès 15h / 4 semaines\",\"url\":\"https://www.atourdebras-atelier.com/_paylink/AZ1Cu7PY\"},{\"label\":\"Libre accès 30h / 4 semaines\",\"url\":\"https://www.atourdebras-atelier.com/_paylink/AZ1CvG0H\"}]}\n",
+  "stderr": "",
+  "execution_time_ms": 312
+}

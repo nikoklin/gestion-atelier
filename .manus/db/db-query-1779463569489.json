@@ -1,0 +1,66 @@
+{
+  "query": "SELECT id, packageId, checkInTime, checkOutTime, durationMinutes, attendanceType FROM attendances WHERE residentId = 60001 AND DATE(checkInTime) = '2026-05-22' ORDER BY checkInTime;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT id, packageId, checkInTime, checkOutTime, durationMinutes, attendanceType FROM attendances WHERE residentId = 60001 AND DATE(checkInTime) = '2026-05-22' ORDER BY checkInTime;",
+  "rows": [
+    {
+      "id": "1110004",
+      "packageId": "NULL",
+      "checkInTime": "2026-05-22 09:00:00",
+      "checkOutTime": "2026-05-22 10:00:00",
+      "durationMinutes": "60",
+      "attendanceType": "normal"
+    },
+    {
+      "id": "1110003",
+      "packageId": "NULL",
+      "checkInTime": "2026-05-22 12:00:00",
+      "checkOutTime": "2026-05-22 13:00:00",
+      "durationMinutes": "60",
+      "attendanceType": "normal"
+    },
+    {
+      "id": "960001",
+      "packageId": "NULL",
+      "checkInTime": "2026-05-22 13:47:55",
+      "checkOutTime": "2026-05-22 13:48:39",
+      "durationMinutes": "0",
+      "attendanceType": "normal"
+    },
+    {
+      "id": "960002",
+      "packageId": "NULL",
+      "checkInTime": "2026-05-22 13:49:13",
+      "checkOutTime": "2026-05-22 13:52:55",
+      "durationMinutes": "3",
+      "attendanceType": "normal"
+    },
+    {
+      "id": "960003",
+      "packageId": "NULL",
+      "checkInTime": "2026-05-22 13:54:39",
+      "checkOutTime": "2026-05-22 14:01:16",
+      "durationMinutes": "6",
+      "attendanceType": "normal"
+    },
+    {
+      "id": "1020001",
+      "packageId": "NULL",
+      "checkInTime": "2026-05-22 14:29:31",
+      "checkOutTime": "2026-05-22 14:31:24",
+      "durationMinutes": "1",
+      "attendanceType": "normal"
+    },
+    {
+      "id": "1020002",
+      "packageId": "NULL",
+      "checkInTime": "2026-05-22 14:32:21",
+      "checkOutTime": "2026-05-22 14:34:45",
+      "durationMinutes": "2",
+      "attendanceType": "normal"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tpackageId\tcheckInTime\tcheckOutTime\tdurationMinutes\tattendanceType\n1110004\tNULL\t2026-05-22 09:00:00\t2026-05-22 10:00:00\t60\tnormal\n1110003\tNULL\t2026-05-22 12:00:00\t2026-05-22 13:00:00\t60\tnormal\n960001\tNULL\t2026-05-22 13:47:55\t2026-05-22 13:48:39\t0\tnormal\n960002\tNULL\t2026-05-22 13:49:13\t2026-05-22 13:52:55\t3\tnormal\n960003\tNULL\t2026-05-22 13:54:39\t2026-05-22 14:01:16\t6\tnormal\n1020001\tNULL\t2026-05-22 14:29:31\t2026-05-22 14:31:24\t1\tnormal\n1020002\tNULL\t2026-05-22 14:32:21\t2026-05-22 14:34:45\t2\tnormal\n",
+  "stderr": "",
+  "execution_time_ms": 262
+}

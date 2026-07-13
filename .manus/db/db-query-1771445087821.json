@@ -1,0 +1,21 @@
+{
+  "query": "SELECT id, residentId, packageType, totalHours, usedHours, startDate, endDate, isActive, deductedMinutes \nFROM packages \nWHERE id = 210004;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT id, residentId, packageType, totalHours, usedHours, startDate, endDate, isActive, deductedMinutes \nFROM packages \nWHERE id = 210004;",
+  "rows": [
+    {
+      "id": "210004",
+      "residentId": "1",
+      "packageType": "15h_8w",
+      "totalHours": "900",
+      "usedHours": "900",
+      "startDate": "2026-02-02 00:00:00",
+      "endDate": "2026-03-30 00:00:00",
+      "isActive": "1",
+      "deductedMinutes": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tresidentId\tpackageType\ttotalHours\tusedHours\tstartDate\tendDate\tisActive\tdeductedMinutes\n210004\t1\t15h_8w\t900\t900\t2026-02-02 00:00:00\t2026-03-30 00:00:00\t1\t0\n",
+  "stderr": "",
+  "execution_time_ms": 350
+}

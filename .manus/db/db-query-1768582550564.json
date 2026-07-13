@@ -1,0 +1,70 @@
+{
+  "query": "SELECT p.id, p.residentId, p.totalHours, p.usedHours, p.endDate, p.isActive, r.firstName, r.lastName\nFROM packages p\nJOIN residents r ON p.residentId = r.id\nWHERE r.firstName = 'Nicolas' AND r.lastName = 'Klein'\nORDER BY p.id DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT p.id, p.residentId, p.totalHours, p.usedHours, p.endDate, p.isActive, r.firstName, r.lastName\nFROM packages p\nJOIN residents r ON p.residentId = r.id\nWHERE r.firstName = 'Nicolas' AND r.lastName = 'Klein'\nORDER BY p.id DESC;",
+  "rows": [
+    {
+      "id": "810002",
+      "residentId": "30001",
+      "totalHours": "900",
+      "usedHours": "903",
+      "endDate": "2026-03-13 00:00:00",
+      "isActive": "0",
+      "firstName": "Nicolas",
+      "lastName": "Klein"
+    },
+    {
+      "id": "750002",
+      "residentId": "30001",
+      "totalHours": "1800",
+      "usedHours": "396",
+      "endDate": "2025-12-22 00:00:00",
+      "isActive": "0",
+      "firstName": "Nicolas",
+      "lastName": "Klein"
+    },
+    {
+      "id": "720007",
+      "residentId": "30001",
+      "totalHours": "1800",
+      "usedHours": "0",
+      "endDate": "2025-12-03 00:00:00",
+      "isActive": "0",
+      "firstName": "Nicolas",
+      "lastName": "Klein"
+    },
+    {
+      "id": "720005",
+      "residentId": "30001",
+      "totalHours": "1800",
+      "usedHours": "0",
+      "endDate": "2025-12-03 00:00:00",
+      "isActive": "0",
+      "firstName": "Nicolas",
+      "lastName": "Klein"
+    },
+    {
+      "id": "720004",
+      "residentId": "30001",
+      "totalHours": "1800",
+      "usedHours": "0",
+      "endDate": "2025-12-01 00:00:00",
+      "isActive": "0",
+      "firstName": "Nicolas",
+      "lastName": "Klein"
+    },
+    {
+      "id": "720003",
+      "residentId": "30001",
+      "totalHours": "1800",
+      "usedHours": "0",
+      "endDate": "2025-12-01 00:00:00",
+      "isActive": "0",
+      "firstName": "Nicolas",
+      "lastName": "Klein"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tresidentId\ttotalHours\tusedHours\tendDate\tisActive\tfirstName\tlastName\n810002\t30001\t900\t903\t2026-03-13 00:00:00\t0\tNicolas\tKlein\n750002\t30001\t1800\t396\t2025-12-22 00:00:00\t0\tNicolas\tKlein\n720007\t30001\t1800\t0\t2025-12-03 00:00:00\t0\tNicolas\tKlein\n720005\t30001\t1800\t0\t2025-12-03 00:00:00\t0\tNicolas\tKlein\n720004\t30001\t1800\t0\t2025-12-01 00:00:00\t0\tNicolas\tKlein\n720003\t30001\t1800\t0\t2025-12-01 00:00:00\t0\tNicolas\tKlein\n",
+  "stderr": "",
+  "execution_time_ms": 51
+}

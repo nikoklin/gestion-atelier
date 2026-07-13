@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE packages SET expirationEmailSent = 0 WHERE residentId = (SELECT id FROM residents WHERE firstName = 'Nicolas' AND lastName = 'Klein') AND id = (SELECT MAX(id) FROM packages WHERE residentId = (SELECT id FROM residents WHERE firstName = 'Nicolas' AND lastName = 'Klein'));",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute UPDATE packages SET expirationEmailSent = 0 WHERE residentId = (SELECT id FROM residents WHERE firstName = 'Nicolas' AND lastName = 'Klein') AND id = (SELECT MAX(id) FROM packages WHERE residentId = (SELECT id FROM residents WHERE firstName = 'Nicolas' AND lastName = 'Klein'));",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 70
+}

@@ -1,0 +1,42 @@
+{
+  "query": "SELECT id, label, totalMinutes, durationWeeks, price, sortOrder FROM packageTypes ORDER BY sortOrder;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT id, label, totalMinutes, durationWeeks, price, sortOrder FROM packageTypes ORDER BY sortOrder;",
+  "rows": [
+    {
+      "id": "1",
+      "label": "15h / 8 semaines",
+      "totalMinutes": "900",
+      "durationWeeks": "8",
+      "price": "175",
+      "sortOrder": "1"
+    },
+    {
+      "id": "2",
+      "label": "30h / 8 semaines",
+      "totalMinutes": "1800",
+      "durationWeeks": "8",
+      "price": "270",
+      "sortOrder": "2"
+    },
+    {
+      "id": "3",
+      "label": "30h / 4 semaines",
+      "totalMinutes": "1800",
+      "durationWeeks": "4",
+      "price": "170",
+      "sortOrder": "3"
+    },
+    {
+      "id": "4",
+      "label": "180h / 6 mois",
+      "totalMinutes": "10800",
+      "durationWeeks": "24",
+      "price": "850",
+      "sortOrder": "4"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tlabel\ttotalMinutes\tdurationWeeks\tprice\tsortOrder\n1\t15h / 8 semaines\t900\t8\t175\t1\n2\t30h / 8 semaines\t1800\t8\t270\t2\n3\t30h / 4 semaines\t1800\t4\t170\t3\n4\t180h / 6 mois\t10800\t24\t850\t4\n",
+  "stderr": "",
+  "execution_time_ms": 265
+}

@@ -1,0 +1,80 @@
+{
+  "query": "SELECT id, residentId, packageType, status, isActive FROM packages LIMIT 10",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT id, residentId, packageType, status, isActive FROM packages LIMIT 10",
+  "rows": [
+    {
+      "id": "1",
+      "residentId": "1",
+      "packageType": "15h_8w",
+      "status": "expired",
+      "isActive": "0"
+    },
+    {
+      "id": "2",
+      "residentId": "2",
+      "packageType": "30h_8w",
+      "status": "expired",
+      "isActive": "0"
+    },
+    {
+      "id": "3",
+      "residentId": "3",
+      "packageType": "30h_4w",
+      "status": "expired",
+      "isActive": "0"
+    },
+    {
+      "id": "4",
+      "residentId": "4",
+      "packageType": "15h_8w",
+      "status": "expired",
+      "isActive": "0"
+    },
+    {
+      "id": "180002",
+      "residentId": "2",
+      "packageType": "15h_8w",
+      "status": "active",
+      "isActive": "1"
+    },
+    {
+      "id": "240001",
+      "residentId": "4",
+      "packageType": "30h_4w",
+      "status": "active",
+      "isActive": "1"
+    },
+    {
+      "id": "240002",
+      "residentId": "3",
+      "packageType": "30h_8w",
+      "status": "expired",
+      "isActive": "0"
+    },
+    {
+      "id": "420003",
+      "residentId": "60002",
+      "packageType": "30h_4w",
+      "status": "expired",
+      "isActive": "0"
+    },
+    {
+      "id": "420005",
+      "residentId": "1",
+      "packageType": "15h_8w",
+      "status": "active",
+      "isActive": "1"
+    },
+    {
+      "id": "450002",
+      "residentId": "60002",
+      "packageType": "30h_4w",
+      "status": "expired",
+      "isActive": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tresidentId\tpackageType\tstatus\tisActive\n1\t1\t15h_8w\texpired\t0\n2\t2\t30h_8w\texpired\t0\n3\t3\t30h_4w\texpired\t0\n4\t4\t15h_8w\texpired\t0\n180002\t2\t15h_8w\tactive\t1\n240001\t4\t30h_4w\tactive\t1\n240002\t3\t30h_8w\texpired\t0\n420003\t60002\t30h_4w\texpired\t0\n420005\t1\t15h_8w\tactive\t1\n450002\t60002\t30h_4w\texpired\t0\n",
+  "stderr": "",
+  "execution_time_ms": 64
+}

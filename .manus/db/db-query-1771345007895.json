@@ -1,0 +1,31 @@
+{
+  "query": "\n-- Vérifier outOfPackageMinutes du résident\nSELECT id, firstName, lastName, outOfPackageMinutes \nFROM residents \nWHERE id = 1;\n\n-- Forfait actuel\nSELECT id, totalHours, usedHours, isActive \nFROM packages \nWHERE residentId = 1 \nORDER BY createdAt DESC \nLIMIT 1;\n\n-- Dernier pointage\nSELECT id, packageId, checkInTime, checkOutTime, durationMinutes \nFROM attendances \nWHERE residentId = 1 \nORDER BY createdAt DESC \nLIMIT 1;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute \n-- Vérifier outOfPackageMinutes du résident\nSELECT id, firstName, lastName, outOfPackageMinutes \nFROM residents \nWHERE id = 1;\n\n-- Forfait actuel\nSELECT id, totalHours, usedHours, isActive \nFROM packages \nWHERE residentId = 1 \nORDER BY createdAt DESC \nLIMIT 1;\n\n-- Dernier pointage\nSELECT id, packageId, checkInTime, checkOutTime, durationMinutes \nFROM attendances \nWHERE residentId = 1 \nORDER BY createdAt DESC \nLIMIT 1;\n",
+  "rows": [
+    {
+      "id": "1",
+      "firstName": "enka",
+      "lastName": "enka",
+      "outOfPackageMinutes": "0"
+    },
+    {
+      "id": "id",
+      "firstName": "totalHours",
+      "lastName": "usedHours",
+      "outOfPackageMinutes": "isActive"
+    },
+    {
+      "id": "150004",
+      "firstName": "900",
+      "lastName": "900",
+      "outOfPackageMinutes": "0"
+    }
+  ],
+  "messages": [
+    "id\tpackageId\tcheckInTime\tcheckOutTime\tdurationMinutes",
+    "180004\t150004\t2026-02-17 16:14:27\t2026-02-17 16:16:28\t2"
+  ],
+  "stdout": "id\tfirstName\tlastName\toutOfPackageMinutes\n1\tenka\tenka\t0\nid\ttotalHours\tusedHours\tisActive\n150004\t900\t900\t0\nid\tpackageId\tcheckInTime\tcheckOutTime\tdurationMinutes\n180004\t150004\t2026-02-17 16:14:27\t2026-02-17 16:16:28\t2\n",
+  "stderr": "",
+  "execution_time_ms": 473
+}

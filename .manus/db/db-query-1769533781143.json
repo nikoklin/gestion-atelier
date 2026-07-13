@@ -1,0 +1,13 @@
+{
+  "query": "SELECT id FROM packages WHERE residentId = 120001 AND isActive = 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT id FROM packages WHERE residentId = 120001 AND isActive = 1;",
+  "rows": [
+    {
+      "id": "930027"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\n930027\n",
+  "stderr": "",
+  "execution_time_ms": 53
+}

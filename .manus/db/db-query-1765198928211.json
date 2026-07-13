@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO packages (residentId, packageType, totalHours, usedHours, status, isActive, startDate, endDate, reminderSent, expirationEmailSent) VALUES \n(30001, '15h_8w', 900, 0, 'pending', false, NULL, NULL, false, false),\n(30001, '30h_8w', 1800, 0, 'pending', false, NULL, NULL, false, false)",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute INSERT INTO packages (residentId, packageType, totalHours, usedHours, status, isActive, startDate, endDate, reminderSent, expirationEmailSent) VALUES \n(30001, '15h_8w', 900, 0, 'pending', false, NULL, NULL, false, false),\n(30001, '30h_8w', 1800, 0, 'pending', false, NULL, NULL, false, false)",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 97
+}

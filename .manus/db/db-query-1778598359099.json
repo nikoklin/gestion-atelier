@@ -1,0 +1,13 @@
+{
+  "query": "\nSELECT COUNT(*) as corrected FROM packages \nWHERE isActive = 1 \n  AND (totalHours - usedHours) > 0 \n  AND (endDate IS NULL OR endDate > NOW());\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute \nSELECT COUNT(*) as corrected FROM packages \nWHERE isActive = 1 \n  AND (totalHours - usedHours) > 0 \n  AND (endDate IS NULL OR endDate > NOW());\n",
+  "rows": [
+    {
+      "corrected": "3"
+    }
+  ],
+  "messages": [],
+  "stdout": "corrected\n3\n",
+  "stderr": "",
+  "execution_time_ms": 267
+}

@@ -1,0 +1,87 @@
+{
+  "query": "SELECT id, residentId, packageType, startDate, endDate, totalHours, usedHours, expirationEmailSent, reminderSent FROM packages WHERE (endDate < NOW() OR usedHours >= totalHours) ORDER BY endDate DESC LIMIT 10",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT id, residentId, packageType, startDate, endDate, totalHours, usedHours, expirationEmailSent, reminderSent FROM packages WHERE (endDate < NOW() OR usedHours >= totalHours) ORDER BY endDate DESC LIMIT 10",
+  "rows": [
+    {
+      "id": "420002",
+      "residentId": "30001",
+      "packageType": "15h_8w",
+      "startDate": "2025-12-02 00:00:00",
+      "endDate": "2025-12-15 00:00:00",
+      "totalHours": "900",
+      "usedHours": "900",
+      "expirationEmailSent": "1",
+      "reminderSent": "0"
+    },
+    {
+      "id": "120001",
+      "residentId": "5",
+      "packageType": "15h_8w",
+      "startDate": "2025-10-31 00:00:00",
+      "endDate": "2025-11-25 00:00:00",
+      "totalHours": "900",
+      "usedHours": "56",
+      "expirationEmailSent": "0",
+      "reminderSent": "0"
+    },
+    {
+      "id": "1",
+      "residentId": "1",
+      "packageType": "15h_8w",
+      "startDate": "2025-09-10 13:04:07",
+      "endDate": "2025-11-23 16:25:50",
+      "totalHours": "900",
+      "usedHours": "445",
+      "expirationEmailSent": "1",
+      "reminderSent": "0"
+    },
+    {
+      "id": "210001",
+      "residentId": "1",
+      "packageType": "15h_8w",
+      "startDate": "2025-11-18 00:00:00",
+      "endDate": "2025-11-23 00:00:00",
+      "totalHours": "900",
+      "usedHours": "39",
+      "expirationEmailSent": "0",
+      "reminderSent": "0"
+    },
+    {
+      "id": "2",
+      "residentId": "2",
+      "packageType": "30h_8w",
+      "startDate": "2025-09-15 13:04:07",
+      "endDate": "2025-11-10 14:04:07",
+      "totalHours": "1800",
+      "usedHours": "835",
+      "expirationEmailSent": "1",
+      "reminderSent": "0"
+    },
+    {
+      "id": "4",
+      "residentId": "4",
+      "packageType": "15h_8w",
+      "startDate": "2025-09-01 13:04:07",
+      "endDate": "2025-10-27 13:04:07",
+      "totalHours": "900",
+      "usedHours": "315",
+      "expirationEmailSent": "1",
+      "reminderSent": "0"
+    },
+    {
+      "id": "3",
+      "residentId": "3",
+      "packageType": "30h_4w",
+      "startDate": "2025-09-25 13:04:07",
+      "endDate": "2025-10-23 13:04:07",
+      "totalHours": "1800",
+      "usedHours": "634",
+      "expirationEmailSent": "1",
+      "reminderSent": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tresidentId\tpackageType\tstartDate\tendDate\ttotalHours\tusedHours\texpirationEmailSent\treminderSent\n420002\t30001\t15h_8w\t2025-12-02 00:00:00\t2025-12-15 00:00:00\t900\t900\t1\t0\n120001\t5\t15h_8w\t2025-10-31 00:00:00\t2025-11-25 00:00:00\t900\t56\t0\t0\n1\t1\t15h_8w\t2025-09-10 13:04:07\t2025-11-23 16:25:50\t900\t445\t1\t0\n210001\t1\t15h_8w\t2025-11-18 00:00:00\t2025-11-23 00:00:00\t900\t39\t0\t0\n2\t2\t30h_8w\t2025-09-15 13:04:07\t2025-11-10 14:04:07\t1800\t835\t1\t0\n4\t4\t15h_8w\t2025-09-01 13:04:07\t2025-10-27 13:04:07\t900\t315\t1\t0\n3\t3\t30h_4w\t2025-09-25 13:04:07\t2025-10-23 13:04:07\t1800\t634\t1\t0\n",
+  "stderr": "",
+  "execution_time_ms": 102
+}

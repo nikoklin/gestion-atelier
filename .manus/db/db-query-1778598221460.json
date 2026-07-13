@@ -1,0 +1,70 @@
+{
+  "query": "\nSELECT r.id, r.firstName, r.lastName, r.email, p.id as pkg_id, p.isActive, p.totalHours, p.usedHours, (p.totalHours - p.usedHours) as remaining, p.endDate\nFROM residents r\nLEFT JOIN packages p ON p.residentId = r.id AND p.isActive = 1\nWHERE r.isActive = 1 AND r.isDeleted = 0\nORDER BY r.id;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute \nSELECT r.id, r.firstName, r.lastName, r.email, p.id as pkg_id, p.isActive, p.totalHours, p.usedHours, (p.totalHours - p.usedHours) as remaining, p.endDate\nFROM residents r\nLEFT JOIN packages p ON p.residentId = r.id AND p.isActive = 1\nWHERE r.isActive = 1 AND r.isDeleted = 0\nORDER BY r.id;\n",
+  "rows": [
+    {
+      "id": "1",
+      "firstName": "enka",
+      "lastName": "enka",
+      "email": "nikoklin@me.com",
+      "pkg_id": "NULL",
+      "isActive": "NULL",
+      "totalHours": "NULL",
+      "usedHours": "NULL",
+      "remaining": "NULL",
+      "endDate": "NULL"
+    },
+    {
+      "id": "60001",
+      "firstName": "Niko",
+      "lastName": "Klein",
+      "email": "nikoklin@me.com",
+      "pkg_id": "NULL",
+      "isActive": "NULL",
+      "totalHours": "NULL",
+      "usedHours": "NULL",
+      "remaining": "NULL",
+      "endDate": "NULL"
+    },
+    {
+      "id": "90002",
+      "firstName": "test",
+      "lastName": "test",
+      "email": "enka@free.fr",
+      "pkg_id": "NULL",
+      "isActive": "NULL",
+      "totalHours": "NULL",
+      "usedHours": "NULL",
+      "remaining": "NULL",
+      "endDate": "NULL"
+    },
+    {
+      "id": "150001",
+      "firstName": "bidule",
+      "lastName": "truc",
+      "email": "",
+      "pkg_id": "540002",
+      "isActive": "1",
+      "totalHours": "900",
+      "usedHours": "40",
+      "remaining": "860",
+      "endDate": "2026-07-03 00:00:00"
+    },
+    {
+      "id": "180001",
+      "firstName": "machin",
+      "lastName": "chose",
+      "email": "",
+      "pkg_id": "NULL",
+      "isActive": "NULL",
+      "totalHours": "NULL",
+      "usedHours": "NULL",
+      "remaining": "NULL",
+      "endDate": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tfirstName\tlastName\temail\tpkg_id\tisActive\ttotalHours\tusedHours\tremaining\tendDate\n1\tenka\tenka\tnikoklin@me.com\tNULL\tNULL\tNULL\tNULL\tNULL\tNULL\n60001\tNiko\tKlein\tnikoklin@me.com\tNULL\tNULL\tNULL\tNULL\tNULL\tNULL\n90002\ttest\ttest\tenka@free.fr\tNULL\tNULL\tNULL\tNULL\tNULL\tNULL\n150001\tbidule\ttruc\t\t540002\t1\t900\t40\t860\t2026-07-03 00:00:00\n180001\tmachin\tchose\t\tNULL\tNULL\tNULL\tNULL\tNULL\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 281
+}

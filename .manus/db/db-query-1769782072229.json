@@ -1,0 +1,9 @@
+{
+  "query": "\nINSERT INTO packages (residentId, packageType, totalHours, usedHours, startDate, endDate, isActive, createdAt, updatedAt)\nSELECT \n  r.id,\n  '15h_8w',\n  0.0167,\n  0,\n  CURDATE(),\n  DATE_ADD(CURDATE(), INTERVAL 8 WEEK),\n  true,\n  NOW(),\n  NOW()\nFROM residents r\nWHERE r.firstName = 'enka' AND r.lastName = 'enka';\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute \nINSERT INTO packages (residentId, packageType, totalHours, usedHours, startDate, endDate, isActive, createdAt, updatedAt)\nSELECT \n  r.id,\n  '15h_8w',\n  0.0167,\n  0,\n  CURDATE(),\n  DATE_ADD(CURDATE(), INTERVAL 8 WEEK),\n  true,\n  NOW(),\n  NOW()\nFROM residents r\nWHERE r.firstName = 'enka' AND r.lastName = 'enka';\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 371
+}

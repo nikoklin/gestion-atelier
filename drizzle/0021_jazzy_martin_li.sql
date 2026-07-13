@@ -1,0 +1,1 @@
+ALTER TABLE `packages` MODIFY COLUMN `packageType` varchar(50) NOT NULL;

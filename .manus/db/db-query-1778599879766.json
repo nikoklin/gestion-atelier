@@ -1,0 +1,16 @@
+{
+  "query": "SELECT templateType, LEFT(body, 100) as body_preview FROM emailTemplates WHERE templateType = 'reminder';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT templateType, LEFT(body, 100) as body_preview FROM emailTemplates WHERE templateType = 'reminder';",
+  "rows": [
+    {
+      "templateType": "reminder",
+      "body_preview": "<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;\">"
+    }
+  ],
+  "messages": [
+    "  <p>Bo"
+  ],
+  "stdout": "templateType\tbody_preview\nreminder\t<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;\">\n  <p>Bo\n",
+  "stderr": "",
+  "execution_time_ms": 255
+}

@@ -1,0 +1,16 @@
+{
+  "query": "SELECT r.id, r.firstName, r.lastName, r.outOfPackageMinutes\nFROM residents r\nWHERE r.firstName = 'enka' AND r.lastName = 'enka';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT r.id, r.firstName, r.lastName, r.outOfPackageMinutes\nFROM residents r\nWHERE r.firstName = 'enka' AND r.lastName = 'enka';",
+  "rows": [
+    {
+      "id": "1",
+      "firstName": "enka",
+      "lastName": "enka",
+      "outOfPackageMinutes": "89"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tfirstName\tlastName\toutOfPackageMinutes\n1\tenka\tenka\t89\n",
+  "stderr": "",
+  "execution_time_ms": 368
+}

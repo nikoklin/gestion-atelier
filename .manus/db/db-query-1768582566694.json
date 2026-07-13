@@ -1,0 +1,55 @@
+{
+  "query": "SELECT p.id, p.totalHours, p.usedHours, (p.totalHours - p.usedHours) as remainingHours, p.endDate, p.isActive, p.createdAt\nFROM packages p\nJOIN residents r ON p.residentId = r.id\nWHERE r.firstName = 'Nicolas' AND r.lastName = 'Klein'\nORDER BY p.id DESC\nLIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT p.id, p.totalHours, p.usedHours, (p.totalHours - p.usedHours) as remainingHours, p.endDate, p.isActive, p.createdAt\nFROM packages p\nJOIN residents r ON p.residentId = r.id\nWHERE r.firstName = 'Nicolas' AND r.lastName = 'Klein'\nORDER BY p.id DESC\nLIMIT 5;",
+  "rows": [
+    {
+      "id": "810002",
+      "totalHours": "900",
+      "usedHours": "905",
+      "remainingHours": "-5",
+      "endDate": "2026-03-13 00:00:00",
+      "isActive": "0",
+      "createdAt": "2026-01-16 15:21:03"
+    },
+    {
+      "id": "750002",
+      "totalHours": "1800",
+      "usedHours": "396",
+      "remainingHours": "1404",
+      "endDate": "2025-12-22 00:00:00",
+      "isActive": "0",
+      "createdAt": "2025-12-16 18:20:29"
+    },
+    {
+      "id": "720007",
+      "totalHours": "1800",
+      "usedHours": "0",
+      "remainingHours": "1800",
+      "endDate": "2025-12-03 00:00:00",
+      "isActive": "0",
+      "createdAt": "2025-12-12 13:12:32"
+    },
+    {
+      "id": "720005",
+      "totalHours": "1800",
+      "usedHours": "0",
+      "remainingHours": "1800",
+      "endDate": "2025-12-03 00:00:00",
+      "isActive": "0",
+      "createdAt": "2025-12-12 13:06:55"
+    },
+    {
+      "id": "720004",
+      "totalHours": "1800",
+      "usedHours": "0",
+      "remainingHours": "1800",
+      "endDate": "2025-12-01 00:00:00",
+      "isActive": "0",
+      "createdAt": "2025-12-12 13:05:04"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttotalHours\tusedHours\tremainingHours\tendDate\tisActive\tcreatedAt\n810002\t900\t905\t-5\t2026-03-13 00:00:00\t0\t2026-01-16 15:21:03\n750002\t1800\t396\t1404\t2025-12-22 00:00:00\t0\t2025-12-16 18:20:29\n720007\t1800\t0\t1800\t2025-12-03 00:00:00\t0\t2025-12-12 13:12:32\n720005\t1800\t0\t1800\t2025-12-03 00:00:00\t0\t2025-12-12 13:06:55\n720004\t1800\t0\t1800\t2025-12-01 00:00:00\t0\t2025-12-12 13:05:04\n",
+  "stderr": "",
+  "execution_time_ms": 64
+}

@@ -1,0 +1,21 @@
+{
+  "query": "SELECT id, packageType, totalHours, usedHours, (totalHours - usedHours) as remainingMinutes, isActive, startDate, endDate, createdAt \nFROM packages \nWHERE residentId = 120001 \nORDER BY createdAt DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT id, packageType, totalHours, usedHours, (totalHours - usedHours) as remainingMinutes, isActive, startDate, endDate, createdAt \nFROM packages \nWHERE residentId = 120001 \nORDER BY createdAt DESC;",
+  "rows": [
+    {
+      "id": "930027",
+      "packageType": "15h_8w",
+      "totalHours": "900",
+      "usedHours": "900",
+      "remainingMinutes": "0",
+      "isActive": "1",
+      "startDate": "2026-01-27 00:00:00",
+      "endDate": "2026-03-24 00:00:00",
+      "createdAt": "2026-01-27 17:04:24"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tpackageType\ttotalHours\tusedHours\tremainingMinutes\tisActive\tstartDate\tendDate\tcreatedAt\n930027\t15h_8w\t900\t900\t0\t1\t2026-01-27 00:00:00\t2026-03-24 00:00:00\t2026-01-27 17:04:24\n",
+  "stderr": "",
+  "execution_time_ms": 48
+}

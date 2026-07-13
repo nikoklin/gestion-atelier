@@ -1,0 +1,61 @@
+{
+  "query": "SELECT body FROM emailTemplates WHERE templateType = 'reminder';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT body FROM emailTemplates WHERE templateType = 'reminder';",
+  "rows": [
+    {
+      "body": "<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;\">"
+    },
+    {
+      "body": "  <p>Bonjour {{residentName}},</p>"
+    },
+    {
+      "body": "  <p>Ton forfait en libre accès à l'atelier est bientôt terminé.</p>"
+    },
+    {
+      "body": "  <p>Il te reste <strong>{{remainingHours}}h</strong> sur ton forfait (date d'expiration : {{endDate}}).</p>"
+    },
+    {
+      "body": "  <p>Est-ce que tu veux le prolonger ?</p>"
+    },
+    {
+      "body": "  <p>Je t'envoie des liens de paiement ci-dessous qui te permettent de régler directement en ligne.</p>"
+    },
+    {
+      "body": "  <p>Tu peux également passer à l'atelier si tu le souhaites.</p>"
+    },
+    {
+      "body": "  <p>"
+    },
+    {
+      "body": "    <a href=\"https://www.atourdebras-atelier.com//_paylink/AZaVWNAD\" style=\"color: #c0392b;\">Libre accès 15h valables 8 semaines</a><br>"
+    },
+    {
+      "body": "    <a href=\"https://www.atourdebras-atelier.com//_paylink/AZaVXSU-\" style=\"color: #c0392b;\">Libre accès 30h valables 8 semaines</a><br>"
+    },
+    {
+      "body": "    <a href=\"https://www.atourdebras-atelier.com//_paylink/AZaVXcoM\" style=\"color: #c0392b;\">Libre accès 30h valables 4 semaines</a>"
+    },
+    {
+      "body": "  </p>"
+    },
+    {
+      "body": "  <p>Tu peux consulter ton historique de pointages ici :<br>"
+    },
+    {
+      "body": "  <a href=\"{{dashboardUrl}}\" style=\"color: #c0392b;\">Consulter mon espace personnel</a></p>"
+    },
+    {
+      "body": "  <p>Bonne journée.</p>"
+    },
+    {
+      "body": "  <p>L'équipe de l'atelier<br><em>À Tour de Bras</em></p>"
+    },
+    {
+      "body": "</div>"
+    }
+  ],
+  "messages": [],
+  "stdout": "body\n<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;\">\n  <p>Bonjour {{residentName}},</p>\n  <p>Ton forfait en libre accès à l'atelier est bientôt terminé.</p>\n  <p>Il te reste <strong>{{remainingHours}}h</strong> sur ton forfait (date d'expiration : {{endDate}}).</p>\n  <p>Est-ce que tu veux le prolonger ?</p>\n  <p>Je t'envoie des liens de paiement ci-dessous qui te permettent de régler directement en ligne.</p>\n  <p>Tu peux également passer à l'atelier si tu le souhaites.</p>\n  <p>\n    <a href=\"https://www.atourdebras-atelier.com//_paylink/AZaVWNAD\" style=\"color: #c0392b;\">Libre accès 15h valables 8 semaines</a><br>\n    <a href=\"https://www.atourdebras-atelier.com//_paylink/AZaVXSU-\" style=\"color: #c0392b;\">Libre accès 30h valables 8 semaines</a><br>\n    <a href=\"https://www.atourdebras-atelier.com//_paylink/AZaVXcoM\" style=\"color: #c0392b;\">Libre accès 30h valables 4 semaines</a>\n  </p>\n  <p>Tu peux consulter ton historique de pointages ici :<br>\n  <a href=\"{{dashboardUrl}}\" style=\"color: #c0392b;\">Consulter mon espace personnel</a></p>\n  <p>Bonne journée.</p>\n  <p>L'équipe de l'atelier<br><em>À Tour de Bras</em></p>\n</div>\n",
+  "stderr": "",
+  "execution_time_ms": 270
+}

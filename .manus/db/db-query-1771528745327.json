@@ -1,0 +1,59 @@
+{
+  "query": "SELECT id, checkInTime, checkOutTime, durationMinutes, packageId FROM attendances WHERE residentId = 1 ORDER BY checkInTime ASC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT id, checkInTime, checkOutTime, durationMinutes, packageId FROM attendances WHERE residentId = 1 ORDER BY checkInTime ASC;",
+  "rows": [
+    {
+      "id": "210024",
+      "checkInTime": "2026-02-02 09:00:00",
+      "checkOutTime": "2026-02-02 14:00:00",
+      "durationMinutes": "300",
+      "packageId": "210004"
+    },
+    {
+      "id": "210027",
+      "checkInTime": "2026-02-03 11:00:00",
+      "checkOutTime": "2026-02-03 19:00:00",
+      "durationMinutes": "480",
+      "packageId": "210004"
+    },
+    {
+      "id": "210028",
+      "checkInTime": "2026-02-03 18:00:00",
+      "checkOutTime": "2026-02-03 20:00:00",
+      "durationMinutes": "120",
+      "packageId": "NULL"
+    },
+    {
+      "id": "210025",
+      "checkInTime": "2026-02-04 09:00:00",
+      "checkOutTime": "2026-02-04 14:00:00",
+      "durationMinutes": "300",
+      "packageId": "210004"
+    },
+    {
+      "id": "210026",
+      "checkInTime": "2026-02-06 15:00:00",
+      "checkOutTime": "2026-02-06 17:00:00",
+      "durationMinutes": "120",
+      "packageId": "210004"
+    },
+    {
+      "id": "240001",
+      "checkInTime": "2026-02-19 19:07:57",
+      "checkOutTime": "2026-02-19 19:09:17",
+      "durationMinutes": "1",
+      "packageId": "210004"
+    },
+    {
+      "id": "240002",
+      "checkInTime": "2026-02-19 19:16:21",
+      "checkOutTime": "2026-02-19 19:18:10",
+      "durationMinutes": "1",
+      "packageId": "210004"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcheckInTime\tcheckOutTime\tdurationMinutes\tpackageId\n210024\t2026-02-02 09:00:00\t2026-02-02 14:00:00\t300\t210004\n210027\t2026-02-03 11:00:00\t2026-02-03 19:00:00\t480\t210004\n210028\t2026-02-03 18:00:00\t2026-02-03 20:00:00\t120\tNULL\n210025\t2026-02-04 09:00:00\t2026-02-04 14:00:00\t300\t210004\n210026\t2026-02-06 15:00:00\t2026-02-06 17:00:00\t120\t210004\n240001\t2026-02-19 19:07:57\t2026-02-19 19:09:17\t1\t210004\n240002\t2026-02-19 19:16:21\t2026-02-19 19:18:10\t1\t210004\n",
+  "stderr": "",
+  "execution_time_ms": 356
+}

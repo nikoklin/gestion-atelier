@@ -1,0 +1,127 @@
+{
+  "query": "SELECT id, residentId, packageType, status, isActive, startDate, endDate FROM packages ORDER BY residentId, createdAt DESC",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT id, residentId, packageType, status, isActive, startDate, endDate FROM packages ORDER BY residentId, createdAt DESC",
+  "rows": [
+    {
+      "id": "420005",
+      "residentId": "1",
+      "packageType": "15h_8w",
+      "status": "pending",
+      "isActive": "1",
+      "startDate": "2025-12-02 00:00:00",
+      "endDate": "2026-01-27 00:00:00"
+    },
+    {
+      "id": "1",
+      "residentId": "1",
+      "packageType": "15h_8w",
+      "status": "pending",
+      "isActive": "0",
+      "startDate": "2025-09-10 13:04:07",
+      "endDate": "2025-11-23 16:25:50"
+    },
+    {
+      "id": "180002",
+      "residentId": "2",
+      "packageType": "15h_8w",
+      "status": "pending",
+      "isActive": "1",
+      "startDate": "2025-11-14 00:00:00",
+      "endDate": "2026-01-09 00:00:00"
+    },
+    {
+      "id": "2",
+      "residentId": "2",
+      "packageType": "30h_8w",
+      "status": "pending",
+      "isActive": "0",
+      "startDate": "2025-09-15 13:04:07",
+      "endDate": "2025-11-10 14:04:07"
+    },
+    {
+      "id": "450003",
+      "residentId": "3",
+      "packageType": "30h_8w",
+      "status": "pending",
+      "isActive": "1",
+      "startDate": "2025-10-18 00:00:00",
+      "endDate": "2025-12-13 00:00:00"
+    },
+    {
+      "id": "240002",
+      "residentId": "3",
+      "packageType": "30h_8w",
+      "status": "pending",
+      "isActive": "0",
+      "startDate": "2025-11-18 00:00:00",
+      "endDate": "2025-12-04 00:00:00"
+    },
+    {
+      "id": "3",
+      "residentId": "3",
+      "packageType": "30h_4w",
+      "status": "pending",
+      "isActive": "0",
+      "startDate": "2025-09-25 13:04:07",
+      "endDate": "2025-10-23 13:04:07"
+    },
+    {
+      "id": "240001",
+      "residentId": "4",
+      "packageType": "30h_4w",
+      "status": "pending",
+      "isActive": "1",
+      "startDate": "2025-11-18 00:00:00",
+      "endDate": "2025-12-16 00:00:00"
+    },
+    {
+      "id": "4",
+      "residentId": "4",
+      "packageType": "15h_8w",
+      "status": "pending",
+      "isActive": "0",
+      "startDate": "2025-09-01 13:04:07",
+      "endDate": "2025-10-27 13:04:07"
+    },
+    {
+      "id": "540001",
+      "residentId": "30001",
+      "packageType": "15h_8w",
+      "status": "pending",
+      "isActive": "1",
+      "startDate": "NULL",
+      "endDate": "NULL"
+    },
+    {
+      "id": "510003",
+      "residentId": "30001",
+      "packageType": "15h_8w",
+      "status": "active",
+      "isActive": "1",
+      "startDate": "2025-12-08 00:00:00",
+      "endDate": "2026-02-02 00:00:00"
+    },
+    {
+      "id": "450002",
+      "residentId": "60002",
+      "packageType": "30h_4w",
+      "status": "pending",
+      "isActive": "0",
+      "startDate": "2025-12-04 00:00:00",
+      "endDate": "2026-01-01 00:00:00"
+    },
+    {
+      "id": "420003",
+      "residentId": "60002",
+      "packageType": "30h_4w",
+      "status": "pending",
+      "isActive": "0",
+      "startDate": "2025-12-02 00:00:00",
+      "endDate": "2025-12-05 00:00:00"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tresidentId\tpackageType\tstatus\tisActive\tstartDate\tendDate\n420005\t1\t15h_8w\tpending\t1\t2025-12-02 00:00:00\t2026-01-27 00:00:00\n1\t1\t15h_8w\tpending\t0\t2025-09-10 13:04:07\t2025-11-23 16:25:50\n180002\t2\t15h_8w\tpending\t1\t2025-11-14 00:00:00\t2026-01-09 00:00:00\n2\t2\t30h_8w\tpending\t0\t2025-09-15 13:04:07\t2025-11-10 14:04:07\n450003\t3\t30h_8w\tpending\t1\t2025-10-18 00:00:00\t2025-12-13 00:00:00\n240002\t3\t30h_8w\tpending\t0\t2025-11-18 00:00:00\t2025-12-04 00:00:00\n3\t3\t30h_4w\tpending\t0\t2025-09-25 13:04:07\t2025-10-23 13:04:07\n240001\t4\t30h_4w\tpending\t1\t2025-11-18 00:00:00\t2025-12-16 00:00:00\n4\t4\t15h_8w\tpending\t0\t2025-09-01 13:04:07\t2025-10-27 13:04:07\n540001\t30001\t15h_8w\tpending\t1\tNULL\tNULL\n510003\t30001\t15h_8w\tactive\t1\t2025-12-08 00:00:00\t2026-02-02 00:00:00\n450002\t60002\t30h_4w\tpending\t0\t2025-12-04 00:00:00\t2026-01-01 00:00:00\n420003\t60002\t30h_4w\tpending\t0\t2025-12-02 00:00:00\t2025-12-05 00:00:00\n",
+  "stderr": "",
+  "execution_time_ms": 57
+}

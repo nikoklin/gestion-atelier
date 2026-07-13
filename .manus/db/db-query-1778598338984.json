@@ -1,0 +1,49 @@
+{
+  "query": "\nSELECT p.id, p.residentId, p.packageType, p.totalHours, p.usedHours, p.isActive, p.startDate, p.endDate,\n       (p.totalHours - p.usedHours) as remaining,\n       NOW() as now,\n       CASE WHEN NOW() > p.endDate THEN 'EXPIRED_BY_DATE' ELSE 'NOT_EXPIRED' END as date_status\nFROM packages p\nWHERE p.id IN (480001, 450011, 390001)\nORDER BY p.id;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute \nSELECT p.id, p.residentId, p.packageType, p.totalHours, p.usedHours, p.isActive, p.startDate, p.endDate,\n       (p.totalHours - p.usedHours) as remaining,\n       NOW() as now,\n       CASE WHEN NOW() > p.endDate THEN 'EXPIRED_BY_DATE' ELSE 'NOT_EXPIRED' END as date_status\nFROM packages p\nWHERE p.id IN (480001, 450011, 390001)\nORDER BY p.id;\n",
+  "rows": [
+    {
+      "id": "390001",
+      "residentId": "90002",
+      "packageType": "30h_4w",
+      "totalHours": "1800",
+      "usedHours": "191",
+      "isActive": "0",
+      "startDate": "2026-04-29 00:00:00",
+      "endDate": "2026-05-12 00:00:00",
+      "remaining": "1609",
+      "now": "2026-05-12 15:05:38",
+      "date_status": "EXPIRED_BY_DATE"
+    },
+    {
+      "id": "450011",
+      "residentId": "60001",
+      "packageType": "15h_8w",
+      "totalHours": "900",
+      "usedHours": "900",
+      "isActive": "0",
+      "startDate": "2026-05-04 00:00:00",
+      "endDate": "2026-06-29 00:00:00",
+      "remaining": "0",
+      "now": "2026-05-12 15:05:38",
+      "date_status": "NOT_EXPIRED"
+    },
+    {
+      "id": "480001",
+      "residentId": "1",
+      "packageType": "30h_4w",
+      "totalHours": "1800",
+      "usedHours": "167",
+      "isActive": "0",
+      "startDate": "2026-05-08 00:00:00",
+      "endDate": "2026-05-16 00:00:00",
+      "remaining": "1633",
+      "now": "2026-05-12 15:05:38",
+      "date_status": "NOT_EXPIRED"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tresidentId\tpackageType\ttotalHours\tusedHours\tisActive\tstartDate\tendDate\tremaining\tnow\tdate_status\n390001\t90002\t30h_4w\t1800\t191\t0\t2026-04-29 00:00:00\t2026-05-12 00:00:00\t1609\t2026-05-12 15:05:38\tEXPIRED_BY_DATE\n450011\t60001\t15h_8w\t900\t900\t0\t2026-05-04 00:00:00\t2026-06-29 00:00:00\t0\t2026-05-12 15:05:38\tNOT_EXPIRED\n480001\t1\t30h_4w\t1800\t167\t0\t2026-05-08 00:00:00\t2026-05-16 00:00:00\t1633\t2026-05-12 15:05:38\tNOT_EXPIRED\n",
+  "stderr": "",
+  "execution_time_ms": 271
+}

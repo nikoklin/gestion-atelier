@@ -1,0 +1,50 @@
+{
+  "query": "SELECT id, residentId, packageId, checkInTime, checkOutTime, durationMinutes FROM attendances WHERE residentId = 1 ORDER BY checkInTime;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT id, residentId, packageId, checkInTime, checkOutTime, durationMinutes FROM attendances WHERE residentId = 1 ORDER BY checkInTime;",
+  "rows": [
+    {
+      "id": "270009",
+      "residentId": "1",
+      "packageId": "270004",
+      "checkInTime": "2026-02-20 09:26:00",
+      "checkOutTime": "2026-02-20 17:26:00",
+      "durationMinutes": "480"
+    },
+    {
+      "id": "270010",
+      "residentId": "1",
+      "packageId": "270004",
+      "checkInTime": "2026-02-23 11:27:00",
+      "checkOutTime": "2026-02-23 16:27:00",
+      "durationMinutes": "300"
+    },
+    {
+      "id": "270011",
+      "residentId": "1",
+      "packageId": "270004",
+      "checkInTime": "2026-02-27 11:28:00",
+      "checkOutTime": "2026-02-27 14:28:00",
+      "durationMinutes": "180"
+    },
+    {
+      "id": "270012",
+      "residentId": "1",
+      "packageId": "NULL",
+      "checkInTime": "2026-02-27 15:28:00",
+      "checkOutTime": "2026-02-27 15:30:00",
+      "durationMinutes": "2"
+    },
+    {
+      "id": "270014",
+      "residentId": "1",
+      "packageId": "NULL",
+      "checkInTime": "2026-02-27 16:10:00",
+      "checkOutTime": "2026-02-27 16:20:00",
+      "durationMinutes": "10"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tresidentId\tpackageId\tcheckInTime\tcheckOutTime\tdurationMinutes\n270009\t1\t270004\t2026-02-20 09:26:00\t2026-02-20 17:26:00\t480\n270010\t1\t270004\t2026-02-23 11:27:00\t2026-02-23 16:27:00\t300\n270011\t1\t270004\t2026-02-27 11:28:00\t2026-02-27 14:28:00\t180\n270012\t1\tNULL\t2026-02-27 15:28:00\t2026-02-27 15:30:00\t2\n270014\t1\tNULL\t2026-02-27 16:10:00\t2026-02-27 16:20:00\t10\n",
+  "stderr": "",
+  "execution_time_ms": 749
+}

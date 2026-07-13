@@ -1,0 +1,18 @@
+{
+  "query": "\nSELECT \n  p.id,\n  p.totalHours,\n  p.usedHours,\n  p.deductedMinutes,\n  p.isActive,\n  GREATEST(0, (p.usedHours - p.totalHours) * 60 - COALESCE(p.deductedMinutes, 0)) as outOfPackageMinutes\nFROM packages p\nJOIN residents r ON p.residentId = r.id\nWHERE r.firstName = 'enka' AND r.lastName = 'enka' AND p.isActive = true\nLIMIT 1;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute \nSELECT \n  p.id,\n  p.totalHours,\n  p.usedHours,\n  p.deductedMinutes,\n  p.isActive,\n  GREATEST(0, (p.usedHours - p.totalHours) * 60 - COALESCE(p.deductedMinutes, 0)) as outOfPackageMinutes\nFROM packages p\nJOIN residents r ON p.residentId = r.id\nWHERE r.firstName = 'enka' AND r.lastName = 'enka' AND p.isActive = true\nLIMIT 1;\n",
+  "rows": [
+    {
+      "id": "990002",
+      "totalHours": "0",
+      "usedHours": "0",
+      "deductedMinutes": "0",
+      "isActive": "1",
+      "outOfPackageMinutes": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttotalHours\tusedHours\tdeductedMinutes\tisActive\toutOfPackageMinutes\n990002\t0\t0\t0\t1\t0\n",
+  "stderr": "",
+  "execution_time_ms": 351
+}

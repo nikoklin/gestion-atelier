@@ -1,0 +1,37 @@
+{
+  "query": "SELECT id, residentId, totalHours, usedHours, isActive, reminderSent, expirationEmailSent FROM packages WHERE totalHours - usedHours <= 0;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT id, residentId, totalHours, usedHours, isActive, reminderSent, expirationEmailSent FROM packages WHERE totalHours - usedHours <= 0;",
+  "rows": [
+    {
+      "id": "1",
+      "residentId": "1",
+      "totalHours": "900",
+      "usedHours": "900",
+      "isActive": "0",
+      "reminderSent": "0",
+      "expirationEmailSent": "0"
+    },
+    {
+      "id": "180002",
+      "residentId": "2",
+      "totalHours": "900",
+      "usedHours": "1552",
+      "isActive": "0",
+      "reminderSent": "0",
+      "expirationEmailSent": "0"
+    },
+    {
+      "id": "450002",
+      "residentId": "60002",
+      "totalHours": "1800",
+      "usedHours": "1893",
+      "isActive": "0",
+      "reminderSent": "0",
+      "expirationEmailSent": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tresidentId\ttotalHours\tusedHours\tisActive\treminderSent\texpirationEmailSent\n1\t1\t900\t900\t0\t0\t0\n180002\t2\t900\t1552\t0\t0\t0\n450002\t60002\t1800\t1893\t0\t0\t0\n",
+  "stderr": "",
+  "execution_time_ms": 53
+}

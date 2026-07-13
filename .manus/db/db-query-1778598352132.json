@@ -1,0 +1,9 @@
+{
+  "query": "\nUPDATE packages \nSET isActive = 1\nWHERE isActive = 0 \n  AND (totalHours - usedHours) > 0 \n  AND (endDate IS NULL OR endDate > NOW());\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute \nUPDATE packages \nSET isActive = 1\nWHERE isActive = 0 \n  AND (totalHours - usedHours) > 0 \n  AND (endDate IS NULL OR endDate > NOW());\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 268
+}

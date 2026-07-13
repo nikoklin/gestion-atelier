@@ -1,0 +1,34 @@
+{
+  "query": "SELECT a.id, a.residentId, r.firstName, r.lastName, a.checkInTime, a.checkOutTime \nFROM attendances a \nJOIN residents r ON a.residentId = r.id \nWHERE (r.firstName = 'enka' OR r.firstName = 'Nicolas') \nAND a.checkOutTime IS NOT NULL\nAND TIME(a.checkOutTime) = '22:00:00'\nORDER BY a.checkInTime DESC \nLIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT a.id, a.residentId, r.firstName, r.lastName, a.checkInTime, a.checkOutTime \nFROM attendances a \nJOIN residents r ON a.residentId = r.id \nWHERE (r.firstName = 'enka' OR r.firstName = 'Nicolas') \nAND a.checkOutTime IS NOT NULL\nAND TIME(a.checkOutTime) = '22:00:00'\nORDER BY a.checkInTime DESC \nLIMIT 5;",
+  "rows": [
+    {
+      "id": "1110004",
+      "residentId": "120001",
+      "firstName": "enka",
+      "lastName": "enka",
+      "checkInTime": "2026-01-16 16:37:58",
+      "checkOutTime": "2026-01-16 22:00:00"
+    },
+    {
+      "id": "900001",
+      "residentId": "30001",
+      "firstName": "Nicolas",
+      "lastName": "Klein",
+      "checkInTime": "2025-12-16 18:54:23",
+      "checkOutTime": "2025-12-16 22:00:00"
+    },
+    {
+      "id": "870001",
+      "residentId": "120001",
+      "firstName": "enka",
+      "lastName": "enka",
+      "checkInTime": "2025-12-12 13:13:25",
+      "checkOutTime": "2025-12-12 22:00:00"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tresidentId\tfirstName\tlastName\tcheckInTime\tcheckOutTime\n1110004\t120001\tenka\tenka\t2026-01-16 16:37:58\t2026-01-16 22:00:00\n900001\t30001\tNicolas\tKlein\t2025-12-16 18:54:23\t2025-12-16 22:00:00\n870001\t120001\tenka\tenka\t2025-12-12 13:13:25\t2025-12-12 22:00:00\n",
+  "stderr": "",
+  "execution_time_ms": 63
+}

@@ -1,0 +1,88 @@
+{
+  "query": "SELECT id, residentId, status, isActive FROM packages",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT id, residentId, status, isActive FROM packages",
+  "rows": [
+    {
+      "id": "1",
+      "residentId": "1",
+      "status": "expired",
+      "isActive": "0"
+    },
+    {
+      "id": "2",
+      "residentId": "2",
+      "status": "expired",
+      "isActive": "0"
+    },
+    {
+      "id": "3",
+      "residentId": "3",
+      "status": "expired",
+      "isActive": "0"
+    },
+    {
+      "id": "4",
+      "residentId": "4",
+      "status": "expired",
+      "isActive": "0"
+    },
+    {
+      "id": "180002",
+      "residentId": "2",
+      "status": "active",
+      "isActive": "1"
+    },
+    {
+      "id": "240001",
+      "residentId": "4",
+      "status": "active",
+      "isActive": "1"
+    },
+    {
+      "id": "240002",
+      "residentId": "3",
+      "status": "expired",
+      "isActive": "0"
+    },
+    {
+      "id": "420003",
+      "residentId": "60002",
+      "status": "expired",
+      "isActive": "0"
+    },
+    {
+      "id": "420005",
+      "residentId": "1",
+      "status": "active",
+      "isActive": "1"
+    },
+    {
+      "id": "450002",
+      "residentId": "60002",
+      "status": "expired",
+      "isActive": "0"
+    },
+    {
+      "id": "450003",
+      "residentId": "3",
+      "status": "active",
+      "isActive": "1"
+    },
+    {
+      "id": "510003",
+      "residentId": "30001",
+      "status": "active",
+      "isActive": "1"
+    },
+    {
+      "id": "540001",
+      "residentId": "30001",
+      "status": "active",
+      "isActive": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tresidentId\tstatus\tisActive\n1\t1\texpired\t0\n2\t2\texpired\t0\n3\t3\texpired\t0\n4\t4\texpired\t0\n180002\t2\tactive\t1\n240001\t4\tactive\t1\n240002\t3\texpired\t0\n420003\t60002\texpired\t0\n420005\t1\tactive\t1\n450002\t60002\texpired\t0\n450003\t3\tactive\t1\n510003\t30001\tactive\t1\n540001\t30001\tactive\t1\n",
+  "stderr": "",
+  "execution_time_ms": 50
+}

@@ -1,0 +1,18 @@
+{
+  "query": "\n-- Forfait complet avec dates\nSELECT id, totalHours, usedHours, isActive, startDate, endDate\nFROM packages \nWHERE residentId = 1 \nORDER BY createdAt DESC \nLIMIT 1;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute \n-- Forfait complet avec dates\nSELECT id, totalHours, usedHours, isActive, startDate, endDate\nFROM packages \nWHERE residentId = 1 \nORDER BY createdAt DESC \nLIMIT 1;\n",
+  "rows": [
+    {
+      "id": "150004",
+      "totalHours": "900",
+      "usedHours": "900",
+      "isActive": "0",
+      "startDate": "2026-02-16 00:00:00",
+      "endDate": "2026-04-13 00:00:00"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttotalHours\tusedHours\tisActive\tstartDate\tendDate\n150004\t900\t900\t0\t2026-02-16 00:00:00\t2026-04-13 00:00:00\n",
+  "stderr": "",
+  "execution_time_ms": 344
+}

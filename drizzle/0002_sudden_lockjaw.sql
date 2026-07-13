@@ -1,0 +1,1 @@
+ALTER TABLE `residents` ADD `pin` varchar(4);

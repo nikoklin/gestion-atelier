@@ -1,0 +1,46 @@
+{
+  "query": "SELECT id, residentId, packageId, checkInTime, checkOutTime, durationMinutes, createdAt \nFROM attendances \nORDER BY createdAt DESC \nLIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT id, residentId, packageId, checkInTime, checkOutTime, durationMinutes, createdAt \nFROM attendances \nORDER BY createdAt DESC \nLIMIT 5;",
+  "rows": [
+    {
+      "id": "180013",
+      "residentId": "1",
+      "packageId": "NULL",
+      "checkInTime": "2026-02-17 11:00:00",
+      "checkOutTime": "2026-02-17 11:30:00",
+      "durationMinutes": "30",
+      "createdAt": "2026-02-17 17:35:05"
+    },
+    {
+      "id": "180012",
+      "residentId": "1",
+      "packageId": "180003",
+      "checkInTime": "2026-02-17 17:34:15",
+      "checkOutTime": "NULL",
+      "durationMinutes": "NULL",
+      "createdAt": "2026-02-17 17:34:15"
+    },
+    {
+      "id": "180010",
+      "residentId": "1",
+      "packageId": "180003",
+      "checkInTime": "2026-02-17 17:28:31",
+      "checkOutTime": "2026-02-17 17:28:33",
+      "durationMinutes": "0",
+      "createdAt": "2026-02-17 17:28:30"
+    },
+    {
+      "id": "180008",
+      "residentId": "60001",
+      "packageId": "60004",
+      "checkInTime": "2026-02-17 17:23:49",
+      "checkOutTime": "NULL",
+      "durationMinutes": "NULL",
+      "createdAt": "2026-02-17 17:23:49"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tresidentId\tpackageId\tcheckInTime\tcheckOutTime\tdurationMinutes\tcreatedAt\n180013\t1\tNULL\t2026-02-17 11:00:00\t2026-02-17 11:30:00\t30\t2026-02-17 17:35:05\n180012\t1\t180003\t2026-02-17 17:34:15\tNULL\tNULL\t2026-02-17 17:34:15\n180010\t1\t180003\t2026-02-17 17:28:31\t2026-02-17 17:28:33\t0\t2026-02-17 17:28:30\n180008\t60001\t60004\t2026-02-17 17:23:49\tNULL\tNULL\t2026-02-17 17:23:49\n",
+  "stderr": "",
+  "execution_time_ms": 363
+}

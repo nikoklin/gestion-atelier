@@ -1,0 +1,1 @@
+ALTER TABLE `residents` ADD `hasMissedCheckout` boolean DEFAULT false NOT NULL;

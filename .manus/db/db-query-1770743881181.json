@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO attendances (residentId, packageId, checkInTime, checkOutTime, durationMinutes, createdAt, updatedAt)\nVALUES (\n  1,\n  1,\n  '2026-02-09 10:00:00',\n  '2026-02-10 01:00:00',\n  900,\n  NOW(),\n  NOW()\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute INSERT INTO attendances (residentId, packageId, checkInTime, checkOutTime, durationMinutes, createdAt, updatedAt)\nVALUES (\n  1,\n  1,\n  '2026-02-09 10:00:00',\n  '2026-02-10 01:00:00',\n  900,\n  NOW(),\n  NOW()\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 379
+}

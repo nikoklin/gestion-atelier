@@ -1,0 +1,2 @@
+ALTER TABLE `attendances` ADD `attendanceType` enum('normal','adjustment_add','adjustment_subtract') DEFAULT 'normal' NOT NULL;--> statement-breakpoint
+ALTER TABLE `attendances` ADD `note` varchar(255);

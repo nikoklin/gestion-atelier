@@ -1,0 +1,100 @@
+{
+  "query": "SELECT id, residentId, packageType, totalHours, usedHours, isActive, startDate, endDate FROM packages ORDER BY id DESC LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT id, residentId, packageType, totalHours, usedHours, isActive, startDate, endDate FROM packages ORDER BY id DESC LIMIT 10;",
+  "rows": [
+    {
+      "id": "720001",
+      "residentId": "60001",
+      "packageType": "custom_3",
+      "totalHours": "1800",
+      "usedHours": "212",
+      "isActive": "1",
+      "startDate": "2026-05-22 00:00:00",
+      "endDate": "2026-06-19 00:00:00"
+    },
+    {
+      "id": "540002",
+      "residentId": "150001",
+      "packageType": "custom_1",
+      "totalHours": "900",
+      "usedHours": "552",
+      "isActive": "1",
+      "startDate": "2026-05-08 00:00:00",
+      "endDate": "2026-07-03 00:00:00"
+    },
+    {
+      "id": "510001",
+      "residentId": "120001",
+      "packageType": "custom_30003",
+      "totalHours": "900",
+      "usedHours": "0",
+      "isActive": "1",
+      "startDate": "2026-05-08 00:00:00",
+      "endDate": "2026-06-05 00:00:00"
+    },
+    {
+      "id": "480001",
+      "residentId": "1",
+      "packageType": "30h_4w",
+      "totalHours": "1800",
+      "usedHours": "1236",
+      "isActive": "0",
+      "startDate": "2026-05-08 00:00:00",
+      "endDate": "2026-05-15 00:00:00"
+    },
+    {
+      "id": "450011",
+      "residentId": "60001",
+      "packageType": "15h_8w",
+      "totalHours": "960",
+      "usedHours": "960",
+      "isActive": "0",
+      "startDate": "2026-05-04 00:00:00",
+      "endDate": "2026-06-29 00:00:00"
+    },
+    {
+      "id": "390001",
+      "residentId": "90002",
+      "packageType": "30h_4w",
+      "totalHours": "1800",
+      "usedHours": "191",
+      "isActive": "0",
+      "startDate": "2026-04-29 00:00:00",
+      "endDate": "2026-05-12 00:00:00"
+    },
+    {
+      "id": "360003",
+      "residentId": "1",
+      "packageType": "15h_8w",
+      "totalHours": "900",
+      "usedHours": "900",
+      "isActive": "0",
+      "startDate": "2026-04-20 00:00:00",
+      "endDate": "2026-06-15 00:00:00"
+    },
+    {
+      "id": "330007",
+      "residentId": "60001",
+      "packageType": "15h_8w",
+      "totalHours": "900",
+      "usedHours": "900",
+      "isActive": "0",
+      "startDate": "2026-04-20 00:00:00",
+      "endDate": "2026-06-15 00:00:00"
+    },
+    {
+      "id": "270008",
+      "residentId": "90002",
+      "packageType": "30h_8w",
+      "totalHours": "1800",
+      "usedHours": "0",
+      "isActive": "0",
+      "startDate": "2026-02-27 00:00:00",
+      "endDate": "2026-04-24 00:00:00"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tresidentId\tpackageType\ttotalHours\tusedHours\tisActive\tstartDate\tendDate\n720001\t60001\tcustom_3\t1800\t212\t1\t2026-05-22 00:00:00\t2026-06-19 00:00:00\n540002\t150001\tcustom_1\t900\t552\t1\t2026-05-08 00:00:00\t2026-07-03 00:00:00\n510001\t120001\tcustom_30003\t900\t0\t1\t2026-05-08 00:00:00\t2026-06-05 00:00:00\n480001\t1\t30h_4w\t1800\t1236\t0\t2026-05-08 00:00:00\t2026-05-15 00:00:00\n450011\t60001\t15h_8w\t960\t960\t0\t2026-05-04 00:00:00\t2026-06-29 00:00:00\n390001\t90002\t30h_4w\t1800\t191\t0\t2026-04-29 00:00:00\t2026-05-12 00:00:00\n360003\t1\t15h_8w\t900\t900\t0\t2026-04-20 00:00:00\t2026-06-15 00:00:00\n330007\t60001\t15h_8w\t900\t900\t0\t2026-04-20 00:00:00\t2026-06-15 00:00:00\n270008\t90002\t30h_8w\t1800\t0\t0\t2026-02-27 00:00:00\t2026-04-24 00:00:00\n",
+  "stderr": "",
+  "execution_time_ms": 300
+}

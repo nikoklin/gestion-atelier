@@ -1,0 +1,19 @@
+{
+  "query": "SELECT r.id as residentId, r.firstName, r.lastName, \n       p.id as packageId, p.totalHours, p.usedHours, p.isActive\nFROM residents r\nLEFT JOIN packages p ON p.residentId = r.id AND p.isActive = true\nWHERE r.firstName LIKE '%test%'\nORDER BY r.createdAt DESC\nLIMIT 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT r.id as residentId, r.firstName, r.lastName, \n       p.id as packageId, p.totalHours, p.usedHours, p.isActive\nFROM residents r\nLEFT JOIN packages p ON p.residentId = r.id AND p.isActive = true\nWHERE r.firstName LIKE '%test%'\nORDER BY r.createdAt DESC\nLIMIT 1;",
+  "rows": [
+    {
+      "residentId": "150001",
+      "firstName": "test",
+      "lastName": "auto",
+      "packageId": "930032",
+      "totalHours": "900",
+      "usedHours": "1",
+      "isActive": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "residentId\tfirstName\tlastName\tpackageId\ttotalHours\tusedHours\tisActive\n150001\ttest\tauto\t930032\t900\t1\t1\n",
+  "stderr": "",
+  "execution_time_ms": 58
+}

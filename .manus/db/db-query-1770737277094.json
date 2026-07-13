@@ -1,0 +1,13 @@
+{
+  "query": "SHOW TABLES LIKE 'emailTemplates';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SHOW TABLES LIKE 'emailTemplates';",
+  "rows": [
+    {
+      "Tables_in_LV5DDS56NhvJNRfavaEMZ5 (emailTemplates)": "emailTemplates"
+    }
+  ],
+  "messages": [],
+  "stdout": "Tables_in_LV5DDS56NhvJNRfavaEMZ5 (emailTemplates)\nemailTemplates\n",
+  "stderr": "",
+  "execution_time_ms": 347
+}

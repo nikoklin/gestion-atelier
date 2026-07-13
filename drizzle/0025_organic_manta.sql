@@ -1,0 +1,1 @@
+ALTER TABLE `atelierSettings` ADD `paymentLinks` text;

@@ -1,0 +1,16 @@
+{
+  "query": "\nSELECT r.id, r.firstName, r.lastName, r.outOfPackageMinutes FROM residents r WHERE r.firstName LIKE '%Niko%' OR r.lastName LIKE '%Klein%';\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute \nSELECT r.id, r.firstName, r.lastName, r.outOfPackageMinutes FROM residents r WHERE r.firstName LIKE '%Niko%' OR r.lastName LIKE '%Klein%';\n",
+  "rows": [
+    {
+      "id": "60001",
+      "firstName": "Niko",
+      "lastName": "Klein",
+      "outOfPackageMinutes": "742"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tfirstName\tlastName\toutOfPackageMinutes\n60001\tNiko\tKlein\t742\n",
+  "stderr": "",
+  "execution_time_ms": 279
+}

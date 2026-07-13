@@ -1,0 +1,1 @@
+ALTER TABLE `residents` ADD `outOfPackageMinutes` int DEFAULT 0 NOT NULL;

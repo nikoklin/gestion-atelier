@@ -1,0 +1,26 @@
+{
+  "query": "SELECT p.*, r.firstName, r.lastName FROM packages p JOIN residents r ON p.residentId = r.id WHERE r.firstName = 'Nico' AND r.lastName = 'Klein' AND p.endDate >= NOW() ORDER BY p.id DESC LIMIT 1",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT p.*, r.firstName, r.lastName FROM packages p JOIN residents r ON p.residentId = r.id WHERE r.firstName = 'Nico' AND r.lastName = 'Klein' AND p.endDate >= NOW() ORDER BY p.id DESC LIMIT 1",
+  "rows": [
+    {
+      "id": "420002",
+      "residentId": "30001",
+      "packageType": "15h_8w",
+      "totalHours": "900",
+      "usedHours": "900",
+      "startDate": "2025-12-02 00:00:00",
+      "endDate": "2025-12-15 00:00:00",
+      "isActive": "1",
+      "reminderSent": "0",
+      "expirationEmailSent": "1",
+      "createdAt": "2025-12-02 16:49:54",
+      "updatedAt": "2025-12-02 16:56:26",
+      "firstName": "Nico",
+      "lastName": "Klein"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tresidentId\tpackageType\ttotalHours\tusedHours\tstartDate\tendDate\tisActive\treminderSent\texpirationEmailSent\tcreatedAt\tupdatedAt\tfirstName\tlastName\n420002\t30001\t15h_8w\t900\t900\t2025-12-02 00:00:00\t2025-12-15 00:00:00\t1\t0\t1\t2025-12-02 16:49:54\t2025-12-02 16:56:26\tNico\tKlein\n",
+  "stderr": "",
+  "execution_time_ms": 52
+}

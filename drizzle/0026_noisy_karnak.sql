@@ -1,0 +1,1 @@
+ALTER TABLE `residents` MODIFY COLUMN `artistSignature` mediumtext;

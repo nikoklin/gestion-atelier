@@ -1,0 +1,50 @@
+{
+  "query": "SELECT id, residentId, packageType, startDate, endDate, totalHours, usedHours, status FROM packages WHERE residentId = 30001 ORDER BY startDate ASC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT id, residentId, packageType, startDate, endDate, totalHours, usedHours, status FROM packages WHERE residentId = 30001 ORDER BY startDate ASC;",
+  "rows": [
+    {
+      "id": "420002",
+      "residentId": "30001",
+      "packageType": "15h_8w",
+      "startDate": "2025-12-02 00:00:00",
+      "endDate": "2025-12-15 00:00:00",
+      "totalHours": "900",
+      "usedHours": "900",
+      "status": "active"
+    },
+    {
+      "id": "420006",
+      "residentId": "30001",
+      "packageType": "30h_4w",
+      "startDate": "2025-12-02 00:00:00",
+      "endDate": "2025-12-30 00:00:00",
+      "totalHours": "1800",
+      "usedHours": "1800",
+      "status": "pending"
+    },
+    {
+      "id": "450004",
+      "residentId": "30001",
+      "packageType": "15h_8w",
+      "startDate": "2025-12-07 00:00:00",
+      "endDate": "2025-12-08 00:00:00",
+      "totalHours": "900",
+      "usedHours": "902",
+      "status": "pending"
+    },
+    {
+      "id": "480001",
+      "residentId": "30001",
+      "packageType": "15h_8w",
+      "startDate": "2025-12-07 00:00:00",
+      "endDate": "2025-12-10 00:00:00",
+      "totalHours": "1500",
+      "usedHours": "1326",
+      "status": "pending"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tresidentId\tpackageType\tstartDate\tendDate\ttotalHours\tusedHours\tstatus\n420002\t30001\t15h_8w\t2025-12-02 00:00:00\t2025-12-15 00:00:00\t900\t900\tactive\n420006\t30001\t30h_4w\t2025-12-02 00:00:00\t2025-12-30 00:00:00\t1800\t1800\tpending\n450004\t30001\t15h_8w\t2025-12-07 00:00:00\t2025-12-08 00:00:00\t900\t902\tpending\n480001\t30001\t15h_8w\t2025-12-07 00:00:00\t2025-12-10 00:00:00\t1500\t1326\tpending\n",
+  "stderr": "",
+  "execution_time_ms": 51
+}

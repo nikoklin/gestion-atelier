@@ -1,0 +1,22 @@
+{
+  "query": "SELECT DISTINCT packageType FROM packages LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT DISTINCT packageType FROM packages LIMIT 5;",
+  "rows": [
+    {
+      "packageType": "15h_8w"
+    },
+    {
+      "packageType": "180h_6m"
+    },
+    {
+      "packageType": "30h_8w"
+    },
+    {
+      "packageType": "30h_4w"
+    }
+  ],
+  "messages": [],
+  "stdout": "packageType\n15h_8w\n180h_6m\n30h_8w\n30h_4w\n",
+  "stderr": "",
+  "execution_time_ms": 354
+}

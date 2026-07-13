@@ -1,0 +1,37 @@
+{
+  "query": "SELECT id, packageType, totalHours, usedHours, isActive, startDate, endDate FROM packages WHERE residentId = 60001 ORDER BY startDate DESC LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT id, packageType, totalHours, usedHours, isActive, startDate, endDate FROM packages WHERE residentId = 60001 ORDER BY startDate DESC LIMIT 5;",
+  "rows": [
+    {
+      "id": "720003",
+      "packageType": "15h_8w",
+      "totalHours": "900",
+      "usedHours": "742",
+      "isActive": "1",
+      "startDate": "2026-05-22 00:00:00",
+      "endDate": "2026-07-17 00:00:00"
+    },
+    {
+      "id": "450011",
+      "packageType": "15h_8w",
+      "totalHours": "960",
+      "usedHours": "960",
+      "isActive": "0",
+      "startDate": "2026-05-04 00:00:00",
+      "endDate": "2026-06-29 00:00:00"
+    },
+    {
+      "id": "330007",
+      "packageType": "15h_8w",
+      "totalHours": "900",
+      "usedHours": "900",
+      "isActive": "0",
+      "startDate": "2026-04-20 00:00:00",
+      "endDate": "2026-06-15 00:00:00"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tpackageType\ttotalHours\tusedHours\tisActive\tstartDate\tendDate\n720003\t15h_8w\t900\t742\t1\t2026-05-22 00:00:00\t2026-07-17 00:00:00\n450011\t15h_8w\t960\t960\t0\t2026-05-04 00:00:00\t2026-06-29 00:00:00\n330007\t15h_8w\t900\t900\t0\t2026-04-20 00:00:00\t2026-06-15 00:00:00\n",
+  "stderr": "",
+  "execution_time_ms": 269
+}

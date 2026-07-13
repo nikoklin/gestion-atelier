@@ -1,0 +1,9 @@
+{
+  "query": "-- Trouver les IDs des derniers pointages à 22h pour chaque résident\nUPDATE residents r\nSET missedCheckoutAttendanceId = (\n  SELECT a.id \n  FROM attendances a \n  WHERE a.residentId = r.id \n  AND TIME(a.checkOutTime) = '22:00:00'\n  ORDER BY a.checkInTime DESC \n  LIMIT 1\n)\nWHERE r.hasMissedCheckout = true \nAND r.missedCheckoutAttendanceId IS NULL\nAND (r.firstName = 'enka' OR r.firstName = 'Nicolas');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute -- Trouver les IDs des derniers pointages à 22h pour chaque résident\nUPDATE residents r\nSET missedCheckoutAttendanceId = (\n  SELECT a.id \n  FROM attendances a \n  WHERE a.residentId = r.id \n  AND TIME(a.checkOutTime) = '22:00:00'\n  ORDER BY a.checkInTime DESC \n  LIMIT 1\n)\nWHERE r.hasMissedCheckout = true \nAND r.missedCheckoutAttendanceId IS NULL\nAND (r.firstName = 'enka' OR r.firstName = 'Nicolas');",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 86
+}

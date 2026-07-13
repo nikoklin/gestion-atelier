@@ -1,0 +1,28 @@
+{
+  "query": "\nSELECT \n  r.id as residentId,\n  r.firstName,\n  r.lastName,\n  p.id as packageId,\n  p.packageType,\n  p.isActive,\n  p.endDate\nFROM residents r\nLEFT JOIN packages p ON r.id = p.residentId\nWHERE r.firstName = 'enka'\nORDER BY p.createdAt DESC;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute \nSELECT \n  r.id as residentId,\n  r.firstName,\n  r.lastName,\n  p.id as packageId,\n  p.packageType,\n  p.isActive,\n  p.endDate\nFROM residents r\nLEFT JOIN packages p ON r.id = p.residentId\nWHERE r.firstName = 'enka'\nORDER BY p.createdAt DESC;\n",
+  "rows": [
+    {
+      "residentId": "120001",
+      "firstName": "enka",
+      "lastName": "enka",
+      "packageId": "810001",
+      "packageType": "30h_4w",
+      "isActive": "0",
+      "endDate": "2026-01-20 00:00:00"
+    },
+    {
+      "residentId": "120001",
+      "firstName": "enka",
+      "lastName": "enka",
+      "packageId": "750001",
+      "packageType": "30h_4w",
+      "isActive": "0",
+      "endDate": "2025-12-02 00:00:00"
+    }
+  ],
+  "messages": [],
+  "stdout": "residentId\tfirstName\tlastName\tpackageId\tpackageType\tisActive\tendDate\n120001\tenka\tenka\t810001\t30h_4w\t0\t2026-01-20 00:00:00\n120001\tenka\tenka\t750001\t30h_4w\t0\t2025-12-02 00:00:00\n",
+  "stderr": "",
+  "execution_time_ms": 54
+}

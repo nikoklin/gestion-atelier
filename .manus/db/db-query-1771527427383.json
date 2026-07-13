@@ -1,0 +1,25 @@
+{
+  "query": "\nSELECT \n  p.id as packageId,\n  p.totalHours,\n  p.usedHours,\n  p.isActive,\n  (SELECT COUNT(*) FROM attendances WHERE packageId = p.id) as attendanceCount,\n  (SELECT SUM(durationMinutes) FROM attendances WHERE packageId = p.id) as totalDuration\nFROM packages p \nWHERE p.residentId = 1 \nORDER BY p.id DESC LIMIT 1;\n\nSELECT \n  id,\n  checkInTime,\n  checkOutTime,\n  durationMinutes,\n  packageId\nFROM attendances \nWHERE residentId = 1 \nORDER BY checkInTime ASC;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute \nSELECT \n  p.id as packageId,\n  p.totalHours,\n  p.usedHours,\n  p.isActive,\n  (SELECT COUNT(*) FROM attendances WHERE packageId = p.id) as attendanceCount,\n  (SELECT SUM(durationMinutes) FROM attendances WHERE packageId = p.id) as totalDuration\nFROM packages p \nWHERE p.residentId = 1 \nORDER BY p.id DESC LIMIT 1;\n\nSELECT \n  id,\n  checkInTime,\n  checkOutTime,\n  durationMinutes,\n  packageId\nFROM attendances \nWHERE residentId = 1 \nORDER BY checkInTime ASC;\n",
+  "rows": [
+    {
+      "packageId": "210004",
+      "totalHours": "900",
+      "usedHours": "1200",
+      "isActive": "0",
+      "attendanceCount": "4",
+      "totalDuration": "1200"
+    }
+  ],
+  "messages": [
+    "id\tcheckInTime\tcheckOutTime\tdurationMinutes\tpackageId",
+    "210024\t2026-02-02 09:00:00\t2026-02-02 14:00:00\t300\t210004",
+    "210027\t2026-02-03 11:00:00\t2026-02-03 19:00:00\t480\t210004",
+    "210028\t2026-02-03 18:00:00\t2026-02-03 20:00:00\t120\tNULL",
+    "210025\t2026-02-04 09:00:00\t2026-02-04 14:00:00\t300\t210004",
+    "210026\t2026-02-06 15:00:00\t2026-02-06 17:00:00\t120\t210004"
+  ],
+  "stdout": "packageId\ttotalHours\tusedHours\tisActive\tattendanceCount\ttotalDuration\n210004\t900\t1200\t0\t4\t1200\nid\tcheckInTime\tcheckOutTime\tdurationMinutes\tpackageId\n210024\t2026-02-02 09:00:00\t2026-02-02 14:00:00\t300\t210004\n210027\t2026-02-03 11:00:00\t2026-02-03 19:00:00\t480\t210004\n210028\t2026-02-03 18:00:00\t2026-02-03 20:00:00\t120\tNULL\n210025\t2026-02-04 09:00:00\t2026-02-04 14:00:00\t300\t210004\n210026\t2026-02-06 15:00:00\t2026-02-06 17:00:00\t120\t210004\n",
+  "stderr": "",
+  "execution_time_ms": 402
+}

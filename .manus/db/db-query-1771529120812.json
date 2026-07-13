@@ -1,0 +1,17 @@
+{
+  "query": "SELECT id, checkInTime, checkOutTime, durationMinutes, packageId FROM attendances WHERE id = 210028;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT id, checkInTime, checkOutTime, durationMinutes, packageId FROM attendances WHERE id = 210028;",
+  "rows": [
+    {
+      "id": "210028",
+      "checkInTime": "2026-02-03 18:00:00",
+      "checkOutTime": "2026-02-03 20:00:00",
+      "durationMinutes": "120",
+      "packageId": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcheckInTime\tcheckOutTime\tdurationMinutes\tpackageId\n210028\t2026-02-03 18:00:00\t2026-02-03 20:00:00\t120\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 347
+}

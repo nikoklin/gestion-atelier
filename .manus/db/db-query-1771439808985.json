@@ -1,0 +1,37 @@
+{
+  "query": "SELECT id, residentId, checkInTime, checkOutTime, durationMinutes, packageId, createdAt \nFROM attendances \nORDER BY id DESC \nLIMIT 3;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT id, residentId, checkInTime, checkOutTime, durationMinutes, packageId, createdAt \nFROM attendances \nORDER BY id DESC \nLIMIT 3;",
+  "rows": [
+    {
+      "id": "210008",
+      "residentId": "1",
+      "checkInTime": "2026-02-18 09:35:00",
+      "checkOutTime": "NULL",
+      "durationMinutes": "NULL",
+      "packageId": "NULL",
+      "createdAt": "2026-02-18 18:36:35"
+    },
+    {
+      "id": "180019",
+      "residentId": "1",
+      "checkInTime": "2026-02-17 09:00:00",
+      "checkOutTime": "2026-02-17 09:20:00",
+      "durationMinutes": "20",
+      "packageId": "NULL",
+      "createdAt": "2026-02-17 17:46:38"
+    },
+    {
+      "id": "180017",
+      "residentId": "1",
+      "checkInTime": "2026-02-17 11:00:00",
+      "checkOutTime": "2026-02-17 11:30:00",
+      "durationMinutes": "30",
+      "packageId": "180004",
+      "createdAt": "2026-02-17 17:45:08"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tresidentId\tcheckInTime\tcheckOutTime\tdurationMinutes\tpackageId\tcreatedAt\n210008\t1\t2026-02-18 09:35:00\tNULL\tNULL\tNULL\t2026-02-18 18:36:35\n180019\t1\t2026-02-17 09:00:00\t2026-02-17 09:20:00\t20\tNULL\t2026-02-17 17:46:38\n180017\t1\t2026-02-17 11:00:00\t2026-02-17 11:30:00\t30\t180004\t2026-02-17 17:45:08\n",
+  "stderr": "",
+  "execution_time_ms": 371
+}

@@ -1,0 +1,18 @@
+{
+  "query": "SELECT p.id, p.totalHours, p.usedHours, p.isActive, \n(SELECT COUNT(*) FROM attendances WHERE packageId = p.id) as attendanceCount,\n(SELECT SUM(durationMinutes) FROM attendances WHERE packageId = p.id) as totalDuration\nFROM packages p \nWHERE p.residentId = 1 \nORDER BY p.id DESC LIMIT 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT p.id, p.totalHours, p.usedHours, p.isActive, \n(SELECT COUNT(*) FROM attendances WHERE packageId = p.id) as attendanceCount,\n(SELECT SUM(durationMinutes) FROM attendances WHERE packageId = p.id) as totalDuration\nFROM packages p \nWHERE p.residentId = 1 \nORDER BY p.id DESC LIMIT 1;",
+  "rows": [
+    {
+      "id": "210004",
+      "totalHours": "900",
+      "usedHours": "1200",
+      "isActive": "1",
+      "attendanceCount": "4",
+      "totalDuration": "1200"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttotalHours\tusedHours\tisActive\tattendanceCount\ttotalDuration\n210004\t900\t1200\t1\t4\t1200\n",
+  "stderr": "",
+  "execution_time_ms": 368
+}

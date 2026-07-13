@@ -1,0 +1,20 @@
+{
+  "query": "SELECT id, residentId, packageType, totalHours, usedHours, isActive, expirationEmailSent, DATE(endDate) as endDate FROM packages WHERE residentId = 30001 AND endDate >= '2025-12-01' ORDER BY id DESC LIMIT 1",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT id, residentId, packageType, totalHours, usedHours, isActive, expirationEmailSent, DATE(endDate) as endDate FROM packages WHERE residentId = 30001 AND endDate >= '2025-12-01' ORDER BY id DESC LIMIT 1",
+  "rows": [
+    {
+      "id": "420002",
+      "residentId": "30001",
+      "packageType": "15h_8w",
+      "totalHours": "900",
+      "usedHours": "900",
+      "isActive": "1",
+      "expirationEmailSent": "1",
+      "endDate": "2025-12-15"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tresidentId\tpackageType\ttotalHours\tusedHours\tisActive\texpirationEmailSent\tendDate\n420002\t30001\t15h_8w\t900\t900\t1\t1\t2025-12-15\n",
+  "stderr": "",
+  "execution_time_ms": 49
+}

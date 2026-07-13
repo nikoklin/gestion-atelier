@@ -1,0 +1,50 @@
+{
+  "query": "SELECT p.id, p.residentId, r.firstName, r.lastName, p.totalHours, p.usedHours, p.expirationEmailSent, p.createdAt FROM packages p LEFT JOIN residents r ON p.residentId = r.id WHERE (p.totalHours - p.usedHours <= 0) AND p.expirationEmailSent = 0 ORDER BY p.residentId, p.createdAt DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT p.id, p.residentId, r.firstName, r.lastName, p.totalHours, p.usedHours, p.expirationEmailSent, p.createdAt FROM packages p LEFT JOIN residents r ON p.residentId = r.id WHERE (p.totalHours - p.usedHours <= 0) AND p.expirationEmailSent = 0 ORDER BY p.residentId, p.createdAt DESC;",
+  "rows": [
+    {
+      "id": "1",
+      "residentId": "1",
+      "firstName": "Marie",
+      "lastName": "Dupont",
+      "totalHours": "900",
+      "usedHours": "900",
+      "expirationEmailSent": "0",
+      "createdAt": "2025-10-31 13:04:07"
+    },
+    {
+      "id": "180002",
+      "residentId": "2",
+      "firstName": "Jean",
+      "lastName": "Martin",
+      "totalHours": "900",
+      "usedHours": "1552",
+      "expirationEmailSent": "0",
+      "createdAt": "2025-11-14 18:13:18"
+    },
+    {
+      "id": "810002",
+      "residentId": "30001",
+      "firstName": "Nicolas",
+      "lastName": "Klein",
+      "totalHours": "900",
+      "usedHours": "901",
+      "expirationEmailSent": "0",
+      "createdAt": "2026-01-16 15:21:03"
+    },
+    {
+      "id": "450002",
+      "residentId": "60002",
+      "firstName": "Chloé",
+      "lastName": "Patir",
+      "totalHours": "1800",
+      "usedHours": "1893",
+      "expirationEmailSent": "0",
+      "createdAt": "2025-12-07 09:48:11"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tresidentId\tfirstName\tlastName\ttotalHours\tusedHours\texpirationEmailSent\tcreatedAt\n1\t1\tMarie\tDupont\t900\t900\t0\t2025-10-31 13:04:07\n180002\t2\tJean\tMartin\t900\t1552\t0\t2025-11-14 18:13:18\n810002\t30001\tNicolas\tKlein\t900\t901\t0\t2026-01-16 15:21:03\n450002\t60002\tChloé\tPatir\t1800\t1893\t0\t2025-12-07 09:48:11\n",
+  "stderr": "",
+  "execution_time_ms": 53
+}

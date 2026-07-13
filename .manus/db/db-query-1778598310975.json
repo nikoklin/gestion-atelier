@@ -1,0 +1,88 @@
+{
+  "query": "\nSELECT r.id as resident_id, r.firstName, r.lastName, r.email, \n       p.id as pkg_id, p.isActive, p.totalHours, p.usedHours, \n       (p.totalHours - p.usedHours) as remaining, p.endDate, p.startDate\nFROM residents r\nJOIN packages p ON p.residentId = r.id\nWHERE r.isActive = 1 AND r.isDeleted = 0\n  AND r.email IS NOT NULL AND r.email != ''\nORDER BY r.id, p.id DESC;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute \nSELECT r.id as resident_id, r.firstName, r.lastName, r.email, \n       p.id as pkg_id, p.isActive, p.totalHours, p.usedHours, \n       (p.totalHours - p.usedHours) as remaining, p.endDate, p.startDate\nFROM residents r\nJOIN packages p ON p.residentId = r.id\nWHERE r.isActive = 1 AND r.isDeleted = 0\n  AND r.email IS NOT NULL AND r.email != ''\nORDER BY r.id, p.id DESC;\n",
+  "rows": [
+    {
+      "resident_id": "1",
+      "firstName": "enka",
+      "lastName": "enka",
+      "email": "nikoklin@me.com",
+      "pkg_id": "480001",
+      "isActive": "0",
+      "totalHours": "1800",
+      "usedHours": "167",
+      "remaining": "1633",
+      "endDate": "2026-05-16 00:00:00",
+      "startDate": "2026-05-08 00:00:00"
+    },
+    {
+      "resident_id": "1",
+      "firstName": "enka",
+      "lastName": "enka",
+      "email": "nikoklin@me.com",
+      "pkg_id": "360003",
+      "isActive": "0",
+      "totalHours": "900",
+      "usedHours": "900",
+      "remaining": "0",
+      "endDate": "2026-06-15 00:00:00",
+      "startDate": "2026-04-20 00:00:00"
+    },
+    {
+      "resident_id": "60001",
+      "firstName": "Niko",
+      "lastName": "Klein",
+      "email": "nikoklin@me.com",
+      "pkg_id": "450011",
+      "isActive": "0",
+      "totalHours": "900",
+      "usedHours": "900",
+      "remaining": "0",
+      "endDate": "2026-06-29 00:00:00",
+      "startDate": "2026-05-04 00:00:00"
+    },
+    {
+      "resident_id": "60001",
+      "firstName": "Niko",
+      "lastName": "Klein",
+      "email": "nikoklin@me.com",
+      "pkg_id": "330007",
+      "isActive": "0",
+      "totalHours": "900",
+      "usedHours": "900",
+      "remaining": "0",
+      "endDate": "2026-06-15 00:00:00",
+      "startDate": "2026-04-20 00:00:00"
+    },
+    {
+      "resident_id": "90002",
+      "firstName": "test",
+      "lastName": "test",
+      "email": "enka@free.fr",
+      "pkg_id": "390001",
+      "isActive": "0",
+      "totalHours": "1800",
+      "usedHours": "191",
+      "remaining": "1609",
+      "endDate": "2026-05-12 00:00:00",
+      "startDate": "2026-04-29 00:00:00"
+    },
+    {
+      "resident_id": "90002",
+      "firstName": "test",
+      "lastName": "test",
+      "email": "enka@free.fr",
+      "pkg_id": "270008",
+      "isActive": "0",
+      "totalHours": "1800",
+      "usedHours": "0",
+      "remaining": "1800",
+      "endDate": "2026-04-24 00:00:00",
+      "startDate": "2026-02-27 00:00:00"
+    }
+  ],
+  "messages": [],
+  "stdout": "resident_id\tfirstName\tlastName\temail\tpkg_id\tisActive\ttotalHours\tusedHours\tremaining\tendDate\tstartDate\n1\tenka\tenka\tnikoklin@me.com\t480001\t0\t1800\t167\t1633\t2026-05-16 00:00:00\t2026-05-08 00:00:00\n1\tenka\tenka\tnikoklin@me.com\t360003\t0\t900\t900\t0\t2026-06-15 00:00:00\t2026-04-20 00:00:00\n60001\tNiko\tKlein\tnikoklin@me.com\t450011\t0\t900\t900\t0\t2026-06-29 00:00:00\t2026-05-04 00:00:00\n60001\tNiko\tKlein\tnikoklin@me.com\t330007\t0\t900\t900\t0\t2026-06-15 00:00:00\t2026-04-20 00:00:00\n90002\ttest\ttest\tenka@free.fr\t390001\t0\t1800\t191\t1609\t2026-05-12 00:00:00\t2026-04-29 00:00:00\n90002\ttest\ttest\tenka@free.fr\t270008\t0\t1800\t0\t1800\t2026-04-24 00:00:00\t2026-02-27 00:00:00\n",
+  "stderr": "",
+  "execution_time_ms": 274
+}

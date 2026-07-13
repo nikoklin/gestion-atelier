@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE attendances SET checkInTime = DATE_SUB(checkOutTime, INTERVAL 10 MINUTE), durationMinutes = 10 WHERE residentId = 30001 ORDER BY checkOutTime DESC LIMIT 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute UPDATE attendances SET checkInTime = DATE_SUB(checkOutTime, INTERVAL 10 MINUTE), durationMinutes = 10 WHERE residentId = 30001 ORDER BY checkOutTime DESC LIMIT 1;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 59
+}

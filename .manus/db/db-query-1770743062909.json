@@ -1,0 +1,24 @@
+{
+  "query": "SELECT \n  r.id as residentId,\n  r.firstName,\n  r.lastName,\n  p.id as packageId,\n  p.packageType,\n  p.totalHours,\n  p.usedHours,\n  p.deductedMinutes,\n  p.isActive,\n  p.startDate,\n  p.endDate,\n  (SELECT SUM(durationMinutes) FROM attendances WHERE packageId = p.id) as actualUsedMinutes\nFROM residents r\nLEFT JOIN packages p ON r.id = p.residentId\nWHERE r.firstName = 'enka' AND r.lastName = 'enka'\nORDER BY p.endDate DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT \n  r.id as residentId,\n  r.firstName,\n  r.lastName,\n  p.id as packageId,\n  p.packageType,\n  p.totalHours,\n  p.usedHours,\n  p.deductedMinutes,\n  p.isActive,\n  p.startDate,\n  p.endDate,\n  (SELECT SUM(durationMinutes) FROM attendances WHERE packageId = p.id) as actualUsedMinutes\nFROM residents r\nLEFT JOIN packages p ON r.id = p.residentId\nWHERE r.firstName = 'enka' AND r.lastName = 'enka'\nORDER BY p.endDate DESC;",
+  "rows": [
+    {
+      "residentId": "1",
+      "firstName": "enka",
+      "lastName": "enka",
+      "packageId": "1",
+      "packageType": "15h_8w",
+      "totalHours": "900",
+      "usedHours": "900",
+      "deductedMinutes": "0",
+      "isActive": "0",
+      "startDate": "2026-01-30 00:00:00",
+      "endDate": "2026-03-27 00:00:00",
+      "actualUsedMinutes": "88"
+    }
+  ],
+  "messages": [],
+  "stdout": "residentId\tfirstName\tlastName\tpackageId\tpackageType\ttotalHours\tusedHours\tdeductedMinutes\tisActive\tstartDate\tendDate\tactualUsedMinutes\n1\tenka\tenka\t1\t15h_8w\t900\t900\t0\t0\t2026-01-30 00:00:00\t2026-03-27 00:00:00\t88\n",
+  "stderr": "",
+  "execution_time_ms": 353
+}

@@ -1,0 +1,60 @@
+{
+  "query": "\nSELECT \n  p.id,\n  p.totalHours,\n  p.usedHours,\n  p.deductedMinutes,\n  p.isActive,\n  p.startDate,\n  p.endDate,\n  GREATEST(0, (p.usedHours - p.totalHours) * 60 - COALESCE(p.deductedMinutes, 0)) as outOfPackageMinutes\nFROM packages p\nJOIN residents r ON p.residentId = r.id\nWHERE r.firstName = 'enka' AND r.lastName = 'enka'\nORDER BY p.createdAt DESC\nLIMIT 5;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute \nSELECT \n  p.id,\n  p.totalHours,\n  p.usedHours,\n  p.deductedMinutes,\n  p.isActive,\n  p.startDate,\n  p.endDate,\n  GREATEST(0, (p.usedHours - p.totalHours) * 60 - COALESCE(p.deductedMinutes, 0)) as outOfPackageMinutes\nFROM packages p\nJOIN residents r ON p.residentId = r.id\nWHERE r.firstName = 'enka' AND r.lastName = 'enka'\nORDER BY p.createdAt DESC\nLIMIT 5;\n",
+  "rows": [
+    {
+      "id": "960006",
+      "totalHours": "900",
+      "usedHours": "900",
+      "deductedMinutes": "0",
+      "isActive": "0",
+      "startDate": "2026-01-28 00:00:00",
+      "endDate": "2026-03-25 00:00:00",
+      "outOfPackageMinutes": "0"
+    },
+    {
+      "id": "960004",
+      "totalHours": "900",
+      "usedHours": "899",
+      "deductedMinutes": "120",
+      "isActive": "0",
+      "startDate": "2026-01-28 00:00:00",
+      "endDate": "2026-03-25 00:00:00",
+      "outOfPackageMinutes": "0"
+    },
+    {
+      "id": "930042",
+      "totalHours": "900",
+      "usedHours": "885",
+      "deductedMinutes": "0",
+      "isActive": "0",
+      "startDate": "2026-01-27 00:00:00",
+      "endDate": "2026-03-24 00:00:00",
+      "outOfPackageMinutes": "0"
+    },
+    {
+      "id": "930041",
+      "totalHours": "900",
+      "usedHours": "897",
+      "deductedMinutes": "62",
+      "isActive": "0",
+      "startDate": "2026-01-27 00:00:00",
+      "endDate": "2026-03-24 00:00:00",
+      "outOfPackageMinutes": "0"
+    },
+    {
+      "id": "930039",
+      "totalHours": "900",
+      "usedHours": "1020",
+      "deductedMinutes": "120",
+      "isActive": "0",
+      "startDate": "2026-01-27 00:00:00",
+      "endDate": "2026-03-24 00:00:00",
+      "outOfPackageMinutes": "7080"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttotalHours\tusedHours\tdeductedMinutes\tisActive\tstartDate\tendDate\toutOfPackageMinutes\n960006\t900\t900\t0\t0\t2026-01-28 00:00:00\t2026-03-25 00:00:00\t0\n960004\t900\t899\t120\t0\t2026-01-28 00:00:00\t2026-03-25 00:00:00\t0\n930042\t900\t885\t0\t0\t2026-01-27 00:00:00\t2026-03-24 00:00:00\t0\n930041\t900\t897\t62\t0\t2026-01-27 00:00:00\t2026-03-24 00:00:00\t0\n930039\t900\t1020\t120\t0\t2026-01-27 00:00:00\t2026-03-24 00:00:00\t7080\n",
+  "stderr": "",
+  "execution_time_ms": 345
+}

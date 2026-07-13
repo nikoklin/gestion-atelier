@@ -1,0 +1,15 @@
+{
+  "query": "\n-- Vérifier combien de forfaits ont usedHours négatif\nSELECT COUNT(*) as count_negative, MIN(usedHours) as min_value, MAX(usedHours) as max_negative\nFROM packages \nWHERE usedHours < 0;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute \n-- Vérifier combien de forfaits ont usedHours négatif\nSELECT COUNT(*) as count_negative, MIN(usedHours) as min_value, MAX(usedHours) as max_negative\nFROM packages \nWHERE usedHours < 0;\n",
+  "rows": [
+    {
+      "count_negative": "2",
+      "min_value": "-386",
+      "max_negative": "-322"
+    }
+  ],
+  "messages": [],
+  "stdout": "count_negative\tmin_value\tmax_negative\n2\t-386\t-322\n",
+  "stderr": "",
+  "execution_time_ms": 52
+}

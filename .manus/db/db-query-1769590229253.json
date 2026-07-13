@@ -1,0 +1,40 @@
+{
+  "query": "SELECT \n  p.id,\n  p.packageType,\n  p.totalHours,\n  p.usedHours,\n  p.deductedMinutes,\n  p.isActive,\n  (p.usedHours - p.totalHours) AS outOfPackageMinutes,\n  GREATEST(0, (p.usedHours - p.totalHours) - COALESCE(p.deductedMinutes, 0)) AS remainingOutOfPackage\nFROM packages p\nJOIN residents r ON p.residentId = r.id\nWHERE r.firstName = 'enka' AND r.lastName = 'enka' AND p.isActive = 0\nORDER BY p.endDate;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT \n  p.id,\n  p.packageType,\n  p.totalHours,\n  p.usedHours,\n  p.deductedMinutes,\n  p.isActive,\n  (p.usedHours - p.totalHours) AS outOfPackageMinutes,\n  GREATEST(0, (p.usedHours - p.totalHours) - COALESCE(p.deductedMinutes, 0)) AS remainingOutOfPackage\nFROM packages p\nJOIN residents r ON p.residentId = r.id\nWHERE r.firstName = 'enka' AND r.lastName = 'enka' AND p.isActive = 0\nORDER BY p.endDate;",
+  "rows": [
+    {
+      "id": "930039",
+      "packageType": "15h_8w",
+      "totalHours": "900",
+      "usedHours": "896",
+      "deductedMinutes": "0",
+      "isActive": "0",
+      "outOfPackageMinutes": "-4",
+      "remainingOutOfPackage": "0"
+    },
+    {
+      "id": "930041",
+      "packageType": "15h_8w",
+      "totalHours": "900",
+      "usedHours": "897",
+      "deductedMinutes": "62",
+      "isActive": "0",
+      "outOfPackageMinutes": "-3",
+      "remainingOutOfPackage": "0"
+    },
+    {
+      "id": "930042",
+      "packageType": "15h_8w",
+      "totalHours": "900",
+      "usedHours": "900",
+      "deductedMinutes": "0",
+      "isActive": "0",
+      "outOfPackageMinutes": "0",
+      "remainingOutOfPackage": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tpackageType\ttotalHours\tusedHours\tdeductedMinutes\tisActive\toutOfPackageMinutes\tremainingOutOfPackage\n930039\t15h_8w\t900\t896\t0\t0\t-4\t0\n930041\t15h_8w\t900\t897\t62\t0\t-3\t0\n930042\t15h_8w\t900\t900\t0\t0\t0\t0\n",
+  "stderr": "",
+  "execution_time_ms": 347
+}

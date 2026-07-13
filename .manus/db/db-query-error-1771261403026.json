@@ -1,0 +1,12 @@
+{
+  "query": "\n-- Forfait complet avec dates\nSELECT id, totalHours, usedHours, isActive, startDate, endDate, NOW() as current_time\nFROM packages \nWHERE residentId = 1 \nORDER BY createdAt DESC \nLIMIT 1;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute \n-- Forfait complet avec dates\nSELECT id, totalHours, usedHours, isActive, startDate, endDate, NOW() as current_time\nFROM packages \nWHERE residentId = 1 \nORDER BY createdAt DESC \nLIMIT 1;\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1064 (42000) at line 3: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 85 near \"current_time",
+    "FROM packages ",
+    "WHERE residentId = 1 ",
+    "ORDER BY createdAt DESC ",
+    "LIMIT 1\""
+  ]
+}

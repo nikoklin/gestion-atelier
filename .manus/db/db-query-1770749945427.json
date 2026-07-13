@@ -1,0 +1,45 @@
+{
+  "query": "\n-- Forfait actuel\nSELECT id, residentId, totalHours, usedHours, deductedMinutes, isActive, startDate, endDate \nFROM packages \nWHERE residentId = 1 AND isActive = 1\nLIMIT 1;\n\n-- Tous les pointages du forfait actuel\nSELECT id, packageId, checkInTime, checkOutTime, durationMinutes, createdAt\nFROM attendances \nWHERE residentId = 1 AND packageId = 120003\nORDER BY createdAt DESC;\n\n-- Somme totale des pointages\nSELECT packageId, SUM(durationMinutes) as totalMinutes\nFROM attendances \nWHERE residentId = 1 AND packageId = 120003\nGROUP BY packageId;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute \n-- Forfait actuel\nSELECT id, residentId, totalHours, usedHours, deductedMinutes, isActive, startDate, endDate \nFROM packages \nWHERE residentId = 1 AND isActive = 1\nLIMIT 1;\n\n-- Tous les pointages du forfait actuel\nSELECT id, packageId, checkInTime, checkOutTime, durationMinutes, createdAt\nFROM attendances \nWHERE residentId = 1 AND packageId = 120003\nORDER BY createdAt DESC;\n\n-- Somme totale des pointages\nSELECT packageId, SUM(durationMinutes) as totalMinutes\nFROM attendances \nWHERE residentId = 1 AND packageId = 120003\nGROUP BY packageId;\n",
+  "rows": [
+    {
+      "id": "120004",
+      "packageId": "120003",
+      "checkInTime": "2026-02-10 18:56:04",
+      "checkOutTime": "2026-02-10 18:58:08",
+      "durationMinutes": "2",
+      "createdAt": "2026-02-10 18:56:04"
+    },
+    {
+      "id": "120003",
+      "packageId": "120003",
+      "checkInTime": "2026-02-10 18:54:06",
+      "checkOutTime": "2026-02-10 18:55:34",
+      "durationMinutes": "1",
+      "createdAt": "2026-02-10 18:54:06"
+    },
+    {
+      "id": "120002",
+      "packageId": "120003",
+      "checkInTime": "2026-02-10 18:44:29",
+      "checkOutTime": "2026-02-10 18:47:59",
+      "durationMinutes": "3",
+      "createdAt": "2026-02-10 18:44:29"
+    },
+    {
+      "id": "120001",
+      "packageId": "120003",
+      "checkInTime": "2026-02-10 18:42:10",
+      "checkOutTime": "2026-02-10 18:44:01",
+      "durationMinutes": "1",
+      "createdAt": "2026-02-10 18:42:10"
+    }
+  ],
+  "messages": [
+    "packageId\ttotalMinutes",
+    "120003\t7"
+  ],
+  "stdout": "id\tpackageId\tcheckInTime\tcheckOutTime\tdurationMinutes\tcreatedAt\n120004\t120003\t2026-02-10 18:56:04\t2026-02-10 18:58:08\t2\t2026-02-10 18:56:04\n120003\t120003\t2026-02-10 18:54:06\t2026-02-10 18:55:34\t1\t2026-02-10 18:54:06\n120002\t120003\t2026-02-10 18:44:29\t2026-02-10 18:47:59\t3\t2026-02-10 18:44:29\n120001\t120003\t2026-02-10 18:42:10\t2026-02-10 18:44:01\t1\t2026-02-10 18:42:10\npackageId\ttotalMinutes\n120003\t7\n",
+  "stderr": "",
+  "execution_time_ms": 451
+}

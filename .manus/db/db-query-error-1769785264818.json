@@ -1,0 +1,8 @@
+{
+  "query": "SELECT p.id, p.residentId, r.name, p.totalHours, p.usedHours, p.deductedMinutes, p.isActive, p.startDate, p.endDate \nFROM packages p \nJOIN residents r ON p.residentId = r.id \nWHERE r.name LIKE '%enka%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT p.id, p.residentId, r.name, p.totalHours, p.usedHours, p.deductedMinutes, p.isActive, p.startDate, p.endDate \nFROM packages p \nJOIN residents r ON p.residentId = r.id \nWHERE r.name LIKE '%enka%';",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'r.name' in 'where clause'"
+  ]
+}

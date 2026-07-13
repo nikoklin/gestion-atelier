@@ -1,0 +1,28 @@
+{
+  "query": "\nSELECT p.id, r.firstName, r.lastName, p.packageType, p.totalHours, p.usedHours, (p.totalHours - p.usedHours) as remainingMinutes\nFROM packages p\nJOIN residents r ON p.residentId = r.id\nWHERE p.usedHours < 0\nORDER BY p.usedHours ASC;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute \nSELECT p.id, r.firstName, r.lastName, p.packageType, p.totalHours, p.usedHours, (p.totalHours - p.usedHours) as remainingMinutes\nFROM packages p\nJOIN residents r ON p.residentId = r.id\nWHERE p.usedHours < 0\nORDER BY p.usedHours ASC;\n",
+  "rows": [
+    {
+      "id": "630003",
+      "firstName": "Test",
+      "lastName": "Utilisateur",
+      "packageType": "180h_6m",
+      "totalHours": "10800",
+      "usedHours": "-386",
+      "remainingMinutes": "11186"
+    },
+    {
+      "id": "810001",
+      "firstName": "enka",
+      "lastName": "enka",
+      "packageType": "30h_4w",
+      "totalHours": "1800",
+      "usedHours": "-322",
+      "remainingMinutes": "2122"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tfirstName\tlastName\tpackageType\ttotalHours\tusedHours\tremainingMinutes\n630003\tTest\tUtilisateur\t180h_6m\t10800\t-386\t11186\n810001\tenka\tenka\t30h_4w\t1800\t-322\t2122\n",
+  "stderr": "",
+  "execution_time_ms": 54
+}

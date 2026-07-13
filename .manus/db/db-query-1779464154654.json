@@ -1,0 +1,63 @@
+{
+  "query": "\nSELECT id, packageType, totalHours, usedHours, isActive, startDate, endDate, deductedMinutes\nFROM packages \nWHERE residentId = 60001\nORDER BY id;\n\nSELECT id, packageId, checkInTime, checkOutTime, durationMinutes, attendanceType\nFROM attendances \nWHERE residentId = 60001\nORDER BY checkInTime;\n\nSELECT id, outOfPackageMinutes FROM residents WHERE id = 60001;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute \nSELECT id, packageType, totalHours, usedHours, isActive, startDate, endDate, deductedMinutes\nFROM packages \nWHERE residentId = 60001\nORDER BY id;\n\nSELECT id, packageId, checkInTime, checkOutTime, durationMinutes, attendanceType\nFROM attendances \nWHERE residentId = 60001\nORDER BY checkInTime;\n\nSELECT id, outOfPackageMinutes FROM residents WHERE id = 60001;\n",
+  "rows": [
+    {
+      "id": "330007",
+      "packageType": "15h_8w",
+      "totalHours": "900",
+      "usedHours": "900",
+      "isActive": "0",
+      "startDate": "2026-04-20 00:00:00",
+      "endDate": "2026-06-15 00:00:00",
+      "deductedMinutes": "0"
+    },
+    {
+      "id": "450011",
+      "packageType": "15h_8w",
+      "totalHours": "960",
+      "usedHours": "960",
+      "isActive": "0",
+      "startDate": "2026-05-04 00:00:00",
+      "endDate": "2026-06-29 00:00:00",
+      "deductedMinutes": "60"
+    },
+    {
+      "id": "720004",
+      "packageType": "custom_3",
+      "totalHours": "1800",
+      "usedHours": "670",
+      "isActive": "1",
+      "startDate": "2026-05-22 00:00:00",
+      "endDate": "2026-06-19 00:00:00",
+      "deductedMinutes": "610"
+    }
+  ],
+  "messages": [
+    "id\tpackageId\tcheckInTime\tcheckOutTime\tdurationMinutes\tattendanceType",
+    "330036\t330007\t2026-04-20 08:45:00\t2026-04-20 13:45:00\t300\tnormal",
+    "330037\t330007\t2026-04-21 12:46:00\t2026-04-21 15:46:00\t180\tnormal",
+    "540006\t330007\t2026-05-05 06:56:00\t2026-05-05 14:56:00\t480\tnormal",
+    "540008\t450011\t2026-05-05 08:58:00\t2026-05-05 13:58:00\t300\tnormal",
+    "540007\t450011\t2026-05-05 14:57:00\t2026-05-05 15:57:00\t60\tnormal",
+    "690002\t450011\t2026-05-08 04:41:00\t2026-05-08 15:40:00\t659\tnormal",
+    "570001\tNULL\t2026-05-08 13:53:07\t2026-05-08 15:04:32\t71\tnormal",
+    "660001\tNULL\t2026-05-08 15:07:14\t2026-05-08 15:07:34\t0\tnormal",
+    "690001\tNULL\t2026-05-08 15:40:21\t2026-05-08 15:41:07\t0\tnormal",
+    "690003\tNULL\t2026-05-08 15:42:00\t2026-05-08 15:42:44\t0\tnormal",
+    "690004\tNULL\t2026-05-08 16:44:00\t2026-05-08 17:44:00\t60\tnormal",
+    "780005\tNULL\t2026-05-12 15:45:41\t2026-05-12 15:48:56\t3\tnormal",
+    "780006\tNULL\t2026-05-12 15:54:32\t2026-05-12 15:56:06\t1\tnormal",
+    "810002\tNULL\t2026-05-14 08:47:22\t2026-05-14 08:47:25\t0\tnormal",
+    "840002\tNULL\t2026-05-14 09:02:19\t2026-05-14 09:12:43\t10\tnormal",
+    "870001\tNULL\t2026-05-15 09:08:02\t2026-05-15 14:55:01\t346\tnormal",
+    "870005\t450011\t2026-05-15 09:10:27\t2026-05-15 09:10:27\t60\tadjustment_add",
+    "930002\tNULL\t2026-05-15 15:06:31\t2026-05-15 15:06:50\t0\tnormal",
+    "1110006\t720004\t2026-05-22 12:00:00\t2026-05-22 13:00:00\t60\tnormal",
+    "id\toutOfPackageMinutes",
+    "60001\t670"
+  ],
+  "stdout": "id\tpackageType\ttotalHours\tusedHours\tisActive\tstartDate\tendDate\tdeductedMinutes\n330007\t15h_8w\t900\t900\t0\t2026-04-20 00:00:00\t2026-06-15 00:00:00\t0\n450011\t15h_8w\t960\t960\t0\t2026-05-04 00:00:00\t2026-06-29 00:00:00\t60\n720004\tcustom_3\t1800\t670\t1\t2026-05-22 00:00:00\t2026-06-19 00:00:00\t610\nid\tpackageId\tcheckInTime\tcheckOutTime\tdurationMinutes\tattendanceType\n330036\t330007\t2026-04-20 08:45:00\t2026-04-20 13:45:00\t300\tnormal\n330037\t330007\t2026-04-21 12:46:00\t2026-04-21 15:46:00\t180\tnormal\n540006\t330007\t2026-05-05 06:56:00\t2026-05-05 14:56:00\t480\tnormal\n540008\t450011\t2026-05-05 08:58:00\t2026-05-05 13:58:00\t300\tnormal\n540007\t450011\t2026-05-05 14:57:00\t2026-05-05 15:57:00\t60\tnormal\n690002\t450011\t2026-05-08 04:41:00\t2026-05-08 15:40:00\t659\tnormal\n570001\tNULL\t2026-05-08 13:53:07\t2026-05-08 15:04:32\t71\tnormal\n660001\tNULL\t2026-05-08 15:07:14\t2026-05-08 15:07:34\t0\tnormal\n690001\tNULL\t2026-05-08 15:40:21\t2026-05-08 15:41:07\t0\tnormal\n690003\tNULL\t2026-05-08 15:42:00\t2026-05-08 15:42:44\t0\tnormal\n690004\tNULL\t2026-05-08 16:44:00\t2026-05-08 17:44:00\t60\tnormal\n780005\tNULL\t2026-05-12 15:45:41\t2026-05-12 15:48:56\t3\tnormal\n780006\tNULL\t2026-05-12 15:54:32\t2026-05-12 15:56:06\t1\tnormal\n810002\tNULL\t2026-05-14 08:47:22\t2026-05-14 08:47:25\t0\tnormal\n840002\tNULL\t2026-05-14 09:02:19\t2026-05-14 09:12:43\t10\tnormal\n870001\tNULL\t2026-05-15 09:08:02\t2026-05-15 14:55:01\t346\tnormal\n870005\t450011\t2026-05-15 09:10:27\t2026-05-15 09:10:27\t60\tadjustment_add\n930002\tNULL\t2026-05-15 15:06:31\t2026-05-15 15:06:50\t0\tnormal\n1110006\t720004\t2026-05-22 12:00:00\t2026-05-22 13:00:00\t60\tnormal\nid\toutOfPackageMinutes\n60001\t670\n",
+  "stderr": "",
+  "execution_time_ms": 277
+}

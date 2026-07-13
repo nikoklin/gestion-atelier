@@ -1,0 +1,32 @@
+{
+  "query": "\nSELECT r.firstName, r.lastName, p.id, p.packageType, p.totalHours, p.usedHours, p.startDate, p.endDate, p.isActive\nFROM residents r\nJOIN packages p ON r.id = p.residentId\nWHERE r.firstName = 'enka' AND r.lastName = 'enka'\nORDER BY p.createdAt DESC;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute \nSELECT r.firstName, r.lastName, p.id, p.packageType, p.totalHours, p.usedHours, p.startDate, p.endDate, p.isActive\nFROM residents r\nJOIN packages p ON r.id = p.residentId\nWHERE r.firstName = 'enka' AND r.lastName = 'enka'\nORDER BY p.createdAt DESC;\n",
+  "rows": [
+    {
+      "firstName": "enka",
+      "lastName": "enka",
+      "id": "810001",
+      "packageType": "30h_4w",
+      "totalHours": "1800",
+      "usedHours": "-322",
+      "startDate": "2025-12-23 00:00:00",
+      "endDate": "2026-01-20 00:00:00",
+      "isActive": "0"
+    },
+    {
+      "firstName": "enka",
+      "lastName": "enka",
+      "id": "750001",
+      "packageType": "30h_4w",
+      "totalHours": "1800",
+      "usedHours": "0",
+      "startDate": "2025-11-04 00:00:00",
+      "endDate": "2025-12-02 00:00:00",
+      "isActive": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "firstName\tlastName\tid\tpackageType\ttotalHours\tusedHours\tstartDate\tendDate\tisActive\nenka\tenka\t810001\t30h_4w\t1800\t-322\t2025-12-23 00:00:00\t2026-01-20 00:00:00\t0\nenka\tenka\t750001\t30h_4w\t1800\t0\t2025-11-04 00:00:00\t2025-12-02 00:00:00\t0\n",
+  "stderr": "",
+  "execution_time_ms": 728
+}

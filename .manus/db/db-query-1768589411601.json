@@ -1,0 +1,9 @@
+{
+  "query": "SELECT a.id, a.residentId, r.firstName, r.lastName, a.checkInTime, a.checkOutTime \nFROM attendances a \nJOIN residents r ON a.residentId = r.id \nWHERE (r.firstName = 'enka' OR r.firstName = 'Nicolas') \nAND a.checkOutTime IS NULL \nORDER BY a.checkInTime DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT a.id, a.residentId, r.firstName, r.lastName, a.checkInTime, a.checkOutTime \nFROM attendances a \nJOIN residents r ON a.residentId = r.id \nWHERE (r.firstName = 'enka' OR r.firstName = 'Nicolas') \nAND a.checkOutTime IS NULL \nORDER BY a.checkInTime DESC;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 57
+}

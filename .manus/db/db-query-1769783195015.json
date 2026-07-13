@@ -1,0 +1,9 @@
+{
+  "query": "\nSET FOREIGN_KEY_CHECKS = 0;\nTRUNCATE TABLE emailLogs;\nTRUNCATE TABLE attendances;\nTRUNCATE TABLE packages;\nTRUNCATE TABLE residents;\nTRUNCATE TABLE users;\nSET FOREIGN_KEY_CHECKS = 1;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute \nSET FOREIGN_KEY_CHECKS = 0;\nTRUNCATE TABLE emailLogs;\nTRUNCATE TABLE attendances;\nTRUNCATE TABLE packages;\nTRUNCATE TABLE residents;\nTRUNCATE TABLE users;\nSET FOREIGN_KEY_CHECKS = 1;\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1426
+}

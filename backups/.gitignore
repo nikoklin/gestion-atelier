@@ -1,0 +1,6 @@
+# Ignorer tous les fichiers Excel de sauvegarde
+*.xlsx
+*.xls
+
+# Mais garder ce fichier .gitignore
+!.gitignore

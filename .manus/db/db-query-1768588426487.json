@@ -1,0 +1,24 @@
+{
+  "query": "SELECT id, firstName, lastName, hasMissedCheckout, missedCheckoutAttendanceId FROM residents WHERE (firstName = 'enka' AND lastName = 'enka') OR (firstName = 'Nicolas' AND lastName = 'Klein');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT id, firstName, lastName, hasMissedCheckout, missedCheckoutAttendanceId FROM residents WHERE (firstName = 'enka' AND lastName = 'enka') OR (firstName = 'Nicolas' AND lastName = 'Klein');",
+  "rows": [
+    {
+      "id": "30001",
+      "firstName": "Nicolas",
+      "lastName": "Klein",
+      "hasMissedCheckout": "1",
+      "missedCheckoutAttendanceId": "NULL"
+    },
+    {
+      "id": "120001",
+      "firstName": "enka",
+      "lastName": "enka",
+      "hasMissedCheckout": "1",
+      "missedCheckoutAttendanceId": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tfirstName\tlastName\thasMissedCheckout\tmissedCheckoutAttendanceId\n30001\tNicolas\tKlein\t1\tNULL\n120001\tenka\tenka\t1\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 63
+}

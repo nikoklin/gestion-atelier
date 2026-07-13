@@ -1,0 +1,16 @@
+{
+  "query": "SELECT * FROM emailTemplates WHERE templateType = 'session_summary';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT * FROM emailTemplates WHERE templateType = 'session_summary';",
+  "rows": [],
+  "messages": [
+    "30005\tsession_summary\tRésumé de ta session à l'atelier.\tBonjour {firstName}",
+    "Tu viens de terminer une session à l'atelier.",
+    "Durée de la session : {duration}",
+    "Tu peux consulter ton espace personnel pour voir l'historique complet de tes pointages : {dashboardUrl}",
+    "Bonne journée.",
+    "Nicolas.\t2025-12-07 13:06:13"
+  ],
+  "stdout": "id\ttemplateType\tsubject\tbody\tupdatedAt\n30005\tsession_summary\tRésumé de ta session à l'atelier.\tBonjour {firstName}\n\nTu viens de terminer une session à l'atelier.\n\nDurée de la session : {duration}\n\nTu peux consulter ton espace personnel pour voir l'historique complet de tes pointages : {dashboardUrl}\n\nBonne journée.\nNicolas.\t2025-12-07 13:06:13\n",
+  "stderr": "",
+  "execution_time_ms": 348
+}

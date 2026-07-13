@@ -1,0 +1,16 @@
+{
+  "query": "SELECT id, firstName, lastName, email FROM residents WHERE firstName LIKE '%enka%' OR lastName LIKE '%enka%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT id, firstName, lastName, email FROM residents WHERE firstName LIKE '%enka%' OR lastName LIKE '%enka%';",
+  "rows": [
+    {
+      "id": "1",
+      "firstName": "enka",
+      "lastName": "enka",
+      "email": "enka@free.fr"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tfirstName\tlastName\temail\n1\tenka\tenka\tenka@free.fr\n",
+  "stderr": "",
+  "execution_time_ms": 355
+}

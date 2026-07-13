@@ -1,0 +1,50 @@
+{
+  "query": "SELECT id, residentId, checkInTime, checkOutTime, durationMinutes, createdAt FROM attendances ORDER BY createdAt DESC LIMIT 5",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT id, residentId, checkInTime, checkOutTime, durationMinutes, createdAt FROM attendances ORDER BY createdAt DESC LIMIT 5",
+  "rows": [
+    {
+      "id": "690021",
+      "residentId": "60002",
+      "checkInTime": "2025-12-07 11:05:00",
+      "checkOutTime": "NULL",
+      "durationMinutes": "NULL",
+      "createdAt": "2025-12-07 11:05:58"
+    },
+    {
+      "id": "690017",
+      "residentId": "30001",
+      "checkInTime": "2025-12-07 10:56:00",
+      "checkOutTime": "NULL",
+      "durationMinutes": "NULL",
+      "createdAt": "2025-12-07 10:56:15"
+    },
+    {
+      "id": "690009",
+      "residentId": "30001",
+      "checkInTime": "2025-12-07 10:35:53",
+      "checkOutTime": "2025-12-07 10:35:56",
+      "durationMinutes": "0",
+      "createdAt": "2025-12-07 10:35:53"
+    },
+    {
+      "id": "690007",
+      "residentId": "60002",
+      "checkInTime": "2025-12-07 10:33:00",
+      "checkOutTime": "2025-12-07 10:33:00",
+      "durationMinutes": "0",
+      "createdAt": "2025-12-07 10:33:36"
+    },
+    {
+      "id": "690005",
+      "residentId": "30001",
+      "checkInTime": "2025-12-07 10:25:44",
+      "checkOutTime": "2025-12-07 10:25:50",
+      "durationMinutes": "0",
+      "createdAt": "2025-12-07 10:25:43"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tresidentId\tcheckInTime\tcheckOutTime\tdurationMinutes\tcreatedAt\n690021\t60002\t2025-12-07 11:05:00\tNULL\tNULL\t2025-12-07 11:05:58\n690017\t30001\t2025-12-07 10:56:00\tNULL\tNULL\t2025-12-07 10:56:15\n690009\t30001\t2025-12-07 10:35:53\t2025-12-07 10:35:56\t0\t2025-12-07 10:35:53\n690007\t60002\t2025-12-07 10:33:00\t2025-12-07 10:33:00\t0\t2025-12-07 10:33:36\n690005\t30001\t2025-12-07 10:25:44\t2025-12-07 10:25:50\t0\t2025-12-07 10:25:43\n",
+  "stderr": "",
+  "execution_time_ms": 100
+}

@@ -1,0 +1,55 @@
+{
+  "query": "SELECT templateType, subject, body FROM emailTemplates;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT templateType, subject, body FROM emailTemplates;",
+  "rows": [
+    {
+      "templateType": "reminder",
+      "subject": "Ton forfait est bientot terminé",
+      "body": "Bonjour {firstName}"
+    },
+    {
+      "templateType": "expiration",
+      "subject": "Ton forfait est terminé",
+      "body": "Bonjour {firstName}"
+    },
+    {
+      "templateType": "session_summary",
+      "subject": "Résumé de ta session à l'atelier.",
+      "body": "Bonjour {{firstName}},"
+    }
+  ],
+  "messages": [
+    "Ton forfait en libre accès à l'atelier est bientôt terminé.",
+    "Est-ce que tu veux le prolonger ?",
+    "Je t'envoie des liens de paiement, ci-dessous, qui te permettent de régler directement en ligne.",
+    "Tu peux également passer à l'atelier si tu le souhaites.",
+    "Libre accès 15h valables 8 semaines:",
+    "https://www.atourdebras-atelier.com//_paylink/AZaVWNAD",
+    "Libre accès 30h valables 8 semaines",
+    "https://www.atourdebras-atelier.com//_paylink/AZaVXSU-",
+    "Libre accès 30h valables 4 semaines",
+    "https://www.atourdebras-atelier.com//_paylink/AZaVXcoM",
+    "Bonne journée.",
+    "Ton forfait en libre accès à l'atelier est terminé.",
+    "Est-ce que tu veux le prolonger ?",
+    "Tu peux consulter ton espace personnel pour voir l'historique complet de tes pointages : {dashboardUrl}",
+    "Je t'envoie des liens de paiement, ci-dessous, qui te permettent de régler directement en ligne.",
+    "Tu peux également passer à l'atelier si tu le souhaites.",
+    "Libre accès 15h valables 8 semaines:",
+    "https://www.atourdebras-atelier.com//_paylink/AZaVWNAD",
+    "Libre accès 30h valables 8 semaines",
+    "https://www.atourdebras-atelier.com//_paylink/AZaVXSU-",
+    "Libre accès 30h valables 4 semaines",
+    "https://www.atourdebras-atelier.com//_paylink/AZaVXcoM",
+    "Bonne journée.",
+    "Nicolas",
+    "Tu viens de terminer une session à l'atelier.",
+    "Durée de la session : {{duration}}",
+    "Tu peux consulter ton espace personnel pour voir l'historique complet de tes pointages : {{dashboardUrl}}",
+    "Bonne journée.",
+    "Nicolas."
+  ],
+  "stdout": "templateType\tsubject\tbody\nreminder\tTon forfait est bientot terminé\tBonjour {firstName}\n\nTon forfait en libre accès à l'atelier est bientôt terminé.\nEst-ce que tu veux le prolonger ?\n\nJe t'envoie des liens de paiement, ci-dessous, qui te permettent de régler directement en ligne.\nTu peux également passer à l'atelier si tu le souhaites.\n\n\nLibre accès 15h valables 8 semaines:\nhttps://www.atourdebras-atelier.com//_paylink/AZaVWNAD\n\nLibre accès 30h valables 8 semaines\nhttps://www.atourdebras-atelier.com//_paylink/AZaVXSU-\n\nLibre accès 30h valables 4 semaines\nhttps://www.atourdebras-atelier.com//_paylink/AZaVXcoM\n\nBonne journée.\n\nexpiration\tTon forfait est terminé\tBonjour {firstName}\n\nTon forfait en libre accès à l'atelier est terminé.\nEst-ce que tu veux le prolonger ?\n\nTu peux consulter ton espace personnel pour voir l'historique complet de tes pointages : {dashboardUrl}\n\nJe t'envoie des liens de paiement, ci-dessous, qui te permettent de régler directement en ligne.\nTu peux également passer à l'atelier si tu le souhaites.\n\n\nLibre accès 15h valables 8 semaines:\nhttps://www.atourdebras-atelier.com//_paylink/AZaVWNAD\n\nLibre accès 30h valables 8 semaines\nhttps://www.atourdebras-atelier.com//_paylink/AZaVXSU-\n\nLibre accès 30h valables 4 semaines\nhttps://www.atourdebras-atelier.com//_paylink/AZaVXcoM\n\nBonne journée.\nNicolas\nsession_summary\tRésumé de ta session à l'atelier.\tBonjour {{firstName}},\n\nTu viens de terminer une session à l'atelier.\n\nDurée de la session : {{duration}}\n\nTu peux consulter ton espace personnel pour voir l'historique complet de tes pointages : {{dashboardUrl}}\n\nBonne journée.\n\nNicolas.\n",
+  "stderr": "",
+  "execution_time_ms": 256
+}

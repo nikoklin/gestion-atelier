@@ -1,0 +1,1 @@
+ALTER TABLE `packages` ADD `status` enum('pending','active','expired') DEFAULT 'pending' NOT NULL;

@@ -1,0 +1,42 @@
+{
+  "query": "SELECT p.id, p.residentId, r.firstName, r.lastName, p.endDate, p.reminderSent FROM packages p JOIN residents r ON p.residentId = r.id WHERE p.isActive = 1 LIMIT 10",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT p.id, p.residentId, r.firstName, r.lastName, p.endDate, p.reminderSent FROM packages p JOIN residents r ON p.residentId = r.id WHERE p.isActive = 1 LIMIT 10",
+  "rows": [
+    {
+      "id": "210001",
+      "residentId": "1",
+      "firstName": "Marie",
+      "lastName": "Dupont",
+      "endDate": "2026-01-13 00:00:00",
+      "reminderSent": "0"
+    },
+    {
+      "id": "180002",
+      "residentId": "2",
+      "firstName": "Jean",
+      "lastName": "Martin",
+      "endDate": "2026-01-09 00:00:00",
+      "reminderSent": "0"
+    },
+    {
+      "id": "120001",
+      "residentId": "5",
+      "firstName": "Claire",
+      "lastName": "Leroy",
+      "endDate": "2026-01-09 00:00:00",
+      "reminderSent": "0"
+    },
+    {
+      "id": "180001",
+      "residentId": "30001",
+      "firstName": "Nico",
+      "lastName": "Klein",
+      "endDate": "2026-01-09 00:00:00",
+      "reminderSent": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tresidentId\tfirstName\tlastName\tendDate\treminderSent\n210001\t1\tMarie\tDupont\t2026-01-13 00:00:00\t0\n180002\t2\tJean\tMartin\t2026-01-09 00:00:00\t0\n120001\t5\tClaire\tLeroy\t2026-01-09 00:00:00\t0\n180001\t30001\tNico\tKlein\t2026-01-09 00:00:00\t0\n",
+  "stderr": "",
+  "execution_time_ms": 51
+}

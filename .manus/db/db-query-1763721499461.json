@@ -1,0 +1,19 @@
+{
+  "query": "SELECT id, residentId, packageType, totalHours, usedHours, startDate, endDate FROM packages WHERE residentId = 30001 ORDER BY startDate DESC LIMIT 5",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT id, residentId, packageType, totalHours, usedHours, startDate, endDate FROM packages WHERE residentId = 30001 ORDER BY startDate DESC LIMIT 5",
+  "rows": [
+    {
+      "id": "390004",
+      "residentId": "30001",
+      "packageType": "15h_8w",
+      "totalHours": "61",
+      "usedHours": "2",
+      "startDate": "2025-11-21 00:00:00",
+      "endDate": "2025-11-21 00:00:00"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tresidentId\tpackageType\ttotalHours\tusedHours\tstartDate\tendDate\n390004\t30001\t15h_8w\t61\t2\t2025-11-21 00:00:00\t2025-11-21 00:00:00\n",
+  "stderr": "",
+  "execution_time_ms": 814
+}

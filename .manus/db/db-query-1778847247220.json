@@ -1,0 +1,38 @@
+{
+  "query": "SELECT templateType, body FROM emailTemplates WHERE templateType IN ('reminder', 'expiration');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT templateType, body FROM emailTemplates WHERE templateType IN ('reminder', 'expiration');",
+  "rows": [
+    {
+      "templateType": "reminder",
+      "body": "<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;\">"
+    },
+    {
+      "templateType": "expiration",
+      "body": "<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;\">"
+    }
+  ],
+  "messages": [
+    "  <p>Bonjour {{residentName}},</p>",
+    "  <p>Ton forfait en libre accès à l'atelier est bientôt terminé.</p>",
+    "  <p>Il te reste <strong>{{remainingHours}}h</strong> sur ton forfait (date d'expiration : {{endDate}}).</p>",
+    "  <p>Est-ce que tu veux le prolonger ?</p>",
+    "  {{paymentLinks}}",
+    "  <p>Tu peux consulter ton historique de pointages ici :<br>",
+    "  <a href=\"{{dashboardUrl}}\" style=\"color: #c0392b;\">Consulter mon espace personnel</a></p>",
+    "  <p>Bonne journée.</p>",
+    "  <p>L'équipe de l'atelier<br><em>À Tour de Bras</em></p>",
+    "</div>",
+    "  <p>Bonjour {{residentName}},</p>",
+    "  <p>Ton forfait en libre accès à l'atelier est terminé.</p>",
+    "  <p>Est-ce que tu veux le renouveler ?</p>",
+    "  {{paymentLinks}}",
+    "<p>Tu peux consulter ton historique de pointages ici :<br>",
+    "  <a href=\"{{dashboardUrl}}\" style=\"color: #c0392b;\">Consulter mon espace personnel</a></p>",
+    "  <p>Bonne journée.</p>",
+    "  <p>L'équipe de l'atelier<br><em>À Tour de Bras</em></p>",
+    "</div>"
+  ],
+  "stdout": "templateType\tbody\nreminder\t<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;\">\n  <p>Bonjour {{residentName}},</p>\n  <p>Ton forfait en libre accès à l'atelier est bientôt terminé.</p>\n  <p>Il te reste <strong>{{remainingHours}}h</strong> sur ton forfait (date d'expiration : {{endDate}}).</p>\n  <p>Est-ce que tu veux le prolonger ?</p>\n  {{paymentLinks}}\n  <p>Tu peux consulter ton historique de pointages ici :<br>\n  <a href=\"{{dashboardUrl}}\" style=\"color: #c0392b;\">Consulter mon espace personnel</a></p>\n  <p>Bonne journée.</p>\n  <p>L'équipe de l'atelier<br><em>À Tour de Bras</em></p>\n</div>\n\nexpiration\t<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;\">\n  <p>Bonjour {{residentName}},</p>\n  <p>Ton forfait en libre accès à l'atelier est terminé.</p>\n \n  <p>Est-ce que tu veux le renouveler ?</p>\n  {{paymentLinks}}\n<p>Tu peux consulter ton historique de pointages ici :<br>\n  <a href=\"{{dashboardUrl}}\" style=\"color: #c0392b;\">Consulter mon espace personnel</a></p>\n  <p>Bonne journée.</p>\n  <p>L'équipe de l'atelier<br><em>À Tour de Bras</em></p>\n</div>\n\n",
+  "stderr": "",
+  "execution_time_ms": 264
+}

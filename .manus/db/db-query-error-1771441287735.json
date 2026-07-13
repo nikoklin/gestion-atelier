@@ -1,0 +1,8 @@
+{
+  "query": "SELECT a.id, a.date, a.checkInTime, a.checkOutTime, a.durationMinutes, a.createdAt, a.packageId\nFROM attendances a\nJOIN residents r ON a.residentId = r.id\nWHERE r.firstName = 'enka' AND r.lastName = 'enka'\nORDER BY a.createdAt;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT a.id, a.date, a.checkInTime, a.checkOutTime, a.durationMinutes, a.createdAt, a.packageId\nFROM attendances a\nJOIN residents r ON a.residentId = r.id\nWHERE r.firstName = 'enka' AND r.lastName = 'enka'\nORDER BY a.createdAt;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'a.date' in 'field list'"
+  ]
+}

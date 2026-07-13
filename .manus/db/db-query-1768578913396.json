@@ -1,0 +1,20 @@
+{
+  "query": "SELECT p.id, p.residentId, r.firstName, r.lastName, p.expirationEmailSent, p.isActive, p.usedHours, p.totalHours \nFROM packages p \nJOIN residents r ON p.residentId = r.id \nWHERE r.firstName = 'Nicolas' AND r.lastName = 'Klein' \nORDER BY p.id DESC LIMIT 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT p.id, p.residentId, r.firstName, r.lastName, p.expirationEmailSent, p.isActive, p.usedHours, p.totalHours \nFROM packages p \nJOIN residents r ON p.residentId = r.id \nWHERE r.firstName = 'Nicolas' AND r.lastName = 'Klein' \nORDER BY p.id DESC LIMIT 1;",
+  "rows": [
+    {
+      "id": "810002",
+      "residentId": "30001",
+      "firstName": "Nicolas",
+      "lastName": "Klein",
+      "expirationEmailSent": "0",
+      "isActive": "0",
+      "usedHours": "901",
+      "totalHours": "900"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tresidentId\tfirstName\tlastName\texpirationEmailSent\tisActive\tusedHours\ttotalHours\n810002\t30001\tNicolas\tKlein\t0\t0\t901\t900\n",
+  "stderr": "",
+  "execution_time_ms": 58
+}

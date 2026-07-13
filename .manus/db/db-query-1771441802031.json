@@ -1,0 +1,34 @@
+{
+  "query": "SELECT a.id, a.checkInTime, a.checkOutTime, a.durationMinutes, a.packageId, p.totalHours as packageTotalHours\nFROM attendances a\nLEFT JOIN packages p ON a.packageId = p.id\nJOIN residents r ON a.residentId = r.id\nWHERE r.firstName = 'enka' AND r.lastName = 'enka'\nORDER BY a.checkInTime;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT a.id, a.checkInTime, a.checkOutTime, a.durationMinutes, a.packageId, p.totalHours as packageTotalHours\nFROM attendances a\nLEFT JOIN packages p ON a.packageId = p.id\nJOIN residents r ON a.residentId = r.id\nWHERE r.firstName = 'enka' AND r.lastName = 'enka'\nORDER BY a.checkInTime;",
+  "rows": [
+    {
+      "id": "180017",
+      "checkInTime": "2026-02-17 11:00:00",
+      "checkOutTime": "2026-02-17 11:30:00",
+      "durationMinutes": "30",
+      "packageId": "180004",
+      "packageTotalHours": "900"
+    },
+    {
+      "id": "210015",
+      "checkInTime": "2026-02-18 09:30:00",
+      "checkOutTime": "2026-02-18 11:30:00",
+      "durationMinutes": "120",
+      "packageId": "NULL",
+      "packageTotalHours": "NULL"
+    },
+    {
+      "id": "180016",
+      "checkInTime": "2026-02-18 11:45:00",
+      "checkOutTime": "2026-02-18 12:45:00",
+      "durationMinutes": "60",
+      "packageId": "180004",
+      "packageTotalHours": "900"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcheckInTime\tcheckOutTime\tdurationMinutes\tpackageId\tpackageTotalHours\n180017\t2026-02-17 11:00:00\t2026-02-17 11:30:00\t30\t180004\t900\n210015\t2026-02-18 09:30:00\t2026-02-18 11:30:00\t120\tNULL\tNULL\n180016\t2026-02-18 11:45:00\t2026-02-18 12:45:00\t60\t180004\t900\n",
+  "stderr": "",
+  "execution_time_ms": 356
+}

@@ -1,0 +1,70 @@
+{
+  "query": "\nSELECT \n  p.id,\n  p.totalHours,\n  p.usedHours,\n  p.deductedMinutes,\n  p.isActive,\n  (p.usedHours - p.totalHours) as diff,\n  (p.usedHours - p.totalHours) * 60 as diffMinutes,\n  GREATEST(0, (p.usedHours - p.totalHours) * 60 - COALESCE(p.deductedMinutes, 0)) as outOfPackageMinutes\nFROM packages p\nJOIN residents r ON p.residentId = r.id\nWHERE r.firstName = 'enka' AND r.lastName = 'enka'\nORDER BY p.createdAt DESC\nLIMIT 10;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute \nSELECT \n  p.id,\n  p.totalHours,\n  p.usedHours,\n  p.deductedMinutes,\n  p.isActive,\n  (p.usedHours - p.totalHours) as diff,\n  (p.usedHours - p.totalHours) * 60 as diffMinutes,\n  GREATEST(0, (p.usedHours - p.totalHours) * 60 - COALESCE(p.deductedMinutes, 0)) as outOfPackageMinutes\nFROM packages p\nJOIN residents r ON p.residentId = r.id\nWHERE r.firstName = 'enka' AND r.lastName = 'enka'\nORDER BY p.createdAt DESC\nLIMIT 10;\n",
+  "rows": [
+    {
+      "id": "990002",
+      "totalHours": "0",
+      "usedHours": "0",
+      "deductedMinutes": "0",
+      "isActive": "1",
+      "diff": "0",
+      "diffMinutes": "0",
+      "outOfPackageMinutes": "0"
+    },
+    {
+      "id": "960006",
+      "totalHours": "900",
+      "usedHours": "900",
+      "deductedMinutes": "0",
+      "isActive": "0",
+      "diff": "0",
+      "diffMinutes": "0",
+      "outOfPackageMinutes": "0"
+    },
+    {
+      "id": "960004",
+      "totalHours": "900",
+      "usedHours": "899",
+      "deductedMinutes": "120",
+      "isActive": "0",
+      "diff": "-1",
+      "diffMinutes": "-60",
+      "outOfPackageMinutes": "0"
+    },
+    {
+      "id": "930042",
+      "totalHours": "900",
+      "usedHours": "885",
+      "deductedMinutes": "0",
+      "isActive": "0",
+      "diff": "-15",
+      "diffMinutes": "-900",
+      "outOfPackageMinutes": "0"
+    },
+    {
+      "id": "930041",
+      "totalHours": "900",
+      "usedHours": "897",
+      "deductedMinutes": "62",
+      "isActive": "0",
+      "diff": "-3",
+      "diffMinutes": "-180",
+      "outOfPackageMinutes": "0"
+    },
+    {
+      "id": "930039",
+      "totalHours": "900",
+      "usedHours": "1020",
+      "deductedMinutes": "120",
+      "isActive": "0",
+      "diff": "120",
+      "diffMinutes": "7200",
+      "outOfPackageMinutes": "7080"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttotalHours\tusedHours\tdeductedMinutes\tisActive\tdiff\tdiffMinutes\toutOfPackageMinutes\n990002\t0\t0\t0\t1\t0\t0\t0\n960006\t900\t900\t0\t0\t0\t0\t0\n960004\t900\t899\t120\t0\t-1\t-60\t0\n930042\t900\t885\t0\t0\t-15\t-900\t0\n930041\t900\t897\t62\t0\t-3\t-180\t0\n930039\t900\t1020\t120\t0\t120\t7200\t7080\n",
+  "stderr": "",
+  "execution_time_ms": 352
+}

@@ -1,0 +1,21 @@
+{
+  "query": "SELECT id, residentId, packageType, totalHours, usedHours, (totalHours - usedHours) as remainingHours, isActive, startDate, endDate \nFROM packages \nWHERE residentId = 120001 \nORDER BY startDate DESC \nLIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT id, residentId, packageType, totalHours, usedHours, (totalHours - usedHours) as remainingHours, isActive, startDate, endDate \nFROM packages \nWHERE residentId = 120001 \nORDER BY startDate DESC \nLIMIT 5;",
+  "rows": [
+    {
+      "id": "930020",
+      "residentId": "120001",
+      "packageType": "15h_8w",
+      "totalHours": "900",
+      "usedHours": "900",
+      "remainingHours": "0",
+      "isActive": "1",
+      "startDate": "2026-01-27 00:00:00",
+      "endDate": "2026-03-24 00:00:00"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tresidentId\tpackageType\ttotalHours\tusedHours\tremainingHours\tisActive\tstartDate\tendDate\n930020\t120001\t15h_8w\t900\t900\t0\t1\t2026-01-27 00:00:00\t2026-03-24 00:00:00\n",
+  "stderr": "",
+  "execution_time_ms": 118
+}

@@ -1,0 +1,1 @@
+ALTER TABLE `residents` ADD `isDeleted` boolean DEFAULT false NOT NULL;

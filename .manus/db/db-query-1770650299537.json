@@ -1,0 +1,19 @@
+{
+  "query": "-- Vérifier les notes orphelines\nSELECT COUNT(*) as orphan_notes FROM notes WHERE residentId NOT IN (SELECT id FROM residents);\n\n-- Vérifier les emailLogs orphelins\nSELECT COUNT(*) as orphan_emailLogs FROM emailLogs WHERE residentId NOT IN (SELECT id FROM residents);\n\n-- Supprimer les notes orphelines\nDELETE FROM notes WHERE residentId NOT IN (SELECT id FROM residents);\n\n-- Supprimer les emailLogs orphelins\nDELETE FROM emailLogs WHERE residentId NOT IN (SELECT id FROM residents);\n\n-- Supprimer les emailLogs avec packageId orphelin\nDELETE FROM emailLogs WHERE packageId IS NOT NULL AND packageId NOT IN (SELECT id FROM packages);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute -- Vérifier les notes orphelines\nSELECT COUNT(*) as orphan_notes FROM notes WHERE residentId NOT IN (SELECT id FROM residents);\n\n-- Vérifier les emailLogs orphelins\nSELECT COUNT(*) as orphan_emailLogs FROM emailLogs WHERE residentId NOT IN (SELECT id FROM residents);\n\n-- Supprimer les notes orphelines\nDELETE FROM notes WHERE residentId NOT IN (SELECT id FROM residents);\n\n-- Supprimer les emailLogs orphelins\nDELETE FROM emailLogs WHERE residentId NOT IN (SELECT id FROM residents);\n\n-- Supprimer les emailLogs avec packageId orphelin\nDELETE FROM emailLogs WHERE packageId IS NOT NULL AND packageId NOT IN (SELECT id FROM packages);",
+  "rows": [
+    {
+      "orphan_notes": "1"
+    },
+    {
+      "orphan_notes": "orphan_emailLogs"
+    },
+    {
+      "orphan_notes": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "orphan_notes\n1\norphan_emailLogs\n0\n",
+  "stderr": "",
+  "execution_time_ms": 627
+}

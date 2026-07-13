@@ -1,0 +1,8 @@
+{
+  "query": "\nINSERT INTO packageTypes (label, totalMinutes, durationWeeks, price, isActive, staticKey, createdAt, updatedAt)\nVALUES\n  ('15h / 8 semaines', 900, 8, 175.00, 1, '15h_8w', NOW(), NOW()),\n  ('30h / 8 semaines', 1800, 8, 270.00, 1, '30h_8w', NOW(), NOW()),\n  ('30h / 4 semaines', 1800, 4, 170.00, 1, '30h_4w', NOW(), NOW()),\n  ('180h / 6 mois', 10800, 24, 850.00, 1, '180h_6m', NOW(), NOW())\nON DUPLICATE KEY UPDATE label = VALUES(label);\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute \nINSERT INTO packageTypes (label, totalMinutes, durationWeeks, price, isActive, staticKey, createdAt, updatedAt)\nVALUES\n  ('15h / 8 semaines', 900, 8, 175.00, 1, '15h_8w', NOW(), NOW()),\n  ('30h / 8 semaines', 1800, 8, 270.00, 1, '30h_8w', NOW(), NOW()),\n  ('30h / 4 semaines', 1800, 4, 170.00, 1, '30h_4w', NOW(), NOW()),\n  ('180h / 6 mois', 10800, 24, 850.00, 1, '180h_6m', NOW(), NOW())\nON DUPLICATE KEY UPDATE label = VALUES(label);\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 2: Unknown column 'staticKey' in 'field list'"
+  ]
+}

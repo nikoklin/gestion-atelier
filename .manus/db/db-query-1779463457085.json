@@ -1,0 +1,202 @@
+{
+  "query": "\nSELECT a.id, a.packageId, a.checkInTime, a.checkOutTime, a.durationMinutes, a.attendanceType\nFROM attendances a WHERE a.residentId = 60001 AND a.attendanceType = 'normal' ORDER BY a.checkInTime DESC LIMIT 30;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute \nSELECT a.id, a.packageId, a.checkInTime, a.checkOutTime, a.durationMinutes, a.attendanceType\nFROM attendances a WHERE a.residentId = 60001 AND a.attendanceType = 'normal' ORDER BY a.checkInTime DESC LIMIT 30;\n",
+  "rows": [
+    {
+      "id": "1020002",
+      "packageId": "NULL",
+      "checkInTime": "2026-05-22 14:32:21",
+      "checkOutTime": "2026-05-22 14:34:45",
+      "durationMinutes": "2",
+      "attendanceType": "normal"
+    },
+    {
+      "id": "1020001",
+      "packageId": "NULL",
+      "checkInTime": "2026-05-22 14:29:31",
+      "checkOutTime": "2026-05-22 14:31:24",
+      "durationMinutes": "1",
+      "attendanceType": "normal"
+    },
+    {
+      "id": "960003",
+      "packageId": "NULL",
+      "checkInTime": "2026-05-22 13:54:39",
+      "checkOutTime": "2026-05-22 14:01:16",
+      "durationMinutes": "6",
+      "attendanceType": "normal"
+    },
+    {
+      "id": "960002",
+      "packageId": "NULL",
+      "checkInTime": "2026-05-22 13:49:13",
+      "checkOutTime": "2026-05-22 13:52:55",
+      "durationMinutes": "3",
+      "attendanceType": "normal"
+    },
+    {
+      "id": "960001",
+      "packageId": "NULL",
+      "checkInTime": "2026-05-22 13:47:55",
+      "checkOutTime": "2026-05-22 13:48:39",
+      "durationMinutes": "0",
+      "attendanceType": "normal"
+    },
+    {
+      "id": "1110003",
+      "packageId": "NULL",
+      "checkInTime": "2026-05-22 12:00:00",
+      "checkOutTime": "2026-05-22 13:00:00",
+      "durationMinutes": "60",
+      "attendanceType": "normal"
+    },
+    {
+      "id": "1110004",
+      "packageId": "NULL",
+      "checkInTime": "2026-05-22 09:00:00",
+      "checkOutTime": "2026-05-22 10:00:00",
+      "durationMinutes": "60",
+      "attendanceType": "normal"
+    },
+    {
+      "id": "930002",
+      "packageId": "NULL",
+      "checkInTime": "2026-05-15 15:06:31",
+      "checkOutTime": "2026-05-15 15:06:50",
+      "durationMinutes": "0",
+      "attendanceType": "normal"
+    },
+    {
+      "id": "870001",
+      "packageId": "NULL",
+      "checkInTime": "2026-05-15 09:08:02",
+      "checkOutTime": "2026-05-15 14:55:01",
+      "durationMinutes": "346",
+      "attendanceType": "normal"
+    },
+    {
+      "id": "840002",
+      "packageId": "NULL",
+      "checkInTime": "2026-05-14 09:02:19",
+      "checkOutTime": "2026-05-14 09:12:43",
+      "durationMinutes": "10",
+      "attendanceType": "normal"
+    },
+    {
+      "id": "810002",
+      "packageId": "NULL",
+      "checkInTime": "2026-05-14 08:47:22",
+      "checkOutTime": "2026-05-14 08:47:25",
+      "durationMinutes": "0",
+      "attendanceType": "normal"
+    },
+    {
+      "id": "780006",
+      "packageId": "NULL",
+      "checkInTime": "2026-05-12 15:54:32",
+      "checkOutTime": "2026-05-12 15:56:06",
+      "durationMinutes": "1",
+      "attendanceType": "normal"
+    },
+    {
+      "id": "780005",
+      "packageId": "NULL",
+      "checkInTime": "2026-05-12 15:45:41",
+      "checkOutTime": "2026-05-12 15:48:56",
+      "durationMinutes": "3",
+      "attendanceType": "normal"
+    },
+    {
+      "id": "690004",
+      "packageId": "NULL",
+      "checkInTime": "2026-05-08 16:44:00",
+      "checkOutTime": "2026-05-08 17:44:00",
+      "durationMinutes": "60",
+      "attendanceType": "normal"
+    },
+    {
+      "id": "690003",
+      "packageId": "NULL",
+      "checkInTime": "2026-05-08 15:42:00",
+      "checkOutTime": "2026-05-08 15:42:44",
+      "durationMinutes": "0",
+      "attendanceType": "normal"
+    },
+    {
+      "id": "690001",
+      "packageId": "NULL",
+      "checkInTime": "2026-05-08 15:40:21",
+      "checkOutTime": "2026-05-08 15:41:07",
+      "durationMinutes": "0",
+      "attendanceType": "normal"
+    },
+    {
+      "id": "660001",
+      "packageId": "NULL",
+      "checkInTime": "2026-05-08 15:07:14",
+      "checkOutTime": "2026-05-08 15:07:34",
+      "durationMinutes": "0",
+      "attendanceType": "normal"
+    },
+    {
+      "id": "570001",
+      "packageId": "NULL",
+      "checkInTime": "2026-05-08 13:53:07",
+      "checkOutTime": "2026-05-08 15:04:32",
+      "durationMinutes": "71",
+      "attendanceType": "normal"
+    },
+    {
+      "id": "690002",
+      "packageId": "450011",
+      "checkInTime": "2026-05-08 04:41:00",
+      "checkOutTime": "2026-05-08 15:40:00",
+      "durationMinutes": "659",
+      "attendanceType": "normal"
+    },
+    {
+      "id": "540007",
+      "packageId": "450011",
+      "checkInTime": "2026-05-05 14:57:00",
+      "checkOutTime": "2026-05-05 15:57:00",
+      "durationMinutes": "60",
+      "attendanceType": "normal"
+    },
+    {
+      "id": "540008",
+      "packageId": "450011",
+      "checkInTime": "2026-05-05 08:58:00",
+      "checkOutTime": "2026-05-05 13:58:00",
+      "durationMinutes": "300",
+      "attendanceType": "normal"
+    },
+    {
+      "id": "540006",
+      "packageId": "330007",
+      "checkInTime": "2026-05-05 06:56:00",
+      "checkOutTime": "2026-05-05 14:56:00",
+      "durationMinutes": "480",
+      "attendanceType": "normal"
+    },
+    {
+      "id": "330037",
+      "packageId": "330007",
+      "checkInTime": "2026-04-21 12:46:00",
+      "checkOutTime": "2026-04-21 15:46:00",
+      "durationMinutes": "180",
+      "attendanceType": "normal"
+    },
+    {
+      "id": "330036",
+      "packageId": "330007",
+      "checkInTime": "2026-04-20 08:45:00",
+      "checkOutTime": "2026-04-20 13:45:00",
+      "durationMinutes": "300",
+      "attendanceType": "normal"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tpackageId\tcheckInTime\tcheckOutTime\tdurationMinutes\tattendanceType\n1020002\tNULL\t2026-05-22 14:32:21\t2026-05-22 14:34:45\t2\tnormal\n1020001\tNULL\t2026-05-22 14:29:31\t2026-05-22 14:31:24\t1\tnormal\n960003\tNULL\t2026-05-22 13:54:39\t2026-05-22 14:01:16\t6\tnormal\n960002\tNULL\t2026-05-22 13:49:13\t2026-05-22 13:52:55\t3\tnormal\n960001\tNULL\t2026-05-22 13:47:55\t2026-05-22 13:48:39\t0\tnormal\n1110003\tNULL\t2026-05-22 12:00:00\t2026-05-22 13:00:00\t60\tnormal\n1110004\tNULL\t2026-05-22 09:00:00\t2026-05-22 10:00:00\t60\tnormal\n930002\tNULL\t2026-05-15 15:06:31\t2026-05-15 15:06:50\t0\tnormal\n870001\tNULL\t2026-05-15 09:08:02\t2026-05-15 14:55:01\t346\tnormal\n840002\tNULL\t2026-05-14 09:02:19\t2026-05-14 09:12:43\t10\tnormal\n810002\tNULL\t2026-05-14 08:47:22\t2026-05-14 08:47:25\t0\tnormal\n780006\tNULL\t2026-05-12 15:54:32\t2026-05-12 15:56:06\t1\tnormal\n780005\tNULL\t2026-05-12 15:45:41\t2026-05-12 15:48:56\t3\tnormal\n690004\tNULL\t2026-05-08 16:44:00\t2026-05-08 17:44:00\t60\tnormal\n690003\tNULL\t2026-05-08 15:42:00\t2026-05-08 15:42:44\t0\tnormal\n690001\tNULL\t2026-05-08 15:40:21\t2026-05-08 15:41:07\t0\tnormal\n660001\tNULL\t2026-05-08 15:07:14\t2026-05-08 15:07:34\t0\tnormal\n570001\tNULL\t2026-05-08 13:53:07\t2026-05-08 15:04:32\t71\tnormal\n690002\t450011\t2026-05-08 04:41:00\t2026-05-08 15:40:00\t659\tnormal\n540007\t450011\t2026-05-05 14:57:00\t2026-05-05 15:57:00\t60\tnormal\n540008\t450011\t2026-05-05 08:58:00\t2026-05-05 13:58:00\t300\tnormal\n540006\t330007\t2026-05-05 06:56:00\t2026-05-05 14:56:00\t480\tnormal\n330037\t330007\t2026-04-21 12:46:00\t2026-04-21 15:46:00\t180\tnormal\n330036\t330007\t2026-04-20 08:45:00\t2026-04-20 13:45:00\t300\tnormal\n",
+  "stderr": "",
+  "execution_time_ms": 260
+}

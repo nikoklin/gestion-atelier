@@ -1,0 +1,15 @@
+{
+  "query": "SELECT \n  COUNT(*) as total_active,\n  SUM(CASE WHEN usedHours >= totalHours THEN 1 ELSE 0 END) as exhausted_by_hours,\n  SUM(CASE WHEN endDate < NOW() THEN 1 ELSE 0 END) as expired_by_date\nFROM packages \nWHERE isActive = true;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT \n  COUNT(*) as total_active,\n  SUM(CASE WHEN usedHours >= totalHours THEN 1 ELSE 0 END) as exhausted_by_hours,\n  SUM(CASE WHEN endDate < NOW() THEN 1 ELSE 0 END) as expired_by_date\nFROM packages \nWHERE isActive = true;",
+  "rows": [
+    {
+      "total_active": "8",
+      "exhausted_by_hours": "0",
+      "expired_by_date": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "total_active\texhausted_by_hours\texpired_by_date\n8\t0\t0\n",
+  "stderr": "",
+  "execution_time_ms": 51
+}

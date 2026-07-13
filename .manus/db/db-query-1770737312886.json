@@ -1,0 +1,28 @@
+{
+  "query": "SELECT body FROM emailTemplates WHERE templateType = 'session_summary';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT body FROM emailTemplates WHERE templateType = 'session_summary';",
+  "rows": [
+    {
+      "body": "Bonjour {{firstName}},"
+    },
+    {
+      "body": "Tu viens de terminer une session à l'atelier."
+    },
+    {
+      "body": "Durée de la session : {{duration}}"
+    },
+    {
+      "body": "Tu peux consulter ton espace personnel pour voir l'historique complet de tes pointages : {{dashboardUrl}}"
+    },
+    {
+      "body": "Bonne journée."
+    },
+    {
+      "body": "Nicolas."
+    }
+  ],
+  "messages": [],
+  "stdout": "body\nBonjour {{firstName}},\n\nTu viens de terminer une session à l'atelier.\n\nDurée de la session : {{duration}}\n\nTu peux consulter ton espace personnel pour voir l'historique complet de tes pointages : {{dashboardUrl}}\n\nBonne journée.\n\nNicolas.\n",
+  "stderr": "",
+  "execution_time_ms": 360
+}

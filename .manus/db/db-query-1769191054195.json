@@ -1,0 +1,20 @@
+{
+  "query": "SELECT checkInTime, checkOutTime, durationMinutes FROM attendances WHERE residentId = 30001 AND packageId = 810002 ORDER BY checkInTime ASC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT checkInTime, checkOutTime, durationMinutes FROM attendances WHERE residentId = 30001 AND packageId = 810002 ORDER BY checkInTime ASC;",
+  "rows": [
+    {
+      "checkInTime": "2026-01-16 15:21:31",
+      "checkOutTime": "2026-01-16 15:23:52",
+      "durationMinutes": "2"
+    },
+    {
+      "checkInTime": "2026-01-23 17:29:55",
+      "checkOutTime": "2026-01-23 17:33:51",
+      "durationMinutes": "3"
+    }
+  ],
+  "messages": [],
+  "stdout": "checkInTime\tcheckOutTime\tdurationMinutes\n2026-01-16 15:21:31\t2026-01-16 15:23:52\t2\n2026-01-23 17:29:55\t2026-01-23 17:33:51\t3\n",
+  "stderr": "",
+  "execution_time_ms": 81
+}

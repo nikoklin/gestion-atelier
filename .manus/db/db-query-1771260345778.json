@@ -1,0 +1,18 @@
+{
+  "query": "\n-- Réduire le forfait actuel à 5 minutes\nUPDATE packages \nSET totalHours = 5 \nWHERE id = 120003;\n\n-- Vérifier la modification\nSELECT id, residentId, totalHours, usedHours, deductedMinutes, isActive \nFROM packages \nWHERE id = 120003;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute \n-- Réduire le forfait actuel à 5 minutes\nUPDATE packages \nSET totalHours = 5 \nWHERE id = 120003;\n\n-- Vérifier la modification\nSELECT id, residentId, totalHours, usedHours, deductedMinutes, isActive \nFROM packages \nWHERE id = 120003;\n",
+  "rows": [
+    {
+      "id": "120003",
+      "residentId": "1",
+      "totalHours": "5",
+      "usedHours": "900",
+      "deductedMinutes": "5",
+      "isActive": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tresidentId\ttotalHours\tusedHours\tdeductedMinutes\tisActive\n120003\t1\t5\t900\t5\t0\n",
+  "stderr": "",
+  "execution_time_ms": 581
+}

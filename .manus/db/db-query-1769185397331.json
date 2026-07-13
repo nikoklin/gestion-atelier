@@ -1,0 +1,55 @@
+{
+  "query": "\nSELECT \n  r.id as residentId,\n  r.firstName,\n  r.lastName,\n  r.email,\n  p.id as packageId,\n  p.packageType,\n  p.totalHours,\n  p.usedHours,\n  p.startDate,\n  p.endDate,\n  p.isActive,\n  p.reminderSent,\n  p.expirationEmailSent\nFROM residents r\nLEFT JOIN packages p ON r.id = p.residentId\nWHERE r.lastName = 'Klein' AND r.firstName = 'Nicolas'\nORDER BY p.createdAt DESC\nLIMIT 3;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute \nSELECT \n  r.id as residentId,\n  r.firstName,\n  r.lastName,\n  r.email,\n  p.id as packageId,\n  p.packageType,\n  p.totalHours,\n  p.usedHours,\n  p.startDate,\n  p.endDate,\n  p.isActive,\n  p.reminderSent,\n  p.expirationEmailSent\nFROM residents r\nLEFT JOIN packages p ON r.id = p.residentId\nWHERE r.lastName = 'Klein' AND r.firstName = 'Nicolas'\nORDER BY p.createdAt DESC\nLIMIT 3;\n",
+  "rows": [
+    {
+      "residentId": "30001",
+      "firstName": "Nicolas",
+      "lastName": "Klein",
+      "email": "nikoklin@me.com",
+      "packageId": "810002",
+      "packageType": "15h_8w",
+      "totalHours": "900",
+      "usedHours": "923",
+      "startDate": "2026-01-16 00:00:00",
+      "endDate": "2026-03-13 00:00:00",
+      "isActive": "0",
+      "reminderSent": "0",
+      "expirationEmailSent": "0"
+    },
+    {
+      "residentId": "30001",
+      "firstName": "Nicolas",
+      "lastName": "Klein",
+      "email": "nikoklin@me.com",
+      "packageId": "750002",
+      "packageType": "30h_4w",
+      "totalHours": "1800",
+      "usedHours": "98",
+      "startDate": "2025-11-17 00:00:00",
+      "endDate": "2025-12-22 00:00:00",
+      "isActive": "0",
+      "reminderSent": "0",
+      "expirationEmailSent": "0"
+    },
+    {
+      "residentId": "30001",
+      "firstName": "Nicolas",
+      "lastName": "Klein",
+      "email": "nikoklin@me.com",
+      "packageId": "720007",
+      "packageType": "30h_4w",
+      "totalHours": "1800",
+      "usedHours": "0",
+      "startDate": "2025-11-05 00:00:00",
+      "endDate": "2025-12-03 00:00:00",
+      "isActive": "0",
+      "reminderSent": "0",
+      "expirationEmailSent": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "residentId\tfirstName\tlastName\temail\tpackageId\tpackageType\ttotalHours\tusedHours\tstartDate\tendDate\tisActive\treminderSent\texpirationEmailSent\n30001\tNicolas\tKlein\tnikoklin@me.com\t810002\t15h_8w\t900\t923\t2026-01-16 00:00:00\t2026-03-13 00:00:00\t0\t0\t0\n30001\tNicolas\tKlein\tnikoklin@me.com\t750002\t30h_4w\t1800\t98\t2025-11-17 00:00:00\t2025-12-22 00:00:00\t0\t0\t0\n30001\tNicolas\tKlein\tnikoklin@me.com\t720007\t30h_4w\t1800\t0\t2025-11-05 00:00:00\t2025-12-03 00:00:00\t0\t0\t0\n",
+  "stderr": "",
+  "execution_time_ms": 57
+}

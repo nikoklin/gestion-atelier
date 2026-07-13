@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE packages SET status = 'active', isActive = true, startDate = NOW(), endDate = DATE_ADD(NOW(), INTERVAL 56 DAY) WHERE id = 9",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute UPDATE packages SET status = 'active', isActive = true, startDate = NOW(), endDate = DATE_ADD(NOW(), INTERVAL 56 DAY) WHERE id = 9",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 52
+}

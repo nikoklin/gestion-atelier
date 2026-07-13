@@ -1,0 +1,37 @@
+{
+  "query": "\nSELECT \n  p.id as package_id, \n  p.packageType, \n  p.totalHours, \n  p.usedHours,\n  p.deductedMinutes,\n  COALESCE(SUM(CASE WHEN a.attendanceType = 'normal' THEN a.durationMinutes ELSE 0 END), 0) as real_used_minutes,\n  p.totalHours - COALESCE(SUM(CASE WHEN a.attendanceType = 'normal' THEN a.durationMinutes ELSE 0 END), 0) as real_remaining\nFROM packages p\nLEFT JOIN attendances a ON a.packageId = p.id\nWHERE p.residentId = 60001\nGROUP BY p.id, p.packageType, p.totalHours, p.usedHours, p.deductedMinutes\nORDER BY p.id;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute \nSELECT \n  p.id as package_id, \n  p.packageType, \n  p.totalHours, \n  p.usedHours,\n  p.deductedMinutes,\n  COALESCE(SUM(CASE WHEN a.attendanceType = 'normal' THEN a.durationMinutes ELSE 0 END), 0) as real_used_minutes,\n  p.totalHours - COALESCE(SUM(CASE WHEN a.attendanceType = 'normal' THEN a.durationMinutes ELSE 0 END), 0) as real_remaining\nFROM packages p\nLEFT JOIN attendances a ON a.packageId = p.id\nWHERE p.residentId = 60001\nGROUP BY p.id, p.packageType, p.totalHours, p.usedHours, p.deductedMinutes\nORDER BY p.id;\n",
+  "rows": [
+    {
+      "package_id": "330007",
+      "packageType": "15h_8w",
+      "totalHours": "900",
+      "usedHours": "900",
+      "deductedMinutes": "0",
+      "real_used_minutes": "960",
+      "real_remaining": "-60"
+    },
+    {
+      "package_id": "450011",
+      "packageType": "15h_8w",
+      "totalHours": "960",
+      "usedHours": "960",
+      "deductedMinutes": "60",
+      "real_used_minutes": "1019",
+      "real_remaining": "-59"
+    },
+    {
+      "package_id": "720004",
+      "packageType": "custom_3",
+      "totalHours": "1800",
+      "usedHours": "670",
+      "deductedMinutes": "610",
+      "real_used_minutes": "60",
+      "real_remaining": "1740"
+    }
+  ],
+  "messages": [],
+  "stdout": "package_id\tpackageType\ttotalHours\tusedHours\tdeductedMinutes\treal_used_minutes\treal_remaining\n330007\t15h_8w\t900\t900\t0\t960\t-60\n450011\t15h_8w\t960\t960\t60\t1019\t-59\n720004\tcustom_3\t1800\t670\t610\t60\t1740\n",
+  "stderr": "",
+  "execution_time_ms": 267
+}

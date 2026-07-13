@@ -1,0 +1,9 @@
+{
+  "query": "DELETE FROM attendances \nWHERE residentId = 1 \n  AND packageId = 1 \n  AND durationMinutes = 900 \n  AND checkInTime = '2026-02-09 10:00:00';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute DELETE FROM attendances \nWHERE residentId = 1 \n  AND packageId = 1 \n  AND durationMinutes = 900 \n  AND checkInTime = '2026-02-09 10:00:00';",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 357
+}

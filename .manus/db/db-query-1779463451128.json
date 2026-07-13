@@ -1,0 +1,30 @@
+{
+  "query": "\nSELECT p.id as pkg_id, p.packageType, p.totalHours as total_min, p.usedHours as used_min, p.isActive, p.startDate, p.endDate,\n  (SELECT COALESCE(SUM(a.durationMinutes),0) FROM attendances a WHERE a.packageId = p.id AND a.attendanceType = 'normal' AND a.durationMinutes IS NOT NULL) as real_sum_min\nFROM packages p WHERE p.residentId = 60001 ORDER BY p.startDate;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute \nSELECT p.id as pkg_id, p.packageType, p.totalHours as total_min, p.usedHours as used_min, p.isActive, p.startDate, p.endDate,\n  (SELECT COALESCE(SUM(a.durationMinutes),0) FROM attendances a WHERE a.packageId = p.id AND a.attendanceType = 'normal' AND a.durationMinutes IS NOT NULL) as real_sum_min\nFROM packages p WHERE p.residentId = 60001 ORDER BY p.startDate;\n",
+  "rows": [
+    {
+      "pkg_id": "330007",
+      "packageType": "15h_8w",
+      "total_min": "900",
+      "used_min": "900",
+      "isActive": "0",
+      "startDate": "2026-04-20 00:00:00",
+      "endDate": "2026-06-15 00:00:00",
+      "real_sum_min": "960"
+    },
+    {
+      "pkg_id": "450011",
+      "packageType": "15h_8w",
+      "total_min": "960",
+      "used_min": "960",
+      "isActive": "0",
+      "startDate": "2026-05-04 00:00:00",
+      "endDate": "2026-06-29 00:00:00",
+      "real_sum_min": "1019"
+    }
+  ],
+  "messages": [],
+  "stdout": "pkg_id\tpackageType\ttotal_min\tused_min\tisActive\tstartDate\tendDate\treal_sum_min\n330007\t15h_8w\t900\t900\t0\t2026-04-20 00:00:00\t2026-06-15 00:00:00\t960\n450011\t15h_8w\t960\t960\t0\t2026-05-04 00:00:00\t2026-06-29 00:00:00\t1019\n",
+  "stderr": "",
+  "execution_time_ms": 271
+}

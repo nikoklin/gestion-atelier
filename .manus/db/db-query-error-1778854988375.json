@@ -1,0 +1,8 @@
+{
+  "query": "INSERT INTO residents (firstName, lastName, email, phone, qrCode, pin, isActive, isDeleted, hasMissedCheckout, outOfPackageMinutes, shelfNumber, artistSignature) VALUES ('Test', 'Resident', 'test@test.com', '0600000000', '', NULL, true, false, false, 0, NULL, NULL);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute INSERT INTO residents (firstName, lastName, email, phone, qrCode, pin, isActive, isDeleted, hasMissedCheckout, outOfPackageMinutes, shelfNumber, artistSignature) VALUES ('Test', 'Resident', 'test@test.com', '0600000000', '', NULL, true, false, false, 0, NULL, NULL);",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1062 (23000) at line 1: Duplicate entry '?' for key 'residents.residents_qrCode_unique'"
+  ]
+}

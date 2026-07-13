@@ -1,0 +1,50 @@
+{
+  "query": "\n-- Supprimer le pointage de test\nDELETE FROM attendances WHERE id = 90004;\n\n-- Vérifier les pointages restants\nSELECT id, residentId, packageId, checkInTime, checkOutTime, durationMinutes \nFROM attendances \nWHERE residentId = 1 \nORDER BY createdAt DESC;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute \n-- Supprimer le pointage de test\nDELETE FROM attendances WHERE id = 90004;\n\n-- Vérifier les pointages restants\nSELECT id, residentId, packageId, checkInTime, checkOutTime, durationMinutes \nFROM attendances \nWHERE residentId = 1 \nORDER BY createdAt DESC;\n",
+  "rows": [
+    {
+      "id": "120002",
+      "residentId": "1",
+      "packageId": "120003",
+      "checkInTime": "2026-02-10 18:44:29",
+      "checkOutTime": "2026-02-10 18:47:59",
+      "durationMinutes": "3"
+    },
+    {
+      "id": "120001",
+      "residentId": "1",
+      "packageId": "120003",
+      "checkInTime": "2026-02-10 18:42:10",
+      "checkOutTime": "2026-02-10 18:44:01",
+      "durationMinutes": "1"
+    },
+    {
+      "id": "90003",
+      "residentId": "1",
+      "packageId": "120001",
+      "checkInTime": "2026-02-10 18:04:39",
+      "checkOutTime": "2026-02-10 18:05:31",
+      "durationMinutes": "0"
+    },
+    {
+      "id": "90002",
+      "residentId": "1",
+      "packageId": "120001",
+      "checkInTime": "2026-02-10 17:56:43",
+      "checkOutTime": "2026-02-10 17:58:51",
+      "durationMinutes": "2"
+    },
+    {
+      "id": "90001",
+      "residentId": "1",
+      "packageId": "120001",
+      "checkInTime": "2026-02-10 17:47:53",
+      "checkOutTime": "2026-02-10 17:56:43",
+      "durationMinutes": "8"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tresidentId\tpackageId\tcheckInTime\tcheckOutTime\tdurationMinutes\n120002\t1\t120003\t2026-02-10 18:44:29\t2026-02-10 18:47:59\t3\n120001\t1\t120003\t2026-02-10 18:42:10\t2026-02-10 18:44:01\t1\n90003\t1\t120001\t2026-02-10 18:04:39\t2026-02-10 18:05:31\t0\n90002\t1\t120001\t2026-02-10 17:56:43\t2026-02-10 17:58:51\t2\n90001\t1\t120001\t2026-02-10 17:47:53\t2026-02-10 17:56:43\t8\n",
+  "stderr": "",
+  "execution_time_ms": 411
+}

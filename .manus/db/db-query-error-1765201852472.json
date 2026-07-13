@@ -1,0 +1,8 @@
+{
+  "query": "ALTER TABLE packages DROP COLUMN status",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute ALTER TABLE packages DROP COLUMN status",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1091 (42000) at line 1: Can't DROP 'status'; check that column/key exists"
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "query": "\nSELECT \n  r.firstName,\n  r.lastName,\n  p.packageType,\n  p.totalHours,\n  p.usedHours,\n  p.endDate,\n  p.reminderSent,\n  p.expirationEmailSent\nFROM residents r\nJOIN packages p ON r.id = p.residentId\nWHERE r.firstName = 'enka' AND p.status = 'active';\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute \nSELECT \n  r.firstName,\n  r.lastName,\n  p.packageType,\n  p.totalHours,\n  p.usedHours,\n  p.endDate,\n  p.reminderSent,\n  p.expirationEmailSent\nFROM residents r\nJOIN packages p ON r.id = p.residentId\nWHERE r.firstName = 'enka' AND p.status = 'active';\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 2: Unknown column 'p.status' in 'where clause'"
+  ]
+}

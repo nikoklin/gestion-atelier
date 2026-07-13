@@ -1,0 +1,28 @@
+{
+  "query": "SELECT id, checkInTime, checkOutTime, durationMinutes FROM attendances WHERE residentId = 120001 ORDER BY checkInTime DESC LIMIT 3;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT id, checkInTime, checkOutTime, durationMinutes FROM attendances WHERE residentId = 120001 ORDER BY checkInTime DESC LIMIT 3;",
+  "rows": [
+    {
+      "id": "1170006",
+      "checkInTime": "2026-01-23 16:55:53",
+      "checkOutTime": "2026-01-23 16:57:40",
+      "durationMinutes": "1"
+    },
+    {
+      "id": "1170003",
+      "checkInTime": "2026-01-23 16:24:44",
+      "checkOutTime": "2026-01-23 16:32:29",
+      "durationMinutes": "7"
+    },
+    {
+      "id": "1110003",
+      "checkInTime": "2026-01-16 16:37:29",
+      "checkOutTime": "2026-01-16 16:37:41",
+      "durationMinutes": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcheckInTime\tcheckOutTime\tdurationMinutes\n1170006\t2026-01-23 16:55:53\t2026-01-23 16:57:40\t1\n1170003\t2026-01-23 16:24:44\t2026-01-23 16:32:29\t7\n1110003\t2026-01-16 16:37:29\t2026-01-16 16:37:41\t0\n",
+  "stderr": "",
+  "execution_time_ms": 53
+}

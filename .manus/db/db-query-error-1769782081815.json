@@ -1,0 +1,8 @@
+{
+  "query": "\nINSERT INTO attendances (residentId, checkIn, checkOut, createdAt, updatedAt)\nSELECT \n  r.id,\n  DATE_SUB(NOW(), INTERVAL 5 MINUTE),\n  NOW(),\n  NOW(),\n  NOW()\nFROM residents r\nWHERE r.firstName = 'enka' AND r.lastName = 'enka';\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute \nINSERT INTO attendances (residentId, checkIn, checkOut, createdAt, updatedAt)\nSELECT \n  r.id,\n  DATE_SUB(NOW(), INTERVAL 5 MINUTE),\n  NOW(),\n  NOW(),\n  NOW()\nFROM residents r\nWHERE r.firstName = 'enka' AND r.lastName = 'enka';\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 2: Unknown column 'checkIn' in 'field list'"
+  ]
+}

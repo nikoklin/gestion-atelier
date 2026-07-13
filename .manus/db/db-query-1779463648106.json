@@ -1,0 +1,16 @@
+{
+  "query": "\nUPDATE packages SET usedHours = (\n  SELECT COALESCE(SUM(a.durationMinutes), 0)\n  FROM attendances a\n  WHERE a.packageId = 720003 AND a.durationMinutes IS NOT NULL\n)\nWHERE id = 720003;\n\nUPDATE residents SET outOfPackageMinutes = 0 WHERE id = 60001;\n\nSELECT p.id, p.totalHours, p.usedHours, r.outOfPackageMinutes\nFROM packages p JOIN residents r ON r.id = p.residentId\nWHERE p.id = 720003;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute \nUPDATE packages SET usedHours = (\n  SELECT COALESCE(SUM(a.durationMinutes), 0)\n  FROM attendances a\n  WHERE a.packageId = 720003 AND a.durationMinutes IS NOT NULL\n)\nWHERE id = 720003;\n\nUPDATE residents SET outOfPackageMinutes = 0 WHERE id = 60001;\n\nSELECT p.id, p.totalHours, p.usedHours, r.outOfPackageMinutes\nFROM packages p JOIN residents r ON r.id = p.residentId\nWHERE p.id = 720003;\n",
+  "rows": [
+    {
+      "id": "720003",
+      "totalHours": "900",
+      "usedHours": "0",
+      "outOfPackageMinutes": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttotalHours\tusedHours\toutOfPackageMinutes\n720003\t900\t0\t0\n",
+  "stderr": "",
+  "execution_time_ms": 280
+}

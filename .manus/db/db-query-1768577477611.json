@@ -1,0 +1,208 @@
+{
+  "query": "SELECT p.id, p.residentId, r.firstName, r.lastName, p.endDate, p.totalHours, p.usedHours, p.expirationEmailSent, p.createdAt FROM packages p LEFT JOIN residents r ON p.residentId = r.id WHERE (p.endDate < NOW() OR p.totalHours - p.usedHours <= 0) ORDER BY p.residentId, p.createdAt DESC LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT p.id, p.residentId, r.firstName, r.lastName, p.endDate, p.totalHours, p.usedHours, p.expirationEmailSent, p.createdAt FROM packages p LEFT JOIN residents r ON p.residentId = r.id WHERE (p.endDate < NOW() OR p.totalHours - p.usedHours <= 0) ORDER BY p.residentId, p.createdAt DESC LIMIT 20;",
+  "rows": [
+    {
+      "id": "1",
+      "residentId": "1",
+      "firstName": "Marie",
+      "lastName": "Dupont",
+      "endDate": "2025-11-23 16:25:50",
+      "totalHours": "900",
+      "usedHours": "900",
+      "expirationEmailSent": "0",
+      "createdAt": "2025-10-31 13:04:07"
+    },
+    {
+      "id": "180002",
+      "residentId": "2",
+      "firstName": "Jean",
+      "lastName": "Martin",
+      "endDate": "2026-01-09 00:00:00",
+      "totalHours": "900",
+      "usedHours": "1552",
+      "expirationEmailSent": "0",
+      "createdAt": "2025-11-14 18:13:18"
+    },
+    {
+      "id": "2",
+      "residentId": "2",
+      "firstName": "Jean",
+      "lastName": "Martin",
+      "endDate": "2025-11-10 14:04:07",
+      "totalHours": "1800",
+      "usedHours": "835",
+      "expirationEmailSent": "0",
+      "createdAt": "2025-10-31 13:04:07"
+    },
+    {
+      "id": "450003",
+      "residentId": "3",
+      "firstName": "Sophie",
+      "lastName": "Bernard",
+      "endDate": "2025-12-13 00:00:00",
+      "totalHours": "1800",
+      "usedHours": "0",
+      "expirationEmailSent": "0",
+      "createdAt": "2025-12-07 09:50:13"
+    },
+    {
+      "id": "240002",
+      "residentId": "3",
+      "firstName": "Sophie",
+      "lastName": "Bernard",
+      "endDate": "2025-12-04 00:00:00",
+      "totalHours": "1800",
+      "usedHours": "0",
+      "expirationEmailSent": "0",
+      "createdAt": "2025-11-18 18:20:12"
+    },
+    {
+      "id": "3",
+      "residentId": "3",
+      "firstName": "Sophie",
+      "lastName": "Bernard",
+      "endDate": "2025-10-23 13:04:07",
+      "totalHours": "1800",
+      "usedHours": "634",
+      "expirationEmailSent": "0",
+      "createdAt": "2025-10-31 13:04:07"
+    },
+    {
+      "id": "240001",
+      "residentId": "4",
+      "firstName": "Pierre",
+      "lastName": "Dubois",
+      "endDate": "2025-12-16 00:00:00",
+      "totalHours": "1800",
+      "usedHours": "1362",
+      "expirationEmailSent": "0",
+      "createdAt": "2025-11-18 18:19:40"
+    },
+    {
+      "id": "4",
+      "residentId": "4",
+      "firstName": "Pierre",
+      "lastName": "Dubois",
+      "endDate": "2025-10-27 13:04:07",
+      "totalHours": "900",
+      "usedHours": "315",
+      "expirationEmailSent": "0",
+      "createdAt": "2025-10-31 13:04:07"
+    },
+    {
+      "id": "810002",
+      "residentId": "30001",
+      "firstName": "Nicolas",
+      "lastName": "Klein",
+      "endDate": "2026-03-13 00:00:00",
+      "totalHours": "900",
+      "usedHours": "901",
+      "expirationEmailSent": "0",
+      "createdAt": "2026-01-16 15:21:03"
+    },
+    {
+      "id": "750002",
+      "residentId": "30001",
+      "firstName": "Nicolas",
+      "lastName": "Klein",
+      "endDate": "2025-12-22 00:00:00",
+      "totalHours": "1800",
+      "usedHours": "396",
+      "expirationEmailSent": "0",
+      "createdAt": "2025-12-16 18:20:29"
+    },
+    {
+      "id": "720007",
+      "residentId": "30001",
+      "firstName": "Nicolas",
+      "lastName": "Klein",
+      "endDate": "2025-12-03 00:00:00",
+      "totalHours": "1800",
+      "usedHours": "0",
+      "expirationEmailSent": "0",
+      "createdAt": "2025-12-12 13:12:32"
+    },
+    {
+      "id": "720005",
+      "residentId": "30001",
+      "firstName": "Nicolas",
+      "lastName": "Klein",
+      "endDate": "2025-12-03 00:00:00",
+      "totalHours": "1800",
+      "usedHours": "0",
+      "expirationEmailSent": "0",
+      "createdAt": "2025-12-12 13:06:55"
+    },
+    {
+      "id": "720004",
+      "residentId": "30001",
+      "firstName": "Nicolas",
+      "lastName": "Klein",
+      "endDate": "2025-12-01 00:00:00",
+      "totalHours": "1800",
+      "usedHours": "0",
+      "expirationEmailSent": "0",
+      "createdAt": "2025-12-12 13:05:04"
+    },
+    {
+      "id": "720003",
+      "residentId": "30001",
+      "firstName": "Nicolas",
+      "lastName": "Klein",
+      "endDate": "2025-12-01 00:00:00",
+      "totalHours": "1800",
+      "usedHours": "0",
+      "expirationEmailSent": "0",
+      "createdAt": "2025-12-12 12:53:30"
+    },
+    {
+      "id": "450002",
+      "residentId": "60002",
+      "firstName": "Chloé",
+      "lastName": "Patir",
+      "endDate": "2026-01-01 00:00:00",
+      "totalHours": "1800",
+      "usedHours": "1893",
+      "expirationEmailSent": "0",
+      "createdAt": "2025-12-07 09:48:11"
+    },
+    {
+      "id": "420003",
+      "residentId": "60002",
+      "firstName": "Chloé",
+      "lastName": "Patir",
+      "endDate": "2025-12-05 00:00:00",
+      "totalHours": "1800",
+      "usedHours": "0",
+      "expirationEmailSent": "0",
+      "createdAt": "2025-12-02 17:42:00"
+    },
+    {
+      "id": "630004",
+      "residentId": "90001",
+      "firstName": "test 2",
+      "lastName": "ddd",
+      "endDate": "2026-01-07 00:00:00",
+      "totalHours": "1800",
+      "usedHours": "0",
+      "expirationEmailSent": "0",
+      "createdAt": "2025-12-10 14:33:57"
+    },
+    {
+      "id": "750001",
+      "residentId": "120001",
+      "firstName": "enka",
+      "lastName": "enka",
+      "endDate": "2025-12-02 00:00:00",
+      "totalHours": "1800",
+      "usedHours": "0",
+      "expirationEmailSent": "0",
+      "createdAt": "2025-12-16 18:18:59"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tresidentId\tfirstName\tlastName\tendDate\ttotalHours\tusedHours\texpirationEmailSent\tcreatedAt\n1\t1\tMarie\tDupont\t2025-11-23 16:25:50\t900\t900\t0\t2025-10-31 13:04:07\n180002\t2\tJean\tMartin\t2026-01-09 00:00:00\t900\t1552\t0\t2025-11-14 18:13:18\n2\t2\tJean\tMartin\t2025-11-10 14:04:07\t1800\t835\t0\t2025-10-31 13:04:07\n450003\t3\tSophie\tBernard\t2025-12-13 00:00:00\t1800\t0\t0\t2025-12-07 09:50:13\n240002\t3\tSophie\tBernard\t2025-12-04 00:00:00\t1800\t0\t0\t2025-11-18 18:20:12\n3\t3\tSophie\tBernard\t2025-10-23 13:04:07\t1800\t634\t0\t2025-10-31 13:04:07\n240001\t4\tPierre\tDubois\t2025-12-16 00:00:00\t1800\t1362\t0\t2025-11-18 18:19:40\n4\t4\tPierre\tDubois\t2025-10-27 13:04:07\t900\t315\t0\t2025-10-31 13:04:07\n810002\t30001\tNicolas\tKlein\t2026-03-13 00:00:00\t900\t901\t0\t2026-01-16 15:21:03\n750002\t30001\tNicolas\tKlein\t2025-12-22 00:00:00\t1800\t396\t0\t2025-12-16 18:20:29\n720007\t30001\tNicolas\tKlein\t2025-12-03 00:00:00\t1800\t0\t0\t2025-12-12 13:12:32\n720005\t30001\tNicolas\tKlein\t2025-12-03 00:00:00\t1800\t0\t0\t2025-12-12 13:06:55\n720004\t30001\tNicolas\tKlein\t2025-12-01 00:00:00\t1800\t0\t0\t2025-12-12 13:05:04\n720003\t30001\tNicolas\tKlein\t2025-12-01 00:00:00\t1800\t0\t0\t2025-12-12 12:53:30\n450002\t60002\tChloé\tPatir\t2026-01-01 00:00:00\t1800\t1893\t0\t2025-12-07 09:48:11\n420003\t60002\tChloé\tPatir\t2025-12-05 00:00:00\t1800\t0\t0\t2025-12-02 17:42:00\n630004\t90001\ttest 2\tddd\t2026-01-07 00:00:00\t1800\t0\t0\t2025-12-10 14:33:57\n750001\t120001\tenka\tenka\t2025-12-02 00:00:00\t1800\t0\t0\t2025-12-16 18:18:59\n",
+  "stderr": "",
+  "execution_time_ms": 58
+}

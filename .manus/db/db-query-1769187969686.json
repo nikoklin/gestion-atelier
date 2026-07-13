@@ -1,0 +1,24 @@
+{
+  "query": "SELECT * FROM packages WHERE residentId = 120001 ORDER BY id DESC LIMIT 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute SELECT * FROM packages WHERE residentId = 120001 ORDER BY id DESC LIMIT 1;",
+  "rows": [
+    {
+      "id": "810001",
+      "residentId": "120001",
+      "packageType": "30h_4w",
+      "totalHours": "1800",
+      "usedHours": "8",
+      "startDate": "2025-12-23 00:00:00",
+      "endDate": "2026-01-20 00:00:00",
+      "isActive": "1",
+      "reminderSent": "0",
+      "expirationEmailSent": "0",
+      "createdAt": "2026-01-16 15:20:39",
+      "updatedAt": "2026-01-23 17:05:50"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tresidentId\tpackageType\ttotalHours\tusedHours\tstartDate\tendDate\tisActive\treminderSent\texpirationEmailSent\tcreatedAt\tupdatedAt\n810001\t120001\t30h_4w\t1800\t8\t2025-12-23 00:00:00\t2026-01-20 00:00:00\t1\t0\t0\t2026-01-16 15:20:39\t2026-01-23 17:05:50\n",
+  "stderr": "",
+  "execution_time_ms": 64
+}

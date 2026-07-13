@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE emailTemplates SET body = REPLACE(body, '<br>{{pendingPackageLinks}}', '') WHERE templateType IN ('reminder', 'expiration');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user ogmtopKka7VLP2a.root --database LV5DDS56NhvJNRfavaEMZ5 --execute UPDATE emailTemplates SET body = REPLACE(body, '<br>{{pendingPackageLinks}}', '') WHERE templateType IN ('reminder', 'expiration');",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 2027
+}
