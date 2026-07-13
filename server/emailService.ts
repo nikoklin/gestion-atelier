@@ -430,7 +430,7 @@ export async function sendGuideEmail(email: string, firstName: string): Promise<
     }
 
     const siteUrl = process.env.PUBLIC_SITE_URL || 'https://gestionlibreacces.manus.space';
-    const guideUrl = `${siteUrl}/manus-storage/guidedesbonnespratiques_d0dde828.pdf`;
+    const guideUrl = `${siteUrl}/guidedesbonnespratiques.pdf`;
 
     const subject = `Bienvenue à l'atelier À Tour de Bras – Guide des bonnes pratiques`;
     const html = `
