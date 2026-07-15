@@ -79,5 +79,7 @@ export async function authenticateRequest(req: Request): Promise<User> {
   // Met à jour la date de dernière connexion (sans toucher au rôle).
   await db.upsertUser({ openId: user.openId, lastSignedIn: new Date() });
 
-  return user;
+  // Ne jamais exposer le hash du mot de passe hors du serveur : l'utilisateur
+  // en contexte (renvoyé notamment par auth.me) ne doit pas le contenir.
+  return { ...user, passwordHash: null };
 }
