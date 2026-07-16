@@ -2,6 +2,7 @@ import cron from "node-cron";
 import { checkAndSendReminders } from "./emailService";
 import { performDailyBackup } from "./scheduledBackup";
 import { checkAndProcessMissedCheckouts } from "./missedCheckoutService";
+import { recalculateAllResidents } from "./db";
 
 let schedulerStarted = false;
 
@@ -16,6 +17,19 @@ export function startScheduler() {
   cron.schedule("0 9 * * *", async () => {
     console.log("[Scheduler] Running daily email check at 9:00 AM");
     await checkAndSendReminders();
+  });
+
+  // Recalcul quotidien de tous les résidents à 00h05 : désactive les forfaits
+  // dont la date de fin est passée et maintient la cohérence des heures.
+  // 5 0 * * * = tous les jours à 00h05
+  cron.schedule("5 0 * * *", async () => {
+    console.log("[Scheduler] Running daily recalculation at 00:05");
+    try {
+      const res = await recalculateAllResidents();
+      console.log(`[Scheduler] Daily recalculation done: ${res.residents} residents`);
+    } catch (error) {
+      console.error("[Scheduler] Daily recalculation failed:", error);
+    }
   });
 
   // Planifier la vérification des pointages oubliés à 22h00

@@ -889,6 +889,21 @@ export async function fullRecalculateResident(residentId: number): Promise<{
   };
 }
 
+/**
+ * Recalcule TOUS les résidents via le moteur unique. Sert à la tâche
+ * quotidienne (désactive les forfaits dont la date de fin est passée et
+ * maintient la cohérence des heures) et à un recalcul global ponctuel.
+ */
+export async function recalculateAllResidents(): Promise<{ residents: number }> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const rows = await db.select({ id: residents.id }).from(residents);
+  for (const r of rows) {
+    await fullRecalculateResident(r.id);
+  }
+  return { residents: rows.length };
+}
+
 // ─── Paramètres de l'atelier ───────────────────────────────────────────────
 
 export async function getAtelierSettings() {
