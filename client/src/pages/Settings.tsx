@@ -211,8 +211,8 @@ export default function Settings() {
         <AlertCircle className="h-5 w-5 text-blue-600" />
         <AlertTitle className="text-blue-900 font-semibold">Configuration Requise</AlertTitle>
         <AlertDescription className="text-blue-800">
-          Pour activer l'envoi automatique des e-mails de rappel, vous devez configurer les secrets 
-          <strong> EMAIL_USER</strong> et <strong> EMAIL_PASSWORD</strong> via l'interface de gestion Manus.
+          Pour activer l'envoi automatique des e-mails de rappel, vous devez configurer les variables
+          d'environnement <strong> EMAIL_USER</strong> et <strong> EMAIL_PASSWORD</strong> dans le fichier <strong>.env</strong> du serveur.
         </AlertDescription>
       </Alert>
 

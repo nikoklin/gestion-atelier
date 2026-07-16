@@ -1,5 +1,7 @@
-import { COOKIE_NAME } from "@shared/const";
+import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+import bcrypt from "bcryptjs";
 import { getSessionCookieOptions } from "./_core/cookies";
+import { signSession } from "./_core/session";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { emailRouter } from "./emailRouter";
@@ -265,6 +267,41 @@ export const appRouter = router({
   }),
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
+    login: publicProcedure
+      .input(
+        z.object({
+          email: z.string().email(),
+          password: z.string().min(1),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const invalidCredentials = new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "E-mail ou mot de passe incorrect",
+        });
+
+        const user = await db.getUserByEmail(input.email);
+        if (!user || !user.passwordHash) {
+          throw invalidCredentials;
+        }
+
+        const passwordOk = await bcrypt.compare(input.password, user.passwordHash);
+        if (!passwordOk) {
+          throw invalidCredentials;
+        }
+
+        const token = await signSession(
+          { openId: user.openId, name: user.name ?? "" },
+          { expiresInMs: ONE_YEAR_MS }
+        );
+
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.cookie(COOKIE_NAME, token, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+
+        await db.upsertUser({ openId: user.openId, lastSignedIn: new Date() });
+
+        return { success: true } as const;
+      }),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });

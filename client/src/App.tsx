@@ -18,10 +18,12 @@ import Statistics from "./pages/Statistics";
 import ResidentProfile from "./pages/ResidentProfile";
 import ArchivedResidents from "./pages/ArchivedResidents";
 import FixCheckout from "./pages/FixCheckout";
+import Login from "./pages/Login";
 
 function Router() {
   return (
     <Switch>
+      <Route path="/login" component={Login} />
       <Route path="/checkin" component={CheckIn} />
       <Route path="/resident/login" component={ResidentLogin} />
       <Route path="/resident/dashboard" component={ResidentDashboard} />

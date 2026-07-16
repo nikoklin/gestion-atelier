@@ -42,7 +42,9 @@ export function getSessionCookieOptions(
   return {
     httpOnly: true,
     path: "/",
-    sameSite: "none",
+    // "lax" convient à un déploiement même origine (client + API servis
+    // ensemble) et fonctionne en HTTP local ; "none" exigerait secure:true.
+    sameSite: "lax",
     secure: isSecureRequest(req),
   };
 }
