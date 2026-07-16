@@ -1,5 +1,6 @@
 import { eq, and, desc, gte, lte, isNull, inArray, ne } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import mysql from "mysql2";
 import { 
   InsertUser, 
   users, 
@@ -23,10 +24,37 @@ import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
+/**
+ * Construit le pool mysql2 à partir de DATABASE_URL.
+ * Active TLS automatiquement pour TiDB Cloud (ou si DB_SSL=1), ce qui permet
+ * de fournir un DATABASE_URL simple, sans le paramètre `?ssl={...}` (dont les
+ * guillemets passent mal dans certaines interfaces d'hébergeur, ex. Railway).
+ */
+function createPool() {
+  const url = process.env.DATABASE_URL!;
+  const m = url.match(/^mysql:\/\/([^:]+):([^@]+)@([^:/]+):(\d+)\/([^?]+)/);
+  const needsSsl = /tidbcloud\.com/i.test(url) || process.env.DB_SSL === "1";
+
+  if (!m) {
+    // Repli : laisser mysql2 parser l'URL telle quelle.
+    return mysql.createPool(url);
+  }
+
+  const [, user, password, host, port, database] = m;
+  return mysql.createPool({
+    host,
+    port: Number(port),
+    user: decodeURIComponent(user),
+    password: decodeURIComponent(password),
+    database,
+    ssl: needsSsl ? { minVersion: "TLSv1.2" } : undefined,
+  });
+}
+
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      _db = drizzle(createPool());
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
