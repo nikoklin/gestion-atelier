@@ -717,19 +717,13 @@ export const appRouter = router({
           expirationEmailSent: false,
         });
 
-        // Si des heures ont été déduites, marquer les anciens forfaits
-        if (deductedMinutes > 0) {
-          await db.markOutOfPackageHoursAsDeducted(input.residentId, deductedMinutes);
+        // Recalcul complet du résident via le moteur unique (règle « par date ») :
+        // impute chaque pointage au forfait valable à sa date, applique la
+        // déduction reportée (deductedMinutes, stockée sur le nouveau forfait)
+        // et met à jour le cumul hors-forfait EN ATTENTE.
+        if (newPackageId) {
+          await db.fullRecalculateResident(input.residentId);
         }
-
-        // Rattacher les pointages orphelins (packageId = null) au nouveau forfait
-        // UNIQUEMENT si aucune heure n'a été déduite manuellement.
-        if (newPackageId && deductedMinutes === 0) {
-          await db.recalculatePackageHours(newPackageId);
-        }
-
-        // Remettre à zéro les heures hors forfait après création d'un nouveau forfait
-        await db.updateResident(input.residentId, { outOfPackageMinutes: 0 });
 
         return { success: true };
       }),
@@ -1054,18 +1048,10 @@ export const appRouter = router({
         // Supprimer le forfait
         await db.deletePackage(input.id);
 
-        // Remettre à zéro les heures hors forfait du résident
-        await db.updateResident(residentId, { outOfPackageMinutes: 0 });
-
-        // Recalcul automatique : rattacher les pointages orphelins au forfait précédent
-        const remainingPackages = await db.getPackagesByResidentId(residentId);
-        if (remainingPackages.length > 0) {
-          // Prendre le plus récent (trié par createdAt desc)
-          await db.recalculatePackageHours(remainingPackages[0].id);
-        } else {
-          // Aucun forfait restant : recalculer uniquement les heures hors forfait
-          await db.recalculateOutOfPackageHours(residentId);
-        }
+        // Recalcul complet du résident (moteur unique « par date ») : réattribue
+        // les pointages devenus orphelins au forfait valable à leur date et
+        // recalcule le cumul hors-forfait en attente.
+        await db.fullRecalculateResident(residentId);
 
         return { success: true };
       }),
