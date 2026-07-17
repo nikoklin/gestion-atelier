@@ -36,31 +36,6 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   // Cron jobs endpoints under /api/cron
   app.use("/api/cron", cronRoutes);
-  
-  // Route de test pour vérifier les heures hors forfait d'Enka Enka
-  app.get("/api/test-out-of-package", async (req, res) => {
-    const { getOutOfPackageHoursByResidentId, getDb } = await import('../db');
-    const { packages, attendances } = await import('../../drizzle/schema');
-    const { eq } = await import('drizzle-orm');
-    
-    const db = await getDb();
-    if (!db) {
-      return res.json({ error: 'Database not available' });
-    }
-    
-    const allPackages = await db.select().from(packages).where(eq(packages.residentId, 1));
-    const allAttendances = await db.select().from(attendances).where(eq(attendances.residentId, 1));
-    const outOfPackageMinutes = await getOutOfPackageHoursByResidentId(1);
-    
-    res.json({ 
-      residentId: 1, 
-      outOfPackageMinutes,
-      packages: allPackages,
-      attendances: allAttendances
-    });
-  });
-
-  
 
   // tRPC API
   app.use(
