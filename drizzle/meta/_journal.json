@@ -204,6 +204,13 @@
       "when": 1783955981947,
       "tag": "0028_cold_kulan_gath",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "5",
+      "when": 1784293524742,
+      "tag": "0029_exotic_toxin",
+      "breakpoints": true
     }
   ]
 }

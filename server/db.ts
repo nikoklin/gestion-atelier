@@ -376,27 +376,22 @@ export async function getOutOfPackageHoursByResidentId(residentId: number): Prom
   return resident?.outOfPackageMinutes ?? 0;
 }
 
+/**
+ * Abandonne définitivement les heures hors-forfait actuellement EN ATTENTE
+ * d'un résident (choix « ne pas déduire » à la création d'un forfait).
+ * Les minutes en attente sont ajoutées au compteur SOLDÉ, de sorte que le
+ * moteur ne les recompte plus jamais, puis on recalcule.
+ */
 export async function clearOutOfPackageHours(residentId: number): Promise<void> {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  const resident = await getResidentById(residentId);
+  if (!resident) return;
 
-  // Simplement remettre à zéro le compteur outOfPackageMinutes du résident
-  await db
-    .update(residents)
-    .set({ outOfPackageMinutes: 0 })
-    .where(eq(residents.id, residentId));
-}
-
-export async function markOutOfPackageHoursAsDeducted(residentId: number, deductedMinutes: number): Promise<void> {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  // Simplement remettre à zéro le compteur outOfPackageMinutes du résident
-  // (les minutes ont déjà été déduites lors de la création du forfait)
-  await db
-    .update(residents)
-    .set({ outOfPackageMinutes: 0 })
-    .where(eq(residents.id, residentId));
+  const pending = resident.outOfPackageMinutes ?? 0;
+  const settled = resident.settledOutOfPackageMinutes ?? 0;
+  if (pending > 0) {
+    await updateResident(residentId, { settledOutOfPackageMinutes: settled + pending });
+  }
+  await fullRecalculateResident(residentId);
 }
 // ============= ATTENDANCES =============
 
@@ -870,12 +865,16 @@ export async function fullRecalculateResident(residentId: number): Promise<{
   }
 
   // 7. Mettre à jour outOfPackageMinutes du résident.
-  // outOfPackageMinutes = heures hors-forfait EN ATTENTE de report.
-  // = total des débordements bruts − total déjà reporté dans un forfait suivant
-  //   (deductedMinutes). Sans cette soustraction, les heures déjà reportées
-  //   seraient recomptées à chaque recalcul (« heures fantômes »).
+  // outOfPackageMinutes = heures hors-forfait EN ATTENTE (ni reportées, ni abandonnées).
+  // = total des débordements bruts
+  //   − total déjà reporté dans un forfait suivant (deductedMinutes)
+  //   − total déjà soldé/abandonné (settledOutOfPackageMinutes).
+  // Sans ces soustractions, les heures déjà traitées seraient recomptées à
+  // chaque recalcul (« heures fantômes »).
+  const resident = await getResidentById(residentId);
+  const settled = resident?.settledOutOfPackageMinutes ?? 0;
   const totalDeducted = pkgCapacities.reduce((sum, p) => sum + p.deductedMinutes, 0);
-  const pendingOutOfPackageMinutes = Math.max(0, totalOutOfPackageMinutes - totalDeducted);
+  const pendingOutOfPackageMinutes = Math.max(0, totalOutOfPackageMinutes - totalDeducted - settled);
   await updateResident(residentId, { outOfPackageMinutes: pendingOutOfPackageMinutes });
 
   console.log(

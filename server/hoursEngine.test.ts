@@ -88,4 +88,53 @@ describe.skipIf(!process.env.DATABASE_URL)("Moteur de calcul des heures (règle 
     const r = await db.getResidentById(RID);
     expect(r!.outOfPackageMinutes).toBe(0);
   });
+
+});
+
+const RID2 = 990002;
+async function cleanup2() {
+  const database = await getDb();
+  if (!database) return;
+  await database.delete(attendances).where(eq(attendances.residentId, RID2));
+  await database.delete(packages).where(eq(packages.residentId, RID2));
+  await database.delete(residents).where(eq(residents.id, RID2));
+}
+
+describe.skipIf(!process.env.DATABASE_URL)("Abandon des heures hors-forfait (« ne pas déduire »)", () => {
+  beforeAll(async () => {
+    await cleanup2();
+    await db.createResident({
+      id: RID2, firstName: "TEST", lastName: "Abandon", email: "test-abandon@local", isActive: true,
+    } as any);
+    // Forfait de 600 min en janvier, dépassé de 120 min (pointage de 720 min).
+    await db.createPackage({
+      id: 990201, residentId: RID2, packageType: "custom_999", totalHours: 600, usedHours: 0,
+      startDate: d("2026-01-01"), endDate: d("2026-01-31"), isActive: true,
+    } as any);
+    await db.createAttendance({
+      residentId: RID2, packageId: 990201,
+      checkInTime: d("2026-01-15T09:00:00"), checkOutTime: d("2026-01-15T21:00:00"), durationMinutes: 720,
+    } as any);
+    await db.fullRecalculateResident(RID2);
+  });
+
+  afterAll(cleanup2);
+
+  it("part de 120 min hors-forfait en attente", async () => {
+    const r = await db.getResidentById(RID2);
+    expect(r!.outOfPackageMinutes).toBe(120);
+  });
+
+  it("l'abandon remet à 0", async () => {
+    await db.clearOutOfPackageHours(RID2);
+    const r = await db.getResidentById(RID2);
+    expect(r!.outOfPackageMinutes).toBe(0);
+  });
+
+  it("les heures abandonnées ne réapparaissent pas aux recalculs suivants", async () => {
+    await db.fullRecalculateResident(RID2);
+    await db.fullRecalculateResident(RID2);
+    const r = await db.getResidentById(RID2);
+    expect(r!.outOfPackageMinutes).toBe(0);
+  });
 });

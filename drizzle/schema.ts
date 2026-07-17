@@ -33,7 +33,8 @@ export const residents = mysqlTable("residents", {
   isDeleted: boolean("isDeleted").default(false).notNull(), // Archivage au lieu de suppression définitive
   hasMissedCheckout: boolean("hasMissedCheckout").default(false).notNull(), // Indique si le résident a oublié de pointer en partant
   missedCheckoutAttendanceId: int("missedCheckoutAttendanceId"), // ID du pointage oublié pour accès direct
-  outOfPackageMinutes: int("outOfPackageMinutes").default(0).notNull(), // Cumul des minutes hors forfait (dépassements)
+  outOfPackageMinutes: int("outOfPackageMinutes").default(0).notNull(), // Cumul des minutes hors forfait EN ATTENTE (dépassements non encore reportés ni abandonnés)
+  settledOutOfPackageMinutes: int("settledOutOfPackageMinutes").default(0).notNull(), // Minutes hors forfait SOLDÉES (abandonnées à la création d'un forfait), à ne plus recompter
   shelfNumber: varchar("shelfNumber", { length: 20 }), // Numéro d'étagère attribué au résident
   artistSignature: mediumtext("artistSignature"), // Signature artistique en base64 (image PNG)
   createdAt: timestamp("createdAt").defaultNow().notNull(),
