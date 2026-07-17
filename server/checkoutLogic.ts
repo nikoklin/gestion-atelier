@@ -5,6 +5,7 @@
 import * as db from "./db";
 import { isPackageExpired, minutesToHoursAndMinutes } from "../shared/packageHelpers";
 import { Resident, InsertPackage } from "../drizzle/schema";
+import { getPublicSiteUrl } from "./_core/publicSiteUrl";
 
 export interface CheckoutResult {
   success: boolean;
@@ -86,7 +87,7 @@ export async function performCheckout(options: CheckoutOptions): Promise<Checkou
   if (residentEmail && residentFirstName) {
     const { hours, minutes } = minutesToHoursAndMinutes(remainingMinutes);
     const { sendSessionSummaryEmail } = await import('./emailService');
-    const baseUrl = process.env.PUBLIC_SITE_URL || 'https://gestionlibreacces.manus.space';
+    const baseUrl = getPublicSiteUrl();
     const dashboardUrl = `${baseUrl}/resident/dashboard?id=${residentId}`;
     await sendSessionSummaryEmail(
       residentEmail,

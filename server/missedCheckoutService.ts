@@ -3,6 +3,7 @@ import { getDb } from "./db";
 import { attendances, residents } from "../drizzle/schema";
 import { sendEmail } from "./emailService";
 import { createFixCheckoutToken } from "./actionTokenService";
+import { getPublicSiteUrl } from "./_core/publicSiteUrl";
 
 /**
  * Vérifie les pointages non terminés et effectue un pointage automatique à 22h
@@ -81,7 +82,7 @@ export async function checkAndProcessMissedCheckouts(): Promise<{ processed: num
       const durationMins = durationMinutes % 60;
 
       // Générer un token de correction
-      const baseUrl = process.env.PUBLIC_SITE_URL || 'https://gestionlibreacces.manus.space';
+      const baseUrl = getPublicSiteUrl();
       let fixCheckoutUrl = '';
       try {
         const token = await createFixCheckoutToken(attendance.residentId, attendance.id);

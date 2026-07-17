@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
 import * as db from "./db";
-import { ENV } from "./_core/env";
+import { getPublicSiteUrl } from "./_core/publicSiteUrl";
 
 // Configuration du transporteur SMTP
 const transporter = nodemailer.createTransport({
@@ -84,7 +84,7 @@ export async function sendReminderEmail(
   const remainingHours = Math.floor(remainingMinutes / 60);
   const totalHours = Math.floor(pkg.totalHours / 60);
 
-  const baseUrl = process.env.PUBLIC_SITE_URL || 'https://gestionlibreacces.manus.space';
+  const baseUrl = getPublicSiteUrl();
   const dashboardUrl = `${baseUrl}/resident/dashboard?id=${residentId}`;
 
   // Récupérer les liens de paiement configurés dans les paramètres
@@ -143,7 +143,7 @@ export async function sendExpirationEmail(
   const totalHours = Math.floor(pkg.totalHours / 60);
   const usedHours = Math.floor(pkg.usedHours / 60);
 
-  const baseUrl = process.env.PUBLIC_SITE_URL || 'https://gestionlibreacces.manus.space';
+  const baseUrl = getPublicSiteUrl();
   const dashboardUrl = `${baseUrl}/resident/dashboard?id=${residentId}`;
 
   // Récupérer les liens de paiement configurés dans les paramètres
@@ -429,7 +429,7 @@ export async function sendGuideEmail(email: string, firstName: string): Promise<
       return false;
     }
 
-    const siteUrl = process.env.PUBLIC_SITE_URL || 'https://gestionlibreacces.manus.space';
+    const siteUrl = getPublicSiteUrl();
     const guideUrl = `${siteUrl}/guidedesbonnespratiques.pdf`;
 
     const subject = `Bienvenue à l'atelier À Tour de Bras – Guide des bonnes pratiques`;
@@ -489,7 +489,7 @@ export async function sendPackageActivatedEmail(
       console.error("[Email] Email credentials not configured");
       return false;
     }
-    const siteUrl = process.env.PUBLIC_SITE_URL || 'https://gestionlibreacces.manus.space';
+    const siteUrl = getPublicSiteUrl();
     const dashboardUrl = `${siteUrl}/resident/dashboard?id=${residentId}`;
     const startStr = startDate.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
     const endStr = endDate
