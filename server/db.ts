@@ -416,6 +416,7 @@ export async function getAttendancesByResidentId(residentId: number) {
       packageEndDate: packages.endDate,
       packageTotalHours: packages.totalHours,
       packageUsedHours: packages.usedHours,
+      packageDeductedMinutes: packages.deductedMinutes,
     })
     .from(attendances)
     .leftJoin(packages, eq(attendances.packageId, packages.id))
@@ -470,6 +471,7 @@ export async function getAllAttendances() {
       packageEndDate: packages.endDate,
       packageTotalHours: packages.totalHours,
       packageUsedHours: packages.usedHours,
+      packageDeductedMinutes: packages.deductedMinutes,
     })
     .from(attendances)
     .innerJoin(residents, eq(attendances.residentId, residents.id))
@@ -645,17 +647,107 @@ export async function deleteNote(id: number) {
 }
 
 /**
- * Recalcule les heures hors forfait pour un résident donné
- * Parcourt tous les pointages dans l'ordre chronologique et détermine
- * lesquels sont hors forfait en fonction du forfait actif
- */
-/**
  * Conservé pour compatibilité des appelants. Délègue au moteur unique
  * `fullRecalculateResident` (règle « par date »), qui met à jour à la fois
  * les forfaits et le cumul hors-forfait du résident.
  */
 export async function recalculateOutOfPackageHours(residentId: number): Promise<void> {
   await fullRecalculateResident(residentId);
+}
+
+type FlaggableAttendance = {
+  id: number;
+  residentId: number;
+  packageId: number | null;
+  checkInTime: Date | string;
+  durationMinutes: number | null;
+  attendanceType: string;
+  packageTotalHours: number | null;
+  packageDeductedMinutes: number | null;
+};
+
+/**
+ * Détermine, pour un ensemble de pointages (avec leurs infos de forfait
+ * jointes), lesquels afficher comme « Hors forfait » dans l'historique.
+ *
+ * Le badge représente le SOLDE ENCORE DÛ (résident.outOfPackageMinutes),
+ * pas le total brut historique : une fois des heures reportées dans un
+ * nouveau forfait (deductedMinutes) ou soldées (abandon), les anciens
+ * pointages qui les représentaient ne doivent plus apparaître comme
+ * « hors forfait ». La somme des pointages flagués correspond ainsi au
+ * résumé affiché sur la fiche résident.
+ *
+ * Algorithme en deux passes :
+ *  1. Calculer le débordement BRUT de chaque pointage, forfait par forfait,
+ *     avec la même règle que `fullRecalculateResident` (les minutes déjà
+ *     reportées consomment la capacité dès le départ).
+ *  2. Pour chaque résident, parcourir ses pointages en débordement du PLUS
+ *     RÉCENT au plus ancien et les marquer un par un jusqu'à couvrir le
+ *     solde encore dû — les plus anciens (déjà reportés/soldés) ne sont
+ *     plus marqués.
+ *
+ * `pendingByResident` : résidentId -> minutes encore dues (généralement
+ * `resident.outOfPackageMinutes`, tel que maintenu par le moteur unique).
+ */
+export function computeOutOfPackageAttendanceIds(
+  atts: FlaggableAttendance[],
+  pendingByResident: Map<number, number>
+): Set<number> {
+  // Passe 1 : débordement brut par pointage (forfait par forfait).
+  const overflowMinutesById = new Map<number, number>();
+  const byPackage = new Map<number, FlaggableAttendance[]>();
+
+  for (const att of atts) {
+    if (att.attendanceType === 'adjustment_add' || att.attendanceType === 'adjustment_subtract') continue;
+    if (!att.packageId || att.packageTotalHours == null) {
+      overflowMinutesById.set(att.id, att.durationMinutes ?? 0); // orphelin = 100% hors forfait
+      continue;
+    }
+    if (!byPackage.has(att.packageId)) byPackage.set(att.packageId, []);
+    byPackage.get(att.packageId)!.push(att);
+  }
+
+  for (const [, list] of Array.from(byPackage)) {
+    const sorted = [...list].sort((a, b) => new Date(a.checkInTime).getTime() - new Date(b.checkInTime).getTime());
+    const totalHours = sorted[0].packageTotalHours ?? Infinity;
+    let cumul = sorted[0].packageDeductedMinutes ?? 0;
+    for (const att of sorted) {
+      const duration = att.durationMinutes ?? 0;
+      if (!duration) {
+        overflowMinutesById.set(att.id, 0);
+        continue;
+      }
+      const cumulBefore = cumul;
+      const cumulAfter = cumul + duration;
+      let overflow = 0;
+      if (cumulBefore >= totalHours) overflow = duration;
+      else if (cumulAfter > totalHours) overflow = cumulAfter - totalHours;
+      overflowMinutesById.set(att.id, overflow);
+      cumul = cumulAfter;
+    }
+  }
+
+  // Passe 2 : par résident, du plus récent au plus ancien, marquer jusqu'à
+  // couvrir le solde encore dû.
+  const byResident = new Map<number, FlaggableAttendance[]>();
+  for (const att of atts) {
+    if ((overflowMinutesById.get(att.id) ?? 0) <= 0) continue;
+    if (!byResident.has(att.residentId)) byResident.set(att.residentId, []);
+    byResident.get(att.residentId)!.push(att);
+  }
+
+  const flagged = new Set<number>();
+  for (const [residentId, list] of Array.from(byResident)) {
+    let remaining = pendingByResident.get(residentId) ?? 0;
+    const sorted = [...list].sort((a, b) => new Date(b.checkInTime).getTime() - new Date(a.checkInTime).getTime());
+    for (const att of sorted) {
+      if (remaining <= 0) break;
+      flagged.add(att.id);
+      remaining -= overflowMinutesById.get(att.id) ?? 0;
+    }
+  }
+
+  return flagged;
 }
 
 /**

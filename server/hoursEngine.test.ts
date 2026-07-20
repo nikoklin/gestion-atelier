@@ -138,3 +138,56 @@ describe.skipIf(!process.env.DATABASE_URL)("Abandon des heures hors-forfait (« 
     expect(r!.outOfPackageMinutes).toBe(0);
   });
 });
+
+// Fonction pure (pas de base de données requise) : le badge « Hors forfait »
+// par pointage doit refléter le solde encore dû, pas le total brut
+// historique — une fois des heures reportées, les anciens pointages qui les
+// représentaient ne doivent plus être marqués.
+describe("computeOutOfPackageAttendanceIds (badge par pointage)", () => {
+  const RID3 = 990003;
+
+  it("ne marque plus les pointages déjà couverts par un report", () => {
+    // Forfait A (600 min) : un pointage de 700 min déborde de 100 min.
+    const attA = {
+      id: 1, residentId: RID3, packageId: 101,
+      checkInTime: d("2026-01-15"), durationMinutes: 700, attendanceType: "normal",
+      packageTotalHours: 600, packageDeductedMinutes: 0,
+    };
+    // Forfait B (600 min, 100 min reportées) : deux pointages, le second déborde de 100 min.
+    const attB1 = {
+      id: 2, residentId: RID3, packageId: 102,
+      checkInTime: d("2026-02-10"), durationMinutes: 400, attendanceType: "normal",
+      packageTotalHours: 600, packageDeductedMinutes: 100,
+    };
+    const attB2 = {
+      id: 3, residentId: RID3, packageId: 102,
+      checkInTime: d("2026-02-20"), durationMinutes: 200, attendanceType: "normal",
+      packageTotalHours: 600, packageDeductedMinutes: 100,
+    };
+    // Solde net encore dû (comme le calculerait fullRecalculateResident) :
+    // débordements bruts (100 + 100) − reporté (100) = 100 min.
+    const pending = 100;
+
+    const flagged = db.computeOutOfPackageAttendanceIds(
+      [attA, attB1, attB2],
+      new Map([[RID3, pending]])
+    );
+
+    // Le pointage le plus récent (attB2, qui a causé le débordement du
+    // nouveau forfait) reste marqué ; l'ancien (attA), déjà "payé" par le
+    // report, ne l'est plus. attB1 n'a jamais débordé.
+    expect(flagged.has(3)).toBe(true);
+    expect(flagged.has(1)).toBe(false);
+    expect(flagged.has(2)).toBe(false);
+  });
+
+  it("les pointages orphelins (sans forfait valable) sont toujours marqués", () => {
+    const orphan = {
+      id: 4, residentId: RID3, packageId: null,
+      checkInTime: d("2026-03-01"), durationMinutes: 60, attendanceType: "normal",
+      packageTotalHours: null, packageDeductedMinutes: null,
+    };
+    const flagged = db.computeOutOfPackageAttendanceIds([orphan], new Map([[RID3, 60]]));
+    expect(flagged.has(4)).toBe(true);
+  });
+});

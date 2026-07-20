@@ -568,35 +568,12 @@ export const appRouter = router({
         const attendances = await db.getAttendancesByResidentId(input.residentId);
         const resident = await db.getResidentById(input.residentId);
 
-        // Calculer chronologiquement pour chaque forfait quels pointages sont hors forfait
-        // On trie les pointages par date croissante pour chaque forfait
-        const outOfPackageAttendanceIds = new Set<number>();
-        for (const pkg of packages) {
-          // Pointages réels de ce forfait (hors ajustements), triés chronologiquement
-          const pkgAtts = attendances
-            .filter(a => a.packageId === pkg.id && a.attendanceType !== 'adjustment_add' && a.attendanceType !== 'adjustment_subtract')
-            .sort((a, b) => new Date(a.checkInTime).getTime() - new Date(b.checkInTime).getTime());
-          
-          let cumul = 0;
-          for (const att of pkgAtts) {
-            if (!att.durationMinutes) continue;
-            const newCumul = cumul + att.durationMinutes;
-            if (cumul >= pkg.totalHours) {
-              // Le forfait était déjà épuisé avant ce pointage
-              outOfPackageAttendanceIds.add(att.id);
-            } else if (newCumul > pkg.totalHours) {
-              // Ce pointage déborde partiellement — on le marque hors forfait
-              outOfPackageAttendanceIds.add(att.id);
-            }
-            cumul = newCumul;
-          }
-        }
-        // Pointages orphelins (sans forfait) = hors forfait
-        for (const att of attendances) {
-          if (!att.packageId && att.attendanceType !== 'adjustment_add' && att.attendanceType !== 'adjustment_subtract') {
-            outOfPackageAttendanceIds.add(att.id);
-          }
-        }
+        // Le badge reflète le solde encore dû (résident.outOfPackageMinutes),
+        // pas le total brut historique.
+        const outOfPackageAttendanceIds = db.computeOutOfPackageAttendanceIds(
+          attendances,
+          new Map([[input.residentId, resident?.outOfPackageMinutes ?? 0]])
+        );
 
         // Enrichir les attendances avec isOutOfPackage
         const enrichedAttendances = attendances.map(att => ({
@@ -1180,34 +1157,10 @@ export const appRouter = router({
 
     listAll: protectedProcedure.query(async () => {
       const allAttendances = await db.getAllAttendances();
-      // Grouper par forfait pour calculer isOutOfPackage chronologiquement
-      const outOfPackageIds = new Set<number>();
-      // Regrouper les pointages réels (hors ajustements) par packageId
-      const byPackage = new Map<number, typeof allAttendances>();
-      for (const att of allAttendances) {
-        if (att.attendanceType === 'adjustment_add' || att.attendanceType === 'adjustment_subtract') continue;
-        if (!att.packageId) {
-          outOfPackageIds.add(att.id); // orphelins = hors forfait
-          continue;
-        }
-        if (!byPackage.has(att.packageId)) byPackage.set(att.packageId, []);
-        byPackage.get(att.packageId)!.push(att);
-      }
-      // Pour chaque forfait, parcourir chronologiquement
-      for (const [, atts] of Array.from(byPackage)) {
-        const sorted = [...atts].sort((a, b) => new Date(a.checkInTime).getTime() - new Date(b.checkInTime).getTime());
-        // Récupérer totalHours depuis le premier pointage (packageTotalHours)
-        const totalHours = (sorted[0] as any)?.packageTotalHours ?? Infinity;
-        let cumul = 0;
-        for (const att of sorted) {
-          if (!att.durationMinutes) continue;
-          const newCumul = cumul + att.durationMinutes;
-          if (cumul >= totalHours || newCumul > totalHours) {
-            outOfPackageIds.add(att.id);
-          }
-          cumul = newCumul;
-        }
-      }
+      // Le badge reflète le solde encore dû par résident, pas le total brut
+      // historique (voir packages.getByResidentId).
+      const pendingByResident = await db.getAllOutOfPackageHours();
+      const outOfPackageIds = db.computeOutOfPackageAttendanceIds(allAttendances, pendingByResident);
       return allAttendances.map(att => ({ ...att, isOutOfPackage: outOfPackageIds.has(att.id) }));
     }),
 
