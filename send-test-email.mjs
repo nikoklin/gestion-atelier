@@ -1,33 +1,34 @@
-import nodemailer from "nodemailer";
+// Envoie un vrai e-mail de test via l'API Brevo, à l'adresse EMAIL_USER (ou TO_EMAIL si fourni).
+const apiKey = process.env.BREVO_API_KEY;
+const sender = process.env.EMAIL_USER;
+const to = process.env.TO_EMAIL || sender;
 
-const user = process.env.EMAIL_USER;
-const pass = process.env.EMAIL_PASSWORD;
-
-if (!user || !pass) {
-  console.error("EMAIL credentials not configured");
+if (!apiKey || !sender) {
+  console.error("BREVO_API_KEY ou EMAIL_USER manquant");
   process.exit(1);
 }
 
-const config = {
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
-  auth: { user, pass }
-};
+console.log(`Sending test email to ${to}...`);
+const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+  method: "POST",
+  headers: {
+    accept: "application/json",
+    "content-type": "application/json",
+    "api-key": apiKey,
+  },
+  body: JSON.stringify({
+    sender: { name: "Atelier À Tour de Bras", email: sender },
+    to: [{ email: to }],
+    subject: "Test - Système d'e-mails (Brevo)",
+    htmlContent:
+      "<p>Ceci est un e-mail de test pour vérifier que le système d'envoi (via l'API Brevo) fonctionne correctement.</p>",
+  }),
+});
 
-console.log("Sending test email...");
-const transporter = nodemailer.createTransport(config);
-
-try {
-  const info = await transporter.sendMail({
-    from: '"Atelier À Tour de Bras" <contact@atourdebras-atelier.com>',
-    to: user,
-    subject: "Test - Système d'e-mails",
-    text: "Ceci est un e-mail de test pour vérifier que le système d'envoi fonctionne correctement."
-  });
-  console.log("✓ Email sent successfully!");
-  console.log("Message ID:", info.messageId);
-} catch (error) {
-  console.error("✗ Failed to send email:", error.message);
-  if (error.code) console.error("Error code:", error.code);
+if (res.ok) {
+  const data = await res.json();
+  console.log("✓ Email sent successfully! messageId:", data.messageId);
+} else {
+  console.error(`✗ Failed to send email (HTTP ${res.status}):`, await res.text());
+  process.exit(1);
 }

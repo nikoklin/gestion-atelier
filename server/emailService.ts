@@ -1,32 +1,55 @@
-import nodemailer from "nodemailer";
 import * as db from "./db";
 import { getPublicSiteUrl } from "./_core/publicSiteUrl";
 
-// Configuration du transporteur SMTP
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
-  },
-});
+// Envoi via l'API HTTPS de Brevo (https://api.brevo.com/v3/smtp/email).
+// NE PAS repasser par du SMTP direct (port 25/465/587) : les hébergeurs
+// cloud (Railway inclus) voient ces connexions bloquées silencieusement par
+// Gmail et d'autres fournisseurs — confirmé en testant depuis le conteneur
+// (timeout même en connexion directe à l'IP, alors que le trafic HTTPS
+// général fonctionne). L'API HTTPS de Brevo passe par le port 443.
+const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
+
+export type EmailAttachment = { name: string; content: string }; // content en base64
 
 // Fonction pour envoyer un e-mail
-export async function sendEmail(to: string, subject: string, html: string, silent: boolean = false): Promise<boolean> {
+export async function sendEmail(
+  to: string,
+  subject: string,
+  html: string,
+  silent: boolean = false,
+  attachments?: EmailAttachment[]
+): Promise<boolean> {
   try {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-      if (!silent) console.error("[Email] Email credentials not configured");
+    const apiKey = process.env.BREVO_API_KEY;
+    const senderEmail = process.env.EMAIL_USER;
+    if (!apiKey || !senderEmail) {
+      if (!silent) console.error("[Email] BREVO_API_KEY ou EMAIL_USER non configuré");
       return false;
     }
 
-    await transporter.sendMail({
-      from: `"Gestion d'Atelier" <${process.env.EMAIL_USER}>`,
-      to,
-      subject,
-      html,
+    const response = await fetch(BREVO_API_URL, {
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        "content-type": "application/json",
+        "api-key": apiKey,
+      },
+      body: JSON.stringify({
+        sender: { name: "Atelier À Tour de Bras", email: senderEmail },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html,
+        ...(attachments && attachments.length > 0 ? { attachment: attachments } : {}),
+      }),
     });
+
+    if (!response.ok) {
+      if (!silent) {
+        const errorBody = await response.text().catch(() => "");
+        console.error(`[Email] Brevo a répondu ${response.status}: ${errorBody}`);
+      }
+      return false;
+    }
 
     if (!silent) console.log(`[Email] Sent to ${to}: ${subject}`);
     return true;
@@ -360,22 +383,21 @@ export async function checkAndSendReminders(): Promise<{ remindersSent: number; 
  */
 export async function sendDataExportEmail(to: string): Promise<boolean> {
   try {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+    if (!process.env.BREVO_API_KEY || !process.env.EMAIL_USER) {
       console.error("[Email] Email credentials not configured");
       return false;
     }
 
     // Importer la fonction d'export
     const { exportAllDataAsCSV } = await import("./exportService");
-    
+
     // Générer les fichiers CSV
     const csvFiles = await exportAllDataAsCSV();
-    
-    // Préparer les pièces jointes
+
+    // Préparer les pièces jointes (Brevo attend le contenu en base64)
     const attachments = csvFiles.map(file => ({
-      filename: file.filename,
-      content: Buffer.from(file.content, 'utf-8'),
-      contentType: 'text/csv; charset=utf-8'
+      name: file.filename,
+      content: Buffer.from(file.content, 'utf-8').toString('base64'),
     }));
 
     const subject = `Export quotidien des données - ${new Date().toLocaleDateString("fr-FR")}`;
@@ -403,16 +425,11 @@ export async function sendDataExportEmail(to: string): Promise<boolean> {
       </p>
     `;
 
-    await transporter.sendMail({
-      from: `"Gestion d'Atelier" <${process.env.EMAIL_USER}>`,
-      to,
-      subject,
-      html: body,
-      attachments
-    });
-
-    console.log(`[Email] Data export sent successfully to ${to}`);
-    return true;
+    const success = await sendEmail(to, subject, body, false, attachments);
+    if (success) {
+      console.log(`[Email] Data export sent successfully to ${to}`);
+    }
+    return success;
   } catch (error) {
     console.error("[Email] Failed to send data export:", error);
     return false;
@@ -424,7 +441,7 @@ export async function sendDataExportEmail(to: string): Promise<boolean> {
  */
 export async function sendGuideEmail(email: string, firstName: string): Promise<boolean> {
   try {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+    if (!process.env.EMAIL_USER || !process.env.BREVO_API_KEY) {
       console.error("[Email] Email credentials not configured");
       return false;
     }
@@ -485,7 +502,7 @@ export async function sendPackageActivatedEmail(
   packageId: number
 ): Promise<boolean> {
   try {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+    if (!process.env.EMAIL_USER || !process.env.BREVO_API_KEY) {
       console.error("[Email] Email credentials not configured");
       return false;
     }

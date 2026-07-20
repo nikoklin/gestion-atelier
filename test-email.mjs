@@ -1,26 +1,19 @@
-import nodemailer from "nodemailer";
+// Vérifie que la clé API Brevo est valide (sans envoyer d'e-mail).
+const apiKey = process.env.BREVO_API_KEY;
+const sender = process.env.EMAIL_USER;
 
-const user = process.env.EMAIL_USER;
-const pass = process.env.EMAIL_PASSWORD;
+console.log("BREVO_API_KEY:", apiKey ? "✓ configured" : "✗ missing");
+console.log("EMAIL_USER:", sender ? "✓ configured" : "✗ missing");
 
-console.log("EMAIL_USER:", user ? "✓ configured" : "✗ missing");
-console.log("EMAIL_PASSWORD:", pass ? "✓ configured" : "✗ missing");
-
-if (user && pass) {
-  const config = {
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false,
-    auth: { user, pass }
-  };
-  
-  console.log("\nTesting SMTP connection...");
-  const transporter = nodemailer.createTransport(config);
-  
-  try {
-    await transporter.verify();
-    console.log("✓ SMTP connection successful");
-  } catch (error) {
-    console.error("✗ SMTP connection failed:", error.message);
+if (apiKey) {
+  console.log("\nTesting Brevo API key...");
+  const res = await fetch("https://api.brevo.com/v3/account", {
+    headers: { accept: "application/json", "api-key": apiKey },
+  });
+  if (res.ok) {
+    const data = await res.json();
+    console.log(`✓ Clé API valide — compte: ${data.email}`);
+  } else {
+    console.error(`✗ Clé API invalide (HTTP ${res.status}):`, await res.text());
   }
 }
