@@ -25,9 +25,11 @@ import { Label } from "@/components/ui/label";
 import { Clock, Package, Calendar, PlusCircle } from "lucide-react";
 import { APP_TITLE, APP_LOGO } from "@/const";
 import { toast } from "sonner";
+import { usePackageLabel } from "@/hooks/usePackageLabel";
 
 export default function ResidentDashboard() {
   const [, setLocation] = useLocation();
+  const { getPackageLabel } = usePackageLabel();
   const [sessionDialogOpen, setSessionDialogOpen] = useState(false);
   const [sessionCheckInH, setSessionCheckInH] = useState("");
   const [sessionCheckInM, setSessionCheckInM] = useState("00");
@@ -127,19 +129,6 @@ export default function ResidentDashboard() {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return `${hours}h${mins.toString().padStart(2, "0")}`;
-  };
-
-  const getPackageLabel = (type: string) => {
-    switch (type) {
-      case "15h_8w":
-        return "15h / 8 semaines";
-      case "30h_8w":
-        return "30h / 8 semaines";
-      case "30h_4w":
-        return "30h / 4 semaines";
-      default:
-        return type;
-    }
   };
 
   const getRemainingHours = (pkg: any) => {

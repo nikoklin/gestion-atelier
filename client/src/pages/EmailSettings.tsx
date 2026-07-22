@@ -3,7 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Mail, Send, CheckCircle, AlertCircle, RotateCcw, Clock, Save, Edit, Trash2, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
+import { Mail, Send, AlertCircle, RotateCcw, Clock, Save, Edit, Trash2, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -162,7 +162,7 @@ export default function EmailSettings() {
               Envoi Automatique
             </CardTitle>
             <CardDescription>
-              Le système vérifie automatiquement tous les jours à 9h00 les forfaits nécessitant un rappel
+              Le système vérifie automatiquement chaque jour les forfaits nécessitant un rappel
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -217,15 +217,6 @@ export default function EmailSettings() {
                 )}
               </div>
             </div>
-
-            <Alert>
-              <CheckCircle className="h-4 w-4" />
-              <AlertTitle>Planification active</AlertTitle>
-              <AlertDescription>
-                Les e-mails sont envoyés automatiquement tous les jours à 9h00. Vous pouvez également
-                déclencher manuellement l'envoi avec le bouton ci-dessous.
-              </AlertDescription>
-            </Alert>
 
             <div className="flex gap-3">
               <Button

@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, Settings as SettingsIcon, Mail, Clock, Download, Layers, Package, Plus, Pencil, Trash2, Check, X, Link as LinkIcon } from "lucide-react";
+import { AlertCircle, Mail, Clock, Download, Layers, Package, Plus, Pencil, Trash2, Check, X, Link as LinkIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -206,128 +206,6 @@ export default function Settings() {
           Configuration du système d'envoi d'e-mails automatiques
         </p>
       </div>
-
-      <Alert className="mb-6 border-blue-200 bg-blue-50">
-        <AlertCircle className="h-5 w-5 text-blue-600" />
-        <AlertTitle className="text-blue-900 font-semibold">Configuration Requise</AlertTitle>
-        <AlertDescription className="text-blue-800">
-          Pour activer l'envoi automatique des e-mails de rappel, vous devez configurer les variables
-          d'environnement <strong> EMAIL_USER</strong> et <strong> EMAIL_PASSWORD</strong> dans le fichier <strong>.env</strong> du serveur.
-        </AlertDescription>
-      </Alert>
-
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <SettingsIcon className="h-5 w-5" />
-            Comment Configurer les Secrets
-          </CardTitle>
-          <CardDescription>
-            Suivez ces étapes pour activer l'envoi d'e-mails
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-4">
-            <div className="flex gap-4">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
-                1
-              </div>
-              <div>
-                <h4 className="font-semibold mb-1">Ouvrir le panneau de gestion</h4>
-                <p className="text-sm text-muted-foreground">
-                  Cliquez sur l'<strong>icône en haut à droite</strong> du panneau de chat (à côté de "Gestion d'Atelier") 
-                  pour ouvrir le panneau Management UI à droite de l'écran.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-4">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
-                2
-              </div>
-              <div>
-                <h4 className="font-semibold mb-1">Accéder aux Secrets</h4>
-                <p className="text-sm text-muted-foreground">
-                  Dans le panneau Management UI, cherchez l'onglet <strong>"Settings"</strong>, 
-                  puis cliquez sur <strong>"Secrets"</strong> dans le sous-menu.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-4">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
-                3
-              </div>
-              <div>
-                <h4 className="font-semibold mb-1">Ajouter les secrets</h4>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Ajoutez les deux secrets suivants :
-                </p>
-                <div className="bg-gray-50 rounded-lg p-4 space-y-3 border">
-                  <div>
-                    <p className="text-sm font-mono font-semibold text-gray-700">EMAIL_USER</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Valeur : <code className="bg-white px-2 py-1 rounded border">contact@atourdebras-atelier.com</code>
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-mono font-semibold text-gray-700">EMAIL_PASSWORD</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Valeur : Votre mot de passe d'application Gmail (16 caractères)
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Mail className="h-5 w-5" />
-            Obtenir un Mot de Passe d'Application Gmail
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              <strong>Accès direct :</strong> Allez sur{" "}
-              <a 
-                href="https://myaccount.google.com/apppasswords" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:underline font-medium"
-              >
-                https://myaccount.google.com/apppasswords
-              </a>
-            </p>
-            
-            <div className="border-t pt-4">
-              <p className="text-sm font-semibold mb-2">Étapes détaillées :</p>
-              <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
-                <li>Connectez-vous à votre compte Google</li>
-                <li>Activez la <strong>validation en deux étapes</strong> si ce n'est pas déjà fait</li>
-                <li>Accédez à "Mots de passe des applications"</li>
-                <li>Sélectionnez "Autre (nom personnalisé)"</li>
-                <li>Entrez "Gestion Atelier" comme nom</li>
-                <li>Cliquez sur "Générer"</li>
-                <li>Copiez le mot de passe de 16 caractères affiché</li>
-                <li>Collez-le dans le secret EMAIL_PASSWORD</li>
-              </ol>
-            </div>
-
-            <Alert className="mt-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-sm">
-                <strong>Important :</strong> La validation en deux étapes doit être activée pour que l'option 
-                "Mots de passe des applications" soit disponible.
-              </AlertDescription>
-            </Alert>
-          </div>
-        </CardContent>
-      </Card>
 
       <Card className="mb-6">
         <CardHeader>
