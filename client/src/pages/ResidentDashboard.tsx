@@ -76,7 +76,7 @@ export default function ResidentDashboard() {
   });
 
   const HOURS = Array.from({ length: 14 }, (_, i) => String(i + 8).padStart(2, '0')); // 08 à 21
-  const MINUTES = ['00', '15', '30', '45'];
+  const MINUTES = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0')); // par tranches de 5 min
 
   const handleCreateSession = () => {
     setSessionError("");
@@ -194,14 +194,16 @@ export default function ResidentDashboard() {
             <DialogTrigger asChild>
               <Button className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold shadow-md">
                 <PlusCircle className="h-4 w-4 shrink-0" />
-                <span>J'ai oublié d'enregistrer ma session&nbsp;!</span>
+                <span>J'ai oublié de pointer&nbsp;!</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-sm">
               <DialogHeader>
                 <DialogTitle>Enregistrer une session</DialogTitle>
                 <DialogDescription>
-                  Saisis tes heures d'arrivée et de départ pour aujourd'hui.
+                  Saisis tes heures d'arrivée et de départ pour aujourd'hui. Si un
+                  pointage a été créé par erreur (ex : tu as pointé une seule fois
+                  en partant), il sera automatiquement remplacé par ces horaires.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-2">

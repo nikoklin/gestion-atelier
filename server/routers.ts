@@ -385,13 +385,21 @@ export const appRouter = router({
           });
         }
 
-        // Validation : pas de pointage en cours
+        // S'il existe un pointage ouvert créé PAR ERREUR aujourd'hui (ex: résident
+        // qui a oublié de pointer à l'arrivée et dont l'unique clic, en fin de
+        // session, a été interprété comme une arrivée), on le remplace par la
+        // session correcte saisie ici plutôt que de bloquer. Un pointage ouvert
+        // plus ancien (jamais possible en pratique : la clôture automatique de
+        // 22h le referme chaque soir) est laissé intact par précaution.
         const openAttendance = await db.getOpenAttendance(input.residentId);
         if (openAttendance) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Un pointage est déjà en cours. Termine-le avant d\'enregistrer une session manuelle.',
-          });
+          if (!isToday(new Date(openAttendance.checkInTime))) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'Un pointage est déjà en cours depuis un autre jour. Contacte l\'atelier.',
+            });
+          }
+          await db.deleteAttendance(openAttendance.id);
         }
 
         // Récupérer le forfait actif
