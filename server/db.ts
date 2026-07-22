@@ -149,7 +149,8 @@ export async function createResident(resident: InsertResident) {
   if (!db) throw new Error("Database not available");
 
   const result = await db.insert(residents).values(resident);
-  return result;
+  // result[0] est un ResultSetHeader avec insertId (mysql2)
+  return (result[0] as any).insertId as number;
 }
 
 export async function getAllResidents() {

@@ -1,0 +1,1 @@
+ALTER TABLE `emailLogs` MODIFY COLUMN `emailType` enum('reminder','expiration','session_summary','guide') NOT NULL;

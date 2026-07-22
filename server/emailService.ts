@@ -439,7 +439,7 @@ export async function sendDataExportEmail(to: string): Promise<boolean> {
 /**
  * Envoyer le guide des bonnes pratiques à un nouveau résident
  */
-export async function sendGuideEmail(email: string, firstName: string): Promise<boolean> {
+export async function sendGuideEmail(email: string, firstName: string, residentId?: number): Promise<boolean> {
   try {
     if (!process.env.EMAIL_USER || !process.env.BREVO_API_KEY) {
       console.error("[Email] Email credentials not configured");
@@ -480,6 +480,11 @@ export async function sendGuideEmail(email: string, firstName: string): Promise<
     const sent = await sendEmail(email, subject, html);
     if (sent) {
       console.log(`[Email] Guide sent to ${email}`);
+    }
+    if (residentId) {
+      await db.createEmailLog({
+        residentId, packageId: null, emailType: 'guide', recipientEmail: email, subject, success: sent,
+      }).catch(() => {});
     }
     return sent;
   } catch (error) {

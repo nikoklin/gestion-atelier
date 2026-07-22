@@ -485,7 +485,7 @@ export const appRouter = router({
         artistSignature: z.string().optional().nullable(),
       }))
       .mutation(async ({ input }) => {
-        await db.createResident({
+        const newResidentId = await db.createResident({
           ...input,
           email: input.email || '',
           pin: input.pin || null,
@@ -498,7 +498,7 @@ export const appRouter = router({
           const settings = await db.getAtelierSettings();
           if (settings?.guideEmailEnabled !== false) {
             const { sendGuideEmail } = await import('./emailService');
-            sendGuideEmail(input.email, input.firstName).catch(err =>
+            sendGuideEmail(input.email, input.firstName, newResidentId).catch(err =>
               console.error('[Email] Failed to send guide email on create:', err)
             );
           }

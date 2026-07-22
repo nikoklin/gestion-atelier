@@ -417,8 +417,16 @@ export default function EmailSettings() {
                         </TableCell>
                         <TableCell>{log.residentName}</TableCell>
                         <TableCell>
-                          <Badge variant={log.emailType === 'session_summary' ? 'default' : log.emailType === 'reminder' ? 'secondary' : 'destructive'}>
-                            {log.emailType === 'session_summary' ? 'Résumé session' : log.emailType === 'reminder' ? 'Rappel' : 'Expiration'}
+                          <Badge variant={
+                            log.emailType === 'session_summary' ? 'default'
+                            : log.emailType === 'reminder' ? 'secondary'
+                            : log.emailType === 'guide' ? 'outline'
+                            : 'destructive'
+                          }>
+                            {log.emailType === 'session_summary' ? 'Résumé session'
+                              : log.emailType === 'reminder' ? 'Rappel'
+                              : log.emailType === 'guide' ? 'Guide de bienvenue'
+                              : 'Expiration'}
                           </Badge>
                         </TableCell>
                         <TableCell className="max-w-xs truncate">{log.subject}</TableCell>

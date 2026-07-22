@@ -112,7 +112,7 @@ export const emailLogs = mysqlTable("emailLogs", {
     .references(() => residents.id, { onDelete: 'cascade' }),
   packageId: int("packageId")
     .references(() => packages.id, { onDelete: 'set null' }),
-  emailType: mysqlEnum("emailType", ["reminder", "expiration", "session_summary"]).notNull(),
+  emailType: mysqlEnum("emailType", ["reminder", "expiration", "session_summary", "guide"]).notNull(),
   recipientEmail: varchar("recipientEmail", { length: 320 }).notNull(),
   subject: varchar("subject", { length: 255 }).notNull(),
   sentAt: timestamp("sentAt").defaultNow().notNull(),
