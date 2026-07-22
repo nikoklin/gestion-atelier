@@ -10,8 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SimpleHtmlEditor } from "@/components/SimpleHtmlEditor";
 
 export default function EmailSettings() {
   const [isSending, setIsSending] = useState(false);
@@ -280,12 +280,12 @@ export default function EmailSettings() {
                 </div>
                 <div>
                   <Label htmlFor="reminder-body">Corps du message</Label>
-                  <Textarea
+                  <SimpleHtmlEditor
                     id="reminder-body"
                     value={reminderBody}
-                    onChange={(e) => setReminderBody(e.target.value)}
-                    placeholder="Bonjour {'{firstName}'},&#10;&#10;Ton forfait expire bientôt..."
-                    className="mt-1 min-h-[200px] font-mono text-sm"
+                    onChange={setReminderBody}
+                    placeholder={"Bonjour {firstName},\n\nTon forfait expire bientôt..."}
+                    className="mt-1"
                   />
                 </div>
                 <Button onClick={handleSaveReminder} className="w-full">
@@ -307,12 +307,12 @@ export default function EmailSettings() {
                 </div>
                 <div>
                   <Label htmlFor="expiration-body">Corps du message</Label>
-                  <Textarea
+                  <SimpleHtmlEditor
                     id="expiration-body"
                     value={expirationBody}
-                    onChange={(e) => setExpirationBody(e.target.value)}
-                    placeholder="Bonjour {'{firstName}'},&#10;&#10;Ton forfait a expiré..."
-                    className="mt-1 min-h-[200px] font-mono text-sm"
+                    onChange={setExpirationBody}
+                    placeholder={"Bonjour {firstName},\n\nTon forfait a expiré..."}
+                    className="mt-1"
                   />
                 </div>
                 <Button onClick={handleSaveExpiration} className="w-full">
@@ -334,12 +334,12 @@ export default function EmailSettings() {
                 </div>
                 <div>
                   <Label htmlFor="session-body">Corps du message</Label>
-                  <Textarea
+                  <SimpleHtmlEditor
                     id="session-body"
                     value={sessionBody}
-                    onChange={(e) => setSessionBody(e.target.value)}
-                    placeholder="Bonjour {'{firstName}'},&#10;&#10;Ta session a duré {'{duration}'}..."
-                    className="mt-1 min-h-[200px] font-mono text-sm"
+                    onChange={setSessionBody}
+                    placeholder={"Bonjour {firstName},\n\nTa session a duré {duration}..."}
+                    className="mt-1"
                   />
                 </div>
                 <Button onClick={handleSaveSession} className="w-full">
