@@ -337,10 +337,9 @@ export const appRouter = router({
           const allPkgs = await db.getPackagesByResidentId(input.residentId);
           activePackage = allPkgs.length > 0 ? allPkgs[0] : null;
         }
-        // Afficher les pointages du forfait trouvé (en cours ou dernier)
-        const attendances = activePackage
-          ? await db.getAttendancesByPackageId(activePackage.id)
-          : [];
+        // Afficher TOUS les pointages du résident (y compris ceux sans forfait,
+        // ex: session enregistrée alors qu'aucun forfait n'était actif).
+        const attendances = await db.getAttendancesByResidentId(input.residentId);
 
         return {
           resident,
@@ -402,17 +401,13 @@ export const appRouter = router({
           await db.deleteAttendance(openAttendance.id);
         }
 
-        // Récupérer le forfait actif
+        // Récupérer le forfait actif — optionnel : un résident sans forfait
+        // actif peut quand même enregistrer sa session, elle sera comptée
+        // hors-forfait (comme un pointage normal sans forfait valable).
         const activePackage = await db.getActivePackageByResidentId(input.residentId);
-        if (!activePackage) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Aucun forfait actif. Contacte l\'atelier pour souscrire à un forfait.',
-          });
-        }
 
-        // Validation : pas avant le début du forfait
-        if (activePackage.startDate) {
+        // Validation : pas avant le début du forfait (uniquement s'il y en a un)
+        if (activePackage?.startDate) {
           const packageStartDate = new Date(activePackage.startDate);
           if (checkInTime < packageStartDate) {
             throw new TRPCError({
@@ -432,7 +427,7 @@ export const appRouter = router({
 
         await db.createAttendance({
           residentId: input.residentId,
-          packageId: activePackage.id,
+          packageId: activePackage?.id ?? null,
           checkInTime,
           checkOutTime,
           durationMinutes,

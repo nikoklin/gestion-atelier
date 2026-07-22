@@ -191,3 +191,46 @@ describe("computeOutOfPackageAttendanceIds (badge par pointage)", () => {
     expect(flagged.has(4)).toBe(true);
   });
 });
+
+// Un résident qui n'a JAMAIS eu de forfait doit quand même pouvoir enregistrer
+// une session manuelle (« J'ai oublié de pointer ! »), comptée hors-forfait.
+describe.skipIf(!process.env.DATABASE_URL)("Résident sans aucun forfait (règle par date)", () => {
+  const RID4 = 990004;
+  async function cleanup4() {
+    const database = await getDb();
+    if (!database) return;
+    await database.delete(attendances).where(eq(attendances.residentId, RID4));
+    await database.delete(residents).where(eq(residents.id, RID4));
+  }
+
+  beforeAll(async () => {
+    await cleanup4();
+    await db.createResident({
+      id: RID4, firstName: "TEST", lastName: "ZeroForfait", email: "test-zero@local", isActive: true,
+    } as any);
+  });
+
+  afterAll(cleanup4);
+
+  it("une session enregistrée sans aucun forfait est comptée hors-forfait", async () => {
+    await db.createAttendance({
+      residentId: RID4, packageId: null,
+      checkInTime: d("2026-01-10T09:00:00"), checkOutTime: d("2026-01-10T10:30:00"), durationMinutes: 90,
+    } as any);
+    await db.fullRecalculateResident(RID4);
+
+    const r = await db.getResidentById(RID4);
+    expect(r!.outOfPackageMinutes).toBe(90);
+  });
+
+  it("une deuxième session s'accumule correctement", async () => {
+    await db.createAttendance({
+      residentId: RID4, packageId: null,
+      checkInTime: d("2026-01-11T14:00:00"), checkOutTime: d("2026-01-11T14:30:00"), durationMinutes: 30,
+    } as any);
+    await db.fullRecalculateResident(RID4);
+
+    const r = await db.getResidentById(RID4);
+    expect(r!.outOfPackageMinutes).toBe(120);
+  });
+});

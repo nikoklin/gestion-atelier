@@ -425,13 +425,6 @@ export async function getAttendancesByResidentId(residentId: number) {
     .orderBy(desc(attendances.checkInTime));
 }
 
-export async function getAttendancesByPackageId(packageId: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  return await db.select().from(attendances).where(eq(attendances.packageId, packageId)).orderBy(desc(attendances.checkInTime));
-}
-
 export async function getOpenAttendance(residentId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -817,8 +810,29 @@ export async function fullRecalculateResident(residentId: number): Promise<{
     .orderBy(packages.startDate);
 
   if (allPackages.length === 0) {
-    await updateResident(residentId, { outOfPackageMinutes: 0 });
-    return { packagesProcessed: 0, attendancesProcessed: 0, totalOutOfPackageMinutes: 0 };
+    // Aucun forfait, jamais : par définition, TOUS les pointages du résident
+    // sont hors-forfait (aucun forfait n'existe pour les couvrir). Sans cette
+    // branche, un résident sans aucun forfait qui enregistre une session (ex:
+    // via « J'ai oublié de pointer ! ») verrait ses heures effacées à tort.
+    const orphanAttendances = await db
+      .select()
+      .from(attendances)
+      .where(and(
+        eq(attendances.residentId, residentId),
+        eq(attendances.attendanceType, 'normal')
+      ));
+    const totalOutOfPackageMinutes = orphanAttendances.reduce(
+      (sum, att) => sum + (att.durationMinutes ?? 0), 0
+    );
+    const resident = await getResidentById(residentId);
+    const settled = resident?.settledOutOfPackageMinutes ?? 0;
+    const pendingOutOfPackageMinutes = Math.max(0, totalOutOfPackageMinutes - settled);
+    await updateResident(residentId, { outOfPackageMinutes: pendingOutOfPackageMinutes });
+    return {
+      packagesProcessed: 0,
+      attendancesProcessed: orphanAttendances.length,
+      totalOutOfPackageMinutes: pendingOutOfPackageMinutes,
+    };
   }
 
   // 2. Pour chaque forfait, recalculer totalHours = base du type + ajustements
