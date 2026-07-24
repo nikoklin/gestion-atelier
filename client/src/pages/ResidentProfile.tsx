@@ -48,7 +48,6 @@ export default function ResidentProfile() {
   const [editLastName, setEditLastName] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editPhone, setEditPhone] = useState("");
-  const [editPin, setEditPin] = useState("");
   const [editShelfNumber, setEditShelfNumber] = useState("");
   const [editArtistSignature, setEditArtistSignature] = useState<string | null>(null);
   
@@ -57,7 +56,6 @@ export default function ResidentProfile() {
   const [lastNameError, setLastNameError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [phoneError, setPhoneError] = useState("");
-  const [pinError, setPinError] = useState("");
 
   // États pour les notes
   const [showAddNoteDialog, setShowAddNoteDialog] = useState(false);
@@ -224,7 +222,6 @@ const utils = trpc.useUtils();
       setEditLastName(resident.lastName);
       setEditEmail(resident.email || "");
       setEditPhone(resident.phone || "");
-      setEditPin(resident.pin || "");
       setEditShelfNumber(resident.shelfNumber || "");
       setEditArtistSignature(resident.artistSignature || null);
       // Réinitialiser les erreurs
@@ -232,7 +229,6 @@ const utils = trpc.useUtils();
       setLastNameError("");
       setEmailError("");
       setPhoneError("");
-      setPinError("");
       setShowEditDialog(true);
     }
   };
@@ -274,36 +270,25 @@ const utils = trpc.useUtils();
     return true;
   };
   
-  const validatePin = (value: string) => {
-    if (value && !/^\d{4}$/.test(value)) {
-      setPinError("Le code PIN doit contenir exactement 4 chiffres");
-      return false;
-    }
-    setPinError("");
-    return true;
-  };
-
   const handleUpdateResident = () => {
     // Valider tous les champs
     const isFirstNameValid = validateFirstName(editFirstName);
     const isLastNameValid = validateLastName(editLastName);
     const isEmailValid = validateEmail(editEmail);
     const isPhoneValid = validatePhone(editPhone);
-    const isPinValid = validatePin(editPin);
-    
+
     // Ne soumettre que si tous les champs sont valides
-    if (!isFirstNameValid || !isLastNameValid || !isEmailValid || !isPhoneValid || !isPinValid) {
+    if (!isFirstNameValid || !isLastNameValid || !isEmailValid || !isPhoneValid) {
       toast.error("Veuillez corriger les erreurs avant de soumettre");
       return;
     }
-    
+
     updateMutation.mutate({
       id: residentId,
       firstName: editFirstName,
       lastName: editLastName,
       email: editEmail || undefined,
       phone: editPhone || undefined,
-      pin: editPin || null,
       shelfNumber: editShelfNumber || null,
       artistSignature: editArtistSignature,
     });
@@ -481,7 +466,7 @@ const utils = trpc.useUtils();
 
   // Calculer les informations du forfait
   const getRemainingHours = () => {
-    if (!activePackage) return { hours: "N/A", isExhausted: false };
+    if (!activePackage) return { hours: "Aucun forfait", isExhausted: false };
     const remainingMinutes = activePackage.totalHours - activePackage.usedHours;
     // On affiche 0 si les heures sont épuisées ou dépassées (jamais de valeur négative)
     const clampedMinutes = Math.max(0, remainingMinutes);
@@ -1174,27 +1159,6 @@ const utils = trpc.useUtils();
               />
               {phoneError && (
                 <p className="text-sm text-red-500 mt-1">{phoneError}</p>
-              )}
-            </div>
-            <div>
-              <label className="text-sm font-medium">Code PIN (4 chiffres)</label>
-              <input
-                type="text"
-                value={editPin}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/\D/g, ""); // Seulement des chiffres
-                  setEditPin(value);
-                  validatePin(value);
-                }}
-                onBlur={(e) => validatePin(e.target.value)}
-                className={`w-full px-3 py-2 border rounded-md ${
-                  pinError ? "border-red-500" : ""
-                }`}
-                placeholder="1234"
-                maxLength={4}
-              />
-              {pinError && (
-                <p className="text-sm text-red-500 mt-1">{pinError}</p>
               )}
             </div>
             <div>

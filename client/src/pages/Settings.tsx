@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, Mail, Clock, Download, Layers, Package, Plus, Pencil, Trash2, Check, X, Link as LinkIcon } from "lucide-react";
+import { Mail, Clock, Download, Layers, Package, Plus, Pencil, Trash2, Check, X, Link as LinkIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -13,8 +13,6 @@ import { useState, useEffect } from "react";
 
 export default function Settings() {
   const [isExporting, setIsExporting] = useState(false);
-  const [exportEmail, setExportEmail] = useState("");
-  const [isSendingExport, setIsSendingExport] = useState(false);
   const [totalShelvesInput, setTotalShelvesInput] = useState("");
   const [reminderDaysInput, setReminderDaysInput] = useState("7");
   const [guideEmailEnabled, setGuideEmailEnabled] = useState(true);
@@ -81,21 +79,6 @@ export default function Settings() {
     updateAtelierSettingsMutation.mutate({ guideEmailEnabled: enabled });
   };
   
-  const sendExportMutation = trpc.email.sendDataExport.useMutation({
-    onSuccess: () => {
-      toast.success("Export envoyé", {
-        description: `Les données ont été envoyées à ${exportEmail}`,
-      });
-      setIsSendingExport(false);
-    },
-    onError: (error) => {
-      toast.error("Erreur lors de l'envoi", {
-        description: error.message,
-      });
-      setIsSendingExport(false);
-    },
-  });
-
   const exportMutation = trpc.export.generateExcel.useMutation({
     onSuccess: (data) => {
       // Convertir le base64 en blob et télécharger
@@ -133,17 +116,6 @@ export default function Settings() {
   const handleExport = () => {
     setIsExporting(true);
     exportMutation.mutate();
-  };
-  
-  const handleSendExport = () => {
-    if (!exportEmail || !exportEmail.includes('@')) {
-      toast.error("E-mail invalide", {
-        description: "Veuillez entrer une adresse e-mail valide",
-      });
-      return;
-    }
-    setIsSendingExport(true);
-    sendExportMutation.mutate({ email: exportEmail });
   };
   
   // ── Types de forfaits ─────────────────────────────────────────────────────
@@ -236,56 +208,6 @@ export default function Settings() {
               </Button>
             </div>
 
-            <div className="border-t pt-6">
-              <h4 className="font-semibold mb-2 flex items-center gap-2">
-                <Mail className="h-4 w-4" />
-                Export automatique quotidien par e-mail (CSV)
-              </h4>
-              <p className="text-sm text-muted-foreground mb-4">
-                Recevez automatiquement chaque jour par e-mail toutes vos données au format CSV :
-              </p>
-              <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground ml-4 mb-4">
-                <li>Liste complète des résidents</li>
-                <li>Tous les forfaits (actifs et expirés)</li>
-                <li>Historique complet des pointages</li>
-                <li>Historique des e-mails envoyés</li>
-              </ul>
-
-              <Alert className="bg-blue-50 border-blue-200 mb-4">
-                <AlertCircle className="h-4 w-4 text-blue-600" />
-                <AlertDescription className="text-sm text-blue-800">
-                  <strong>Envoi automatique :</strong> Les fichiers CSV seront envoyés automatiquement tous les jours à 23h00 à l'adresse e-mail configurée (EMAIL_USER).
-                </AlertDescription>
-              </Alert>
-
-              <div className="space-y-3">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">
-                    Envoyer un export manuel maintenant
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="email"
-                      placeholder="adresse@exemple.com"
-                      value={exportEmail}
-                      onChange={(e) => setExportEmail(e.target.value)}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    />
-                    <Button 
-                      onClick={handleSendExport}
-                      disabled={isSendingExport}
-                      className="flex items-center gap-2 whitespace-nowrap"
-                    >
-                      <Mail className="h-4 w-4" />
-                      {isSendingExport ? "Envoi..." : "Envoyer"}
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Les fichiers CSV seront envoyés en pièces jointes à cette adresse
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
         </CardContent>
       </Card>

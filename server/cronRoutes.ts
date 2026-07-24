@@ -117,31 +117,3 @@ cronRoutes.post('/check-missed-checkouts', verifyHttpBasicAuth, async (req: Requ
   }
 });
 
-/**
- * Endpoint pour déclencher l'export quotidien des données par e-mail
- * GET /api/cron/daily-export
- * À appeler quotidiennement à 22h00
- */
-cronRoutes.get('/daily-export', verifyHttpBasicAuth, async (req: Request, res: Response) => {
-  console.log("[Cron API] Executing data export task");
-  
-  try {
-    const { sendDataExportEmail } = await import("./emailService");
-    const emailUser = process.env.EMAIL_USER;
-    
-    if (!emailUser) {
-      return res.status(500).json({
-        success: false,
-        error: "EMAIL_USER not configured",
-      });
-    }
-    
-    await sendDataExportEmail(emailUser);
-    
-    // Réponse courte pour cron-job.org
-    res.send("OK");
-  } catch (error: any) {
-    console.error("[Cron API] Error sending data export:", error);
-    res.status(500).send("ERROR");
-  }
-});

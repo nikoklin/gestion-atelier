@@ -17,23 +17,22 @@ type SimpleHtmlEditorProps = {
  */
 export function SimpleHtmlEditor({ id, value, onChange, placeholder, className }: SimpleHtmlEditorProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const lastValue = useRef(value);
 
-  // Ne réinjecte le HTML que lorsque la valeur change depuis L'EXTÉRIEUR
-  // (ex: chargement initial du template) — jamais pendant la frappe, sinon
-  // le curseur saute au début à chaque caractère.
+  // Ne réinjecte le HTML que lorsqu'il diffère du DOM réel (ex: chargement
+  // initial du template, ou remount après changement d'onglet) — jamais
+  // pendant la frappe, sinon le curseur saute au début à chaque caractère.
+  // On compare au DOM réel (pas à une ref séparée) car au remount d'un
+  // composant existant une ref initialisée avec `value` masquerait le fait
+  // que le nouveau <div> est, lui, encore vide.
   useEffect(() => {
-    if (ref.current && value !== lastValue.current && document.activeElement !== ref.current) {
+    if (ref.current && ref.current.innerHTML !== value && document.activeElement !== ref.current) {
       ref.current.innerHTML = value;
-      lastValue.current = value;
     }
   }, [value]);
 
   const handleInput = () => {
     if (!ref.current) return;
-    const html = ref.current.innerHTML;
-    lastValue.current = html;
-    onChange(html);
+    onChange(ref.current.innerHTML);
   };
 
   const exec = (command: string, arg?: string) => {

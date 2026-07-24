@@ -338,8 +338,8 @@ export default function Statistics() {
         </CardContent>
       </Card>
 
-      {/* Forfaits expirés par date avec heures perdues */}
-      {(pkgStats?.expiredByDateDetails?.length ?? 0) > 0 && (
+      {/* Forfaits expirés par date avec heures perdues — regroupés par type */}
+      {(pkgStats?.expiredByDateByType?.length ?? 0) > 0 && (
         <Card className="mb-6 border-red-200">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -347,7 +347,7 @@ export default function Statistics() {
               Forfaits expirés par date — heures perdues
             </CardTitle>
             <CardDescription>
-              Forfaits dont la date de validité est atteinte avec des heures non utilisées
+              Types de forfaits dont la date de validité est le plus souvent atteinte avec des heures non utilisées
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -355,22 +355,18 @@ export default function Statistics() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left p-2">Résident</th>
-                    <th className="text-left p-2">Type</th>
-                    <th className="text-right p-2">Date d'expiration</th>
-                    <th className="text-right p-2">Heures perdues</th>
+                    <th className="text-left p-2">Type de forfait</th>
+                    <th className="text-right p-2">Nombre de fois expiré</th>
+                    <th className="text-right p-2">Heures perdues (total)</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {pkgStats?.expiredByDateDetails?.map((item: any) => (
-                    <tr key={item.id} className="border-b hover:bg-muted/50">
-                      <td className="p-2 font-medium">{item.residentName}</td>
+                  {pkgStats?.expiredByDateByType?.map((item: any) => (
+                    <tr key={item.packageType} className="border-b hover:bg-muted/50">
                       <td className="p-2">
                         <Badge variant="outline">{getPackageLabel(item.packageType)}</Badge>
                       </td>
-                      <td className="text-right p-2 text-muted-foreground">
-                        {new Date(item.endDate).toLocaleDateString('fr-FR')}
-                      </td>
+                      <td className="text-right p-2 font-medium">{item.count}</td>
                       <td className="text-right p-2 font-semibold text-red-600">
                         {item.lostHours}h
                       </td>

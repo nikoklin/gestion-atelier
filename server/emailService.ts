@@ -379,64 +379,6 @@ export async function checkAndSendReminders(): Promise<{ remindersSent: number; 
 }
 
 /**
- * Envoyer un e-mail d'export quotidien des données avec pièces jointes CSV
- */
-export async function sendDataExportEmail(to: string): Promise<boolean> {
-  try {
-    if (!process.env.BREVO_API_KEY || !process.env.EMAIL_USER) {
-      console.error("[Email] Email credentials not configured");
-      return false;
-    }
-
-    // Importer la fonction d'export
-    const { exportAllDataAsCSV } = await import("./exportService");
-
-    // Générer les fichiers CSV
-    const csvFiles = await exportAllDataAsCSV();
-
-    // Préparer les pièces jointes (Brevo attend le contenu en base64)
-    const attachments = csvFiles.map(file => ({
-      name: file.filename,
-      content: Buffer.from(file.content, 'utf-8').toString('base64'),
-    }));
-
-    const subject = `Export quotidien des données - ${new Date().toLocaleDateString("fr-FR")}`;
-    const body = `
-      <h2>Export quotidien des données de l'atelier</h2>
-      <p>Bonjour,</p>
-      <p>Voici l'export automatique quotidien de toutes les données de votre atelier.</p>
-      
-      <h3>Fichiers joints :</h3>
-      <ul>
-        <li><strong>residents_*.csv</strong> : Liste complète des résidents</li>
-        <li><strong>packages_*.csv</strong> : Tous les forfaits (actifs et expirés)</li>
-        <li><strong>attendances_*.csv</strong> : Historique complet des pointages</li>
-        <li><strong>email_logs_*.csv</strong> : Historique des e-mails envoyés</li>
-      </ul>
-      
-      <p>Ces fichiers peuvent être ouverts avec Excel, Google Sheets ou tout autre tableur.</p>
-      
-      <p><em>Cet e-mail est envoyé automatiquement chaque jour. Conservez ces fichiers comme sauvegarde de vos données.</em></p>
-      
-      <hr>
-      <p style="color: #666; font-size: 12px;">
-        Gestion d'Atelier - Export automatique<br>
-        Date : ${new Date().toLocaleString("fr-FR")}
-      </p>
-    `;
-
-    const success = await sendEmail(to, subject, body, false, attachments);
-    if (success) {
-      console.log(`[Email] Data export sent successfully to ${to}`);
-    }
-    return success;
-  } catch (error) {
-    console.error("[Email] Failed to send data export:", error);
-    return false;
-  }
-}
-
-/**
  * Envoyer le guide des bonnes pratiques à un nouveau résident
  */
 export async function sendGuideEmail(email: string, firstName: string, residentId?: number): Promise<boolean> {

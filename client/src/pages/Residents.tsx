@@ -33,7 +33,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Plus, Edit, UserX, Package, Mail, AlertCircle, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Edit, UserX, Package, Mail, AlertCircle, ArrowUpDown, ArrowUp, ArrowDown, Search } from "lucide-react";
 import SignaturePad from "@/components/SignaturePad";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
@@ -66,6 +66,8 @@ export default function Residents() {
     { excludeResidentId: selectedResident?.id },
     { enabled: isCreateDialogOpen || isEditDialogOpen }
   );
+
+  const [searchQuery, setSearchQuery] = useState("");
 
   type SortField = "firstName" | "lastName" | "presence" | "packageType" | "remainingMinutes" | "endDate";
   type SortDirection = "asc" | "desc";
@@ -103,8 +105,15 @@ export default function Residents() {
     },
   });
   
-  // Trier les résidents selon le champ et la direction sélectionnés
-  const residents = residentsData ? [...residentsData].sort((a, b) => {
+  // Filtrer par recherche (prénom, nom, e-mail) puis trier selon le champ et la direction sélectionnés
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const filteredResidents = residentsData?.filter((r) =>
+    !normalizedQuery ||
+    r.firstName.toLowerCase().includes(normalizedQuery) ||
+    r.lastName.toLowerCase().includes(normalizedQuery) ||
+    r.email?.toLowerCase().includes(normalizedQuery)
+  );
+  const residents = filteredResidents ? [...filteredResidents].sort((a, b) => {
     let valA: string | number;
     let valB: string | number;
 
@@ -228,7 +237,7 @@ export default function Residents() {
   };
 
   const getRemainingHours = (pkg: any) => {
-    if (!pkg) return { display: "N/A", isExhausted: false };
+    if (!pkg) return { display: "Aucun forfait", isExhausted: false };
     const remainingMinutes = pkg.totalHours - pkg.usedHours;
     // Plafonner à 0 : on n'affiche jamais de valeur négative
     const clamped = Math.max(0, remainingMinutes);
@@ -256,10 +265,22 @@ export default function Residents() {
               <CardTitle>Gestion des Résidents</CardTitle>
               <CardDescription className="hidden sm:block">Liste de tous les résidents de l'atelier</CardDescription>
             </div>
-            <Button onClick={() => setIsCreateDialogOpen(true)} size="sm">
-              <Plus className="mr-2 h-4 w-4" />
-              Nouveau Résident
-            </Button>
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Rechercher un résident..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8 w-[200px] sm:w-[260px]"
+                />
+              </div>
+              <Button onClick={() => setIsCreateDialogOpen(true)} size="sm">
+                <Plus className="mr-2 h-4 w-4" />
+                Nouveau Résident
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0 sm:p-6">

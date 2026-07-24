@@ -13,6 +13,7 @@ export default function CheckIn() {
     remainingHours?: number;
     remainingMinutes?: number;
     durationMinutes?: number;
+    isOutOfPackage?: boolean;
   } | null>(null);
   
   const [selectedResident, setSelectedResident] = useState<any>(null);
@@ -71,6 +72,7 @@ export default function CheckIn() {
           durationMinutes: data.durationMinutes,
           remainingHours: data.remainingHours,
           remainingMinutes: data.remainingMinutes,
+          isOutOfPackage: data.isOutOfPackage,
         });
         toast.success("Pointage de départ enregistré");
       } else {
@@ -79,6 +81,7 @@ export default function CheckIn() {
           action: "checkin",
           remainingHours: data.remainingHours,
           remainingMinutes: data.remainingMinutes,
+          isOutOfPackage: data.isOutOfPackage,
         });
         toast.success("Pointage d'arrivée enregistré");
       }
@@ -122,7 +125,6 @@ export default function CheckIn() {
     let btnClass = 'bg-white border-gray-200 text-gray-800 hover:bg-gray-50 hover:border-gray-300';
     if (flashingRedResidentId === resident.id) btnClass = 'animate-flash-red';
     else if (flashingGreenResidentId === resident.id) btnClass = 'animate-flash-green';
-    else if (isPresentWithExpiredPackage) btnClass = 'bg-red-50 border-red-300 text-red-800 hover:bg-red-100';
     else if (hasOpenAttendance) btnClass = 'bg-green-50 border-green-300 text-green-800 hover:bg-green-100';
     return (
       <div className="flex gap-2 w-full">
@@ -137,7 +139,7 @@ export default function CheckIn() {
           <span className="font-semibold">{resident.firstName} {resident.lastName}</span>
           <span className={`${isLandscape ? 'text-xs' : 'text-sm'} font-normal ml-2`}>
             {isPresentWithExpiredPackage ? (
-              <span className="text-red-600">Expiré • {checkInTime}</span>
+              <span className="text-red-600 font-semibold">Hors forfait • {checkInTime} →</span>
             ) : hasOpenAttendance ? (
               <span className="text-green-700">{checkInTime} →</span>
             ) : null}
@@ -197,10 +199,17 @@ export default function CheckIn() {
                   <p className="text-xs text-blue-800 font-semibold">{formatDuration(lastScan.durationMinutes)}</p>
                 )}
                 {lastScan.remainingHours !== undefined && (
-                  <p className={`text-xs font-semibold ${lastScan.action === "checkin" ? "text-green-800" : "text-blue-800"}`}>
-                    Restant : {lastScan.remainingHours < 0 ? "-" : ""}{Math.abs(lastScan.remainingHours)}h
-                    {Math.abs(lastScan.remainingMinutes!) > 0 ? Math.abs(lastScan.remainingMinutes!).toString().padStart(2, "0") : ""}
-                  </p>
+                  lastScan.isOutOfPackage ? (
+                    <p className="text-xs font-semibold text-red-600">
+                      Hors forfait : {lastScan.remainingHours}h
+                      {lastScan.remainingMinutes! > 0 ? lastScan.remainingMinutes!.toString().padStart(2, "0") : "00"}
+                    </p>
+                  ) : (
+                    <p className={`text-xs font-semibold ${lastScan.action === "checkin" ? "text-green-800" : "text-blue-800"}`}>
+                      Restant : {lastScan.remainingHours < 0 ? "-" : ""}{Math.abs(lastScan.remainingHours)}h
+                      {Math.abs(lastScan.remainingMinutes!) > 0 ? Math.abs(lastScan.remainingMinutes!).toString().padStart(2, "0") : ""}
+                    </p>
+                  )
                 )}
                 {lastScan.resident && (
                   <button

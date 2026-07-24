@@ -110,48 +110,6 @@ export const cronRouter = router({
     }),
 
   /**
-   * Endpoint pour déclencher l'export quotidien des données par e-mail
-   * À appeler quotidiennement à 23h00
-   * URL: /api/trpc/cron.sendDataExport
-   * Authentification: HTTP Basic (username: cron, password: CRON_API_KEY)
-   */
-  sendDataExport: publicProcedure
-    .mutation(async ({ ctx }) => {
-      // Vérifier l'authentification HTTP Basic
-      const authHeader = ctx.req.headers.authorization;
-      if (!verifyHttpBasicAuth(authHeader)) {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "Invalid credentials",
-        });
-      }
-
-      // Exécuter la tâche
-      console.log("[Cron API] Executing data export task");
-      try {
-        const { sendDataExportEmail } = await import("./emailService");
-        const emailUser = process.env.EMAIL_USER;
-        
-        if (!emailUser) {
-          throw new Error("EMAIL_USER not configured");
-        }
-        
-        await sendDataExportEmail(emailUser);
-        return {
-          success: true,
-          message: "Data export sent successfully",
-          timestamp: new Date().toISOString(),
-        };
-      } catch (error: any) {
-        console.error("[Cron API] Error sending data export:", error);
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: `Failed to send data export: ${error.message}`,
-        });
-      }
-    }),
-
-  /**
    * Endpoint de test pour vérifier que l'API fonctionne
    * URL: /api/trpc/cron.ping
    * Authentification: HTTP Basic (username: cron, password: CRON_API_KEY)

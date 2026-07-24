@@ -181,20 +181,6 @@ export default function ResidentPackages() {
     },
   });
 
-  const forceRecalculateMutation = trpc.packages.forceRecalculate.useMutation({
-    onSuccess: (data) => {
-      toast.success(`Recalcul effectué : ${data.packagesRecalculated} forfait(s) recalculé(s)`);
-      utils.packages.getByResidentId.invalidate({ residentId });
-      utils.packages.getOutOfPackageHours.invalidate();
-      utils.residents.getWithActivePackage.invalidate();
-      utils.residents.getById.invalidate({ id: residentId });
-      utils.attendances.listAll.invalidate();
-    },
-    onError: (error) => {
-      toast.error("Erreur lors du recalcul : " + error.message);
-    },
-  });
-
   const createAttendanceMutation = trpc.attendances.create.useMutation({
     onSuccess: () => {
       toast.success("Pointage créé avec succès");
@@ -735,16 +721,6 @@ export default function ResidentPackages() {
               </CardDescription>
             </div>
             <div className="flex flex-wrap gap-2 flex-shrink-0">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => forceRecalculateMutation.mutate({ residentId })}
-                disabled={forceRecalculateMutation.isPending}
-                title="Recalculer les heures de tous les forfaits depuis le premier pointage"
-              >
-                <RefreshCw className="mr-1 h-4 w-4" />
-                <span className="hidden sm:inline">{forceRecalculateMutation.isPending ? "Recalcul..." : "Recalculer"}</span>
-              </Button>
               <Button size="sm" onClick={handleOpenCreateAttendanceDialog}>
                 <CalendarPlus className="mr-1 h-4 w-4" />
                 <span className="hidden sm:inline">Nouveau </span>Pointage

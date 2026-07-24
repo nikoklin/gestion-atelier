@@ -12,6 +12,7 @@ export interface CheckoutResult {
   action: 'checkout';
   resident?: Resident;
   durationMinutes: number;
+  isOutOfPackage?: boolean;
   remainingHours?: number;
   remainingMinutes?: number;
 }
@@ -49,21 +50,35 @@ export async function performCheckout(options: CheckoutOptions): Promise<Checkou
     durationMinutes,
   });
 
-  // Mettre à jour le forfait
+  // Mettre à jour le forfait — sans forfait, la session est hors-forfait :
+  // il faut quand même recalculer (sinon resident.outOfPackageMinutes reste
+  // périmé jusqu'au recalcul nocturne), puis renvoyer le solde réel à jour.
   if (packageId === null) {
+    await db.fullRecalculateResident(residentId);
+    const resident = await db.getResidentById(residentId);
+    const outOfPackageMinutes = resident?.outOfPackageMinutes ?? 0;
     return {
       success: true,
       action: 'checkout',
       durationMinutes,
+      isOutOfPackage: true,
+      remainingHours: Math.floor(outOfPackageMinutes / 60),
+      remainingMinutes: outOfPackageMinutes % 60,
     };
   }
-  
+
   const pkg = await db.getPackageById(packageId);
   if (!pkg) {
+    await db.fullRecalculateResident(residentId);
+    const resident = await db.getResidentById(residentId);
+    const outOfPackageMinutes = resident?.outOfPackageMinutes ?? 0;
     return {
       success: true,
       action: 'checkout',
       durationMinutes,
+      isOutOfPackage: true,
+      remainingHours: Math.floor(outOfPackageMinutes / 60),
+      remainingMinutes: outOfPackageMinutes % 60,
     };
   }
 

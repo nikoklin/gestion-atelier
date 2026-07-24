@@ -14,6 +14,11 @@ import * as emailService from "./emailService";
 import { eq } from "drizzle-orm";
 import { attendances } from "../drizzle/schema";
 
+// Solde maximum d'heures hors-forfait en attente avant blocage du pointage
+// (arrivée kiosque ou saisie manuelle) — au-delà, il faut régulariser
+// (nouveau forfait avec report, ou abandon) avant de pouvoir pointer à nouveau.
+const OUT_OF_PACKAGE_LIMIT_MINUTES = 5 * 60;
+
 // Helper pour calculer la date de fin selon le type de forfait
 function calculateEndDate(startDate: Date, packageType: string): Date {
   const end = new Date(startDate);
@@ -197,17 +202,25 @@ export const appRouter = router({
           return dateReached && hasUnusedHours;
         });
 
-        const expiredByDateWithLostHours = expiredByDate.map(p => ({
-          id: p.id,
-          residentId: p.residentId,
-          residentName: residentNames.get(p.residentId) ?? 'Inconnu',
-          packageType: p.packageType,
-          endDate: p.endDate,
-          lostMinutes: p.totalHours - p.usedHours,
-          lostHours: Math.round((p.totalHours - p.usedHours) / 60 * 10) / 10,
-        }));
-
         const totalLostMinutes = expiredByDate.reduce((sum, p) => sum + (p.totalHours - p.usedHours), 0);
+
+        // Regroupement par type de forfait : lesquels expirent le plus souvent
+        // avec des heures perdues (et non un par un, pour repérer une tendance).
+        const expiredByDateTypeStats: Record<string, { count: number; lostMinutes: number }> = {};
+        for (const p of expiredByDate) {
+          if (!expiredByDateTypeStats[p.packageType]) {
+            expiredByDateTypeStats[p.packageType] = { count: 0, lostMinutes: 0 };
+          }
+          expiredByDateTypeStats[p.packageType].count++;
+          expiredByDateTypeStats[p.packageType].lostMinutes += p.totalHours - p.usedHours;
+        }
+        const expiredByDateByType = Object.entries(expiredByDateTypeStats)
+          .map(([packageType, data]) => ({
+            packageType,
+            count: data.count,
+            lostHours: Math.round(data.lostMinutes / 60 * 10) / 10,
+          }))
+          .sort((a, b) => b.count - a.count || b.lostHours - a.lostHours);
 
         // 6. Stats par résident (pour tableau détaillé)
         const byResident: Record<number, {
@@ -260,7 +273,7 @@ export const appRouter = router({
           expiredEarlyCount: expiredEarly.length,
           expiredByDateCount: expiredByDate.length,
           totalLostHours: Math.round(totalLostMinutes / 60 * 10) / 10,
-          expiredByDateDetails: expiredByDateWithLostHours,
+          expiredByDateByType,
           byResident: Object.values(byResident).sort((a, b) => b.totalRevenue - a.totalRevenue),
         };
       }),
@@ -360,6 +373,14 @@ export const appRouter = router({
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Résident non trouvé ou inactif' });
         }
 
+        // Blocage si le solde d'heures hors-forfait en attente a déjà atteint la limite
+        if ((resident.outOfPackageMinutes ?? 0) >= OUT_OF_PACKAGE_LIMIT_MINUTES) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: "Le solde d'heures hors-forfait a atteint la limite de 5h. Il faut régulariser (nouveau forfait ou abandon) avant de pouvoir pointer à nouveau.",
+          });
+        }
+
         const checkInTime = new Date(input.checkInTime);
         const checkOutTime = new Date(input.checkOutTime);
 
@@ -399,6 +420,14 @@ export const appRouter = router({
             });
           }
           await db.deleteAttendance(openAttendance.id);
+        }
+
+        // Validation : pas de chevauchement avec un pointage déjà enregistré ce jour-là
+        if (await db.hasOverlappingAttendance(input.residentId, checkInTime, checkOutTime)) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Cette plage horaire chevauche un pointage déjà enregistré.',
+          });
         }
 
         // Récupérer le forfait actif — optionnel : un résident sans forfait
@@ -475,7 +504,6 @@ export const appRouter = router({
         lastName: z.string().min(1).max(100),
         email: z.string().email().max(320).optional().or(z.literal('')),
         phone: z.string().max(20).optional(),
-        pin: z.string().regex(/^\d{4}$/).optional().or(z.literal('')),
         shelfNumber: z.string().max(20).optional().or(z.literal('')),
         artistSignature: z.string().optional().nullable(),
       }))
@@ -483,7 +511,6 @@ export const appRouter = router({
         const newResidentId = await db.createResident({
           ...input,
           email: input.email || '',
-          pin: input.pin || null,
           shelfNumber: input.shelfNumber || null,
           artistSignature: input.artistSignature || null,
           isActive: true,
@@ -508,7 +535,6 @@ export const appRouter = router({
         lastName: z.string().min(1).max(100).optional(),
         email: z.string().email().max(320).optional(),
         phone: z.string().max(20).optional(),
-        pin: z.string().regex(/^\d{4}$/).optional().nullable(),
         isActive: z.boolean().optional(),
         shelfNumber: z.string().max(20).optional().nullable(),
         artistSignature: z.string().optional().nullable(),
@@ -773,12 +799,14 @@ export const appRouter = router({
 
     getExpiringPackages: protectedProcedure.query(async () => {
       const allPackages = await db.getAllPackages();
+      const settings = await db.getAtelierSettings();
+      const reminderDays = settings?.reminderDaysBeforeExpiry ?? 7;
       const now = new Date();
-      const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-      
+      const reminderWindowEnd = new Date(now.getTime() + reminderDays * 24 * 60 * 60 * 1000);
+
       // Grouper tous les forfaits par résident et ne garder que le dernier (id le plus élevé)
       const latestPackageByResident = new Map<number, typeof allPackages[0]>();
-      
+
       for (const pkg of allPackages) {
         const existing = latestPackageByResident.get(pkg.residentId);
         if (!existing || pkg.id > existing.id) {
@@ -786,11 +814,11 @@ export const appRouter = router({
         }
       }
 
-      // Filtrer pour ne garder que les derniers forfaits expirant dans 7 jours sans rappel
+      // Filtrer pour ne garder que les derniers forfaits expirant dans la fenêtre de rappel configurée, sans rappel envoyé
       const expiringPackages = Array.from(latestPackageByResident.values()).filter(pkg => {
         if (!pkg.endDate) return false; // Ignorer les forfaits en attente
         const endDate = new Date(pkg.endDate);
-        return endDate >= now && endDate <= sevenDaysFromNow && !pkg.reminderSent;
+        return endDate >= now && endDate <= reminderWindowEnd && !pkg.reminderSent;
       });
 
       // Fetch resident info for each package and filter out packages with missing residents
@@ -1036,25 +1064,6 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    forceRecalculate: protectedProcedure
-      .input(z.object({
-        residentId: z.number(),
-      }))
-      .mutation(async ({ input }) => {
-        // Recalcul limité au forfait actif.
-        // Si aucun forfait actif, on prend le plus récent (pour recalculer après suppression d'un forfait).
-        let targetPackage = await db.getActivePackageByResidentId(input.residentId);
-        if (!targetPackage) {
-          const allPackages = await db.getPackagesByResidentId(input.residentId);
-          if (allPackages.length === 0) {
-            return { success: true, packagesRecalculated: 0 };
-          }
-          // Prendre le plus récent (déjà trié par createdAt desc)
-          targetPackage = allPackages[0];
-        }
-        await db.recalculatePackageHours(targetPackage.id);
-        return { success: true, packagesRecalculated: 1 };
-      }),
   }),
 
   attendances: router({
@@ -1090,26 +1099,32 @@ export const appRouter = router({
           };
         }
 
-        // Récupérer le forfait actif (ou le dernier forfait même s'il est expiré)
-        let activePackage = await db.getActivePackageByResidentId(resident.id);
-        
-        // Si pas de forfait actif, récupérer le dernier forfait du résident
-        if (!activePackage) {
-          const allPackages = await db.getPackagesByResidentId(resident.id);
-          if (!allPackages || allPackages.length === 0) {
-            throw new TRPCError({ code: "NOT_FOUND", message: "Aucun forfait trouvé" });
-          }
-          // Prendre le forfait le plus récent
-          activePackage = allPackages.sort((a, b) => b.id - a.id)[0];
+        // Blocage si le solde d'heures hors-forfait en attente a déjà atteint la limite
+        if ((resident.outOfPackageMinutes ?? 0) >= OUT_OF_PACKAGE_LIMIT_MINUTES) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: "Le solde d'heures hors-forfait a atteint la limite de 5h. Il faut régulariser (nouveau forfait ou abandon) avant de pouvoir pointer à nouveau.",
+          });
         }
 
-        // Calculer les heures restantes (peut être négatif)
-        const remainingMinutes = activePackage.totalHours - activePackage.usedHours;
+        // Récupérer le forfait actif — optionnel : un résident sans forfait
+        // valable en ce moment (aucun forfait en cours, ou seulement des
+        // forfaits expirés) peut quand même pointer, sa session sera comptée
+        // hors-forfait (voir residents.createManualSession pour la même règle).
+        const activePackage = await db.getActivePackageByResidentId(resident.id);
+        const isOutOfPackage = !activePackage;
 
-        // Créer le pointage d'arrivée même si le forfait est expiré
+        // Heures à afficher : restant du forfait actif si valable, sinon le
+        // solde hors-forfait déjà en attente (les heures de cette session ne
+        // seront comptées qu'au recalcul déclenché par le checkout).
+        const remainingMinutes = activePackage
+          ? activePackage.totalHours - activePackage.usedHours
+          : (resident.outOfPackageMinutes ?? 0);
+
+        // Créer le pointage d'arrivée même sans forfait valable
         await db.createAttendance({
           residentId: resident.id,
-          packageId: activePackage.id,
+          packageId: activePackage?.id ?? null,
           checkInTime: new Date(),
           checkOutTime: null,
           durationMinutes: null,
@@ -1119,6 +1134,7 @@ export const appRouter = router({
           success: true,
           action: 'checkin' as const,
           resident,
+          isOutOfPackage,
           remainingHours: Math.floor(remainingMinutes / 60),
           remainingMinutes: remainingMinutes % 60,
         };
@@ -1188,12 +1204,20 @@ export const appRouter = router({
         
         // Validation : l'heure de départ doit être postérieure à l'heure d'arrivée
         if (checkOutTime && checkOutTime <= checkInTime) {
-          throw new TRPCError({ 
-            code: "BAD_REQUEST", 
-            message: "L'heure de départ doit être postérieure à l'heure d'arrivée" 
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "L'heure de départ doit être postérieure à l'heure d'arrivée"
           });
         }
-        
+
+        // Validation : pas de chevauchement avec un autre pointage du même résident
+        if (checkOutTime && await db.hasOverlappingAttendance(attendance.residentId, checkInTime, checkOutTime, input.id)) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Cette plage horaire chevauche un autre pointage déjà enregistré.",
+          });
+        }
+
         let durationMinutes = attendance.durationMinutes;
         if (checkOutTime) {
           durationMinutes = Math.floor((checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60));

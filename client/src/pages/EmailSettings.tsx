@@ -39,6 +39,8 @@ export default function EmailSettings() {
 
   const { data: expiringPackages } = trpc.packages.getExpiringPackages.useQuery();
   const { data: expiredPackages } = trpc.packages.getExpiredPackages.useQuery();
+  const { data: atelierSettings } = trpc.atelierSettings.get.useQuery();
+  const reminderDays = atelierSettings?.reminderDaysBeforeExpiry ?? 7;
   const { data: emailHistory, isLoading: isLoadingHistory } = trpc.email.getEmailHistory.useQuery();
   const clearHistoryMutation = trpc.email.clearEmailHistory.useMutation({
     onSuccess: () => {
@@ -170,7 +172,7 @@ export default function EmailSettings() {
               <div className="p-4 border rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
                   <AlertCircle className="h-5 w-5 text-yellow-600" />
-                  <h3 className="font-semibold">Forfaits Expirant dans 7 Jours</h3>
+                  <h3 className="font-semibold">Forfaits Expirant dans {reminderDays} Jour{reminderDays > 1 ? "s" : ""}</h3>
                 </div>
                 <p className="text-3xl font-bold text-yellow-600">
                   {expiringPackages?.length || 0}

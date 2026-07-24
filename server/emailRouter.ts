@@ -146,21 +146,6 @@ export const emailRouter = router({
       };
     }),
 
-  // Envoyer manuellement l'export quotidien des données
-  sendDataExport: protectedProcedure
-    .input(z.object({ email: z.string().email() }))
-    .mutation(async ({ input }) => {
-      const { sendDataExportEmail } = await import("./emailService");
-      const success = await sendDataExportEmail(input.email);
-      
-      return {
-        success,
-        message: success 
-          ? `Export des données envoyé à ${input.email}` 
-          : "Échec de l'envoi de l'export"
-      };
-    }),
-
   // Effacer l'historique des e-mails
   clearEmailHistory: protectedProcedure.mutation(async () => {
     await db.clearEmailLogs();

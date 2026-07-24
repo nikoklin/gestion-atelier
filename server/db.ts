@@ -439,6 +439,25 @@ export async function getOpenAttendance(residentId: number) {
   return result.length > 0 ? result[0] : null;
 }
 
+// Vérifie si un créneau [checkInTime, checkOutTime] chevauche un pointage
+// déjà enregistré pour ce résident (hors pointage exclu, utile en édition).
+// Un pointage encore ouvert (checkOutTime null) est traité comme allant
+// jusqu'à "maintenant" pour la comparaison.
+export async function hasOverlappingAttendance(
+  residentId: number,
+  checkInTime: Date,
+  checkOutTime: Date,
+  excludeAttendanceId?: number
+): Promise<boolean> {
+  const existing = await getAttendancesByResidentId(residentId);
+  return existing.some((att) => {
+    if (excludeAttendanceId && att.id === excludeAttendanceId) return false;
+    const existingStart = new Date(att.checkInTime).getTime();
+    const existingEnd = att.checkOutTime ? new Date(att.checkOutTime).getTime() : Date.now();
+    return checkInTime.getTime() < existingEnd && checkOutTime.getTime() > existingStart;
+  });
+}
+
 export async function updateAttendance(id: number, data: Partial<InsertAttendance>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
