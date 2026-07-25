@@ -39,6 +39,11 @@ export async function uploadToAtelierDrive(
       body: Readable.from(buffer),
     },
     fields: "id",
+    // Requis pour écrire dans un dossier situé dans un Drive partagé (les
+    // comptes de service n'ont pas de quota de stockage propre — ils ne
+    // peuvent créer des fichiers que dans un Drive partagé, jamais dans un
+    // "Mon Drive" personnel, même partagé en Éditeur).
+    supportsAllDrives: true,
   });
 
   return { uploaded: true, fileId: res.data.id ?? undefined };
