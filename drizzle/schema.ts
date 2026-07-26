@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, mediumtext, timestamp, varchar, datetime, boolean, index } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, mediumtext, timestamp, varchar, datetime, boolean, index, uniqueIndex } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -67,11 +67,13 @@ export const packages = mysqlTable("packages", {
   status: mysqlEnum("status", ["active", "pending", "expired"]).default("active").notNull(), // pending = en attente de validation par Nicolas
   reminderSent: boolean("reminderSent").default(false).notNull(), // E-mail de rappel envoyé (7 jours avant)
   expirationEmailSent: boolean("expirationEmailSent").default(false).notNull(), // E-mail d'expiration envoyé
+  wixPaymentId: varchar("wixPaymentId", { length: 100 }), // ID du paiement Wix à l'origine de la création (évite les doublons si le webhook est renvoyé)
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => ({
   residentIdIdx: index("packages_residentId_idx").on(table.residentId),
   isActiveIdx: index("packages_isActive_idx").on(table.isActive),
+  wixPaymentIdIdx: uniqueIndex("packages_wixPaymentId_idx").on(table.wixPaymentId),
 }));
 
 export type Package = typeof packages.$inferSelect;

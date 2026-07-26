@@ -8,6 +8,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { startScheduler } from "../scheduler";
 import { cronRoutes } from "../cronRoutes";
+import { wixWebhookRoutes } from "../wixWebhookRoutes";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -31,6 +32,10 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
+  // Webhooks Wix : le corps est un JWT brut (pas du JSON) — monté avant le
+  // parseur JSON global avec son propre middleware "text" pour éviter que
+  // express.json() n'essaie (et échoue) de le parser comme du JSON.
+  app.use("/api/webhooks/wix", express.text({ type: () => true }), wixWebhookRoutes);
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));

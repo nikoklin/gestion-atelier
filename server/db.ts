@@ -274,6 +274,14 @@ export async function getPackageById(id: number) {
   return result.length > 0 ? result[0] : null;
 }
 
+export async function getPackageByWixPaymentId(wixPaymentId: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.select().from(packages).where(eq(packages.wixPaymentId, wixPaymentId)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
 export async function updatePackage(id: number, data: Partial<InsertPackage>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
