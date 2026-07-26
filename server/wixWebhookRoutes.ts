@@ -100,6 +100,9 @@ export async function processWixPaymentEvent(event: any): Promise<void> {
       return;
     }
 
+    const settings = await db.getAtelierSettings();
+    const autoActivate = settings?.wixAutoActivatePackage ?? true;
+
     const outOfPackageMinutes = resident.outOfPackageMinutes ?? 0;
     const startDate = new Date();
     const endDate = new Date(startDate);
@@ -113,17 +116,26 @@ export async function processWixPaymentEvent(event: any): Promise<void> {
       deductedMinutes: outOfPackageMinutes,
       startDate,
       endDate,
-      isActive: true,
+      isActive: autoActivate,
+      status: autoActivate ? 'active' : 'pending',
       reminderSent: false,
       expirationEmailSent: false,
       wixPaymentId,
-    });
+    } as any);
 
-    await db.fullRecalculateResident(resident.id);
+    if (autoActivate) {
+      await db.fullRecalculateResident(resident.id);
+    }
 
-    console.log(`[WixWebhook] Forfait #${newPackageId} créé et activé pour ${resident.firstName} ${resident.lastName} (paiement ${wixPaymentId}, ${paidAmount}€, ${matchedType.label}).`);
+    console.log(
+      autoActivate
+        ? `[WixWebhook] Forfait #${newPackageId} créé et activé pour ${resident.firstName} ${resident.lastName} (paiement ${wixPaymentId}, ${paidAmount}€, ${matchedType.label}).`
+        : `[WixWebhook] Forfait #${newPackageId} créé EN ATTENTE de validation pour ${resident.firstName} ${resident.lastName} (paiement ${wixPaymentId}, ${paidAmount}€, ${matchedType.label}).`
+    );
 
-    if (resident.email) {
+    // En mode "en attente", l'e-mail de confirmation est envoyé plus tard,
+    // au moment où Nicolas valide le forfait (packages.activatePending).
+    if (autoActivate && resident.email) {
       const { sendPackageActivatedEmail } = await import("./emailService");
       await sendPackageActivatedEmail(
         resident.email,

@@ -16,6 +16,7 @@ export default function Settings() {
   const [totalShelvesInput, setTotalShelvesInput] = useState("");
   const [reminderDaysInput, setReminderDaysInput] = useState("7");
   const [guideEmailEnabled, setGuideEmailEnabled] = useState(true);
+  const [wixAutoActivatePackage, setWixAutoActivatePackage] = useState(true);
 
   // Liens de paiement
   type PaymentLink = { label: string; url: string };
@@ -33,6 +34,7 @@ export default function Settings() {
       setTotalShelvesInput(String(atelierSettings.totalShelves));
       setReminderDaysInput(String(atelierSettings.reminderDaysBeforeExpiry ?? 7));
       setGuideEmailEnabled(atelierSettings.guideEmailEnabled ?? true);
+      setWixAutoActivatePackage(atelierSettings.wixAutoActivatePackage ?? true);
       // Charger les liens de paiement
       if (atelierSettings.paymentLinks) {
         try {
@@ -77,6 +79,11 @@ export default function Settings() {
   const handleToggleGuideEmail = (enabled: boolean) => {
     setGuideEmailEnabled(enabled);
     updateAtelierSettingsMutation.mutate({ guideEmailEnabled: enabled });
+  };
+
+  const handleToggleWixAutoActivate = (enabled: boolean) => {
+    setWixAutoActivatePackage(enabled);
+    updateAtelierSettingsMutation.mutate({ wixAutoActivatePackage: enabled });
   };
   
   const exportMutation = trpc.export.generateExcel.useMutation({
@@ -504,6 +511,36 @@ export default function Settings() {
                 Ajouter
               </Button>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Forfait automatique sur paiement Wix ── */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Package className="h-5 w-5" />
+            Forfait Automatique sur Paiement Wix
+          </CardTitle>
+          <CardDescription className="mt-1">
+            Quand un lien de paiement Wix est payé, un forfait correspondant est créé pour le résident.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label className="font-semibold">Activer le forfait immédiatement</Label>
+              <p className="text-sm text-muted-foreground">
+                {wixAutoActivatePackage
+                  ? "Le forfait est actif dès réception du paiement, sans validation de ta part."
+                  : "Le forfait est créé « En attente » — tu dois cliquer sur « Activer » (page du résident) pour qu'il devienne actif."}
+              </p>
+            </div>
+            <Switch
+              checked={wixAutoActivatePackage}
+              onCheckedChange={handleToggleWixAutoActivate}
+              disabled={updateAtelierSettingsMutation.isPending}
+            />
           </div>
         </CardContent>
       </Card>

@@ -766,6 +766,7 @@ export const appRouter = router({
         }
         await db.updatePackage(input.packageId, {
           isActive: true,
+          status: 'active',
           startDate,
           ...(endDate ? { endDate } : {}),
         } as any);
@@ -1460,7 +1461,7 @@ export const appRouter = router({
     get: protectedProcedure
       .query(async () => {
         const settings = await db.getAtelierSettings();
-        return settings ?? { id: 0, totalShelves: 0, reminderDaysBeforeExpiry: 7, guideEmailEnabled: true, paymentLinks: null as string | null, updatedAt: new Date() };
+        return settings ?? { id: 0, totalShelves: 0, reminderDaysBeforeExpiry: 7, guideEmailEnabled: true, paymentLinks: null as string | null, wixAutoActivatePackage: true, updatedAt: new Date() };
       }),
 
     // Retourne les numéros d'étagères disponibles (non occupées par un résident actif)
@@ -1499,6 +1500,7 @@ export const appRouter = router({
         reminderDaysBeforeExpiry: z.number().int().min(1).max(30).optional(),
         guideEmailEnabled: z.boolean().optional(),
         paymentLinks: z.string().nullable().optional(), // JSON string
+        wixAutoActivatePackage: z.boolean().optional(),
       }))
       .mutation(async ({ input }) => {
         await db.updateAtelierSettings(input);

@@ -1,0 +1,1 @@
+ALTER TABLE `atelierSettings` ADD `wixAutoActivatePackage` boolean DEFAULT true NOT NULL;

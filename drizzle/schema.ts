@@ -169,6 +169,7 @@ export const atelierSettings = mysqlTable("atelierSettings", {
   guideEmailEnabled: boolean("guideEmailEnabled").default(true).notNull(), // Envoyer le guide des bonnes pratiques à l'inscription
   // Liens de paiement pour les emails (JSON stocké en texte)
   paymentLinks: text("paymentLinks"), // JSON: { links: [{ label: string, url: string }] }
+  wixAutoActivatePackage: boolean("wixAutoActivatePackage").default(true).notNull(), // Forfait créé par paiement Wix : actif immédiatement (true) ou en attente de validation (false)
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 export type AtelierSettings = typeof atelierSettings.$inferSelect;
