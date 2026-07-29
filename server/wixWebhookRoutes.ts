@@ -25,13 +25,14 @@ function verifyWixWebhook(rawBody: string): any {
   // si Wix utilise une variante RSA différente).
   const decoded = jwt.verify(rawBody.trim(), publicKey);
 
-  // Le contenu utile peut être directement l'objet décodé, ou enveloppé dans
-  // un champ "data" (chaîne JSON) selon la version d'API — on gère les deux.
+  // Le contenu utile est enveloppé sur deux niveaux : le JWT décodé donne
+  // {instanceId, eventType, identity, data}, et ce champ "data" (chaîne JSON)
+  // contient à son tour l'événement réel {id, entityFqdn, slug, createdEvent}.
   let unwrapped: any = decoded;
   if (typeof unwrapped === "string") {
     unwrapped = JSON.parse(unwrapped);
   }
-  if (unwrapped && typeof unwrapped.data === "string") {
+  while (unwrapped && typeof unwrapped.data === "string") {
     unwrapped = JSON.parse(unwrapped.data);
   }
   return unwrapped;
