@@ -1,6 +1,5 @@
 import { Router, Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import { createHash } from "crypto";
 import * as db from "./db";
 
 /**
@@ -21,12 +20,10 @@ function verifyWixWebhook(rawBody: string): any {
     err.code = "MISSING_CONFIG";
     throw err;
   }
-  console.log(`[WixWebhook] Clé publique configurée — longueur: ${publicKey.length}, sha256: ${createHash("sha256").update(publicKey).digest("hex")}`);
   // Pas de restriction d'algorithme explicite : suit l'exemple officiel Wix
   // à l'identique (une restriction à RS256 pourrait rejeter un token valide
   // si Wix utilise une variante RSA différente).
   const decoded = jwt.verify(rawBody.trim(), publicKey);
-  console.log(`[WixWebhook] JWT décodé — typeof: ${typeof decoded}, clés: ${typeof decoded === "object" && decoded ? Object.keys(decoded).join(",") : "N/A"}`);
 
   // Le contenu utile peut être directement l'objet décodé, ou enveloppé dans
   // un champ "data" (chaîne JSON) selon la version d'API — on gère les deux.
@@ -43,7 +40,6 @@ function verifyWixWebhook(rawBody: string): any {
 wixWebhookRoutes.post("/", async (req: Request, res: Response) => {
   let event: any;
   try {
-    console.log(`[WixWebhook] Requête reçue — Content-Type: ${req.headers["content-type"]}, typeof body: ${typeof req.body}, longueur: ${typeof req.body === "string" ? req.body.length : "N/A"}`);
     event = verifyWixWebhook(req.body);
   } catch (err: any) {
     if (err.code === "MISSING_CONFIG") {
