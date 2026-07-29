@@ -25,8 +25,19 @@ function verifyWixWebhook(rawBody: string): any {
   // Pas de restriction d'algorithme explicite : suit l'exemple officiel Wix
   // à l'identique (une restriction à RS256 pourrait rejeter un token valide
   // si Wix utilise une variante RSA différente).
-  const payload = jwt.verify(rawBody.trim(), publicKey) as string;
-  return JSON.parse(payload as unknown as string);
+  const decoded = jwt.verify(rawBody.trim(), publicKey);
+  console.log(`[WixWebhook] JWT décodé — typeof: ${typeof decoded}, clés: ${typeof decoded === "object" && decoded ? Object.keys(decoded).join(",") : "N/A"}`);
+
+  // Le contenu utile peut être directement l'objet décodé, ou enveloppé dans
+  // un champ "data" (chaîne JSON) selon la version d'API — on gère les deux.
+  let unwrapped: any = decoded;
+  if (typeof unwrapped === "string") {
+    unwrapped = JSON.parse(unwrapped);
+  }
+  if (unwrapped && typeof unwrapped.data === "string") {
+    unwrapped = JSON.parse(unwrapped.data);
+  }
+  return unwrapped;
 }
 
 wixWebhookRoutes.post("/", async (req: Request, res: Response) => {
