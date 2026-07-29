@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import jwt from "jsonwebtoken";
+import { createHash } from "crypto";
 import * as db from "./db";
 
 /**
@@ -20,6 +21,7 @@ function verifyWixWebhook(rawBody: string): any {
     err.code = "MISSING_CONFIG";
     throw err;
   }
+  console.log(`[WixWebhook] Clé publique configurée — longueur: ${publicKey.length}, sha256: ${createHash("sha256").update(publicKey).digest("hex")}`);
   // Pas de restriction d'algorithme explicite : suit l'exemple officiel Wix
   // à l'identique (une restriction à RS256 pourrait rejeter un token valide
   // si Wix utilise une variante RSA différente).
