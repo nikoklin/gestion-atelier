@@ -55,6 +55,7 @@ wixWebhookRoutes.post("/", async (req: Request, res: Response) => {
   // de transport à corriger côté Wix.
   res.status(200).send();
 
+  console.log(`[WixWebhook] Événement décodé (diagnostic): ${JSON.stringify(event)}`);
   await processWixPaymentEvent(event);
 });
 
