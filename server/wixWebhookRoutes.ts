@@ -16,7 +16,9 @@ export const wixWebhookRoutes = Router();
 function verifyWixWebhook(rawBody: string): any {
   const publicKey = process.env.WIX_WEBHOOK_PUBLIC_KEY;
   if (!publicKey) {
-    throw new Error("WIX_WEBHOOK_PUBLIC_KEY not configured");
+    const err: any = new Error("WIX_WEBHOOK_PUBLIC_KEY not configured");
+    err.code = "MISSING_CONFIG";
+    throw err;
   }
   const payload = jwt.verify(rawBody, publicKey, { algorithms: ["RS256"] }) as string;
   return JSON.parse(payload as unknown as string);
@@ -25,10 +27,15 @@ function verifyWixWebhook(rawBody: string): any {
 wixWebhookRoutes.post("/", async (req: Request, res: Response) => {
   let event: any;
   try {
+    console.log(`[WixWebhook] Requête reçue — Content-Type: ${req.headers["content-type"]}, typeof body: ${typeof req.body}, longueur: ${typeof req.body === "string" ? req.body.length : "N/A"}`);
     event = verifyWixWebhook(req.body);
   } catch (err: any) {
-    console.error("[WixWebhook] Signature invalide:", err.message);
-    return res.status(400).send("Invalid signature");
+    if (err.code === "MISSING_CONFIG") {
+      console.error("[WixWebhook] WIX_WEBHOOK_PUBLIC_KEY absente de la configuration serveur.");
+      return res.status(500).send("Server misconfigured: WIX_WEBHOOK_PUBLIC_KEY missing");
+    }
+    console.error(`[WixWebhook] Échec de vérification (${err.name}): ${err.message}`);
+    return res.status(400).send(`Invalid signature: ${err.name}`);
   }
 
   // Toujours répondre 200 une fois la signature validée : Wix réessaie sinon,
