@@ -20,7 +20,10 @@ function verifyWixWebhook(rawBody: string): any {
     err.code = "MISSING_CONFIG";
     throw err;
   }
-  const payload = jwt.verify(rawBody, publicKey, { algorithms: ["RS256"] }) as string;
+  // Pas de restriction d'algorithme explicite : suit l'exemple officiel Wix
+  // à l'identique (une restriction à RS256 pourrait rejeter un token valide
+  // si Wix utilise une variante RSA différente).
+  const payload = jwt.verify(rawBody.trim(), publicKey) as string;
   return JSON.parse(payload as unknown as string);
 }
 
