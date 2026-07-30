@@ -641,6 +641,22 @@ export const appRouter = router({
         return Object.fromEntries(map);
       }),
 
+    getRecentWixPaidPackages: protectedProcedure
+      .query(async () => {
+        const rows = await db.getRecentWixPaidPackages(20);
+        return rows.map(r => ({
+          id: r.id,
+          residentId: r.residentId,
+          residentName: `${r.residentFirstName} ${r.residentLastName}`,
+          packageType: r.packageType,
+          totalHours: r.totalHours,
+          isActive: r.isActive,
+          status: r.status,
+          wixPaymentId: r.wixPaymentId,
+          createdAt: r.createdAt,
+        }));
+      }),
+
     clearOutOfPackageHours: protectedProcedure
       .input(z.object({ residentId: z.number() }))
       .mutation(async ({ input }) => {

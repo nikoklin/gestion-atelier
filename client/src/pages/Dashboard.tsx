@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Users, Package, Clock, Layers } from "lucide-react";
+import { Users, Package, Clock, Layers, CreditCard } from "lucide-react";
 import { useLocation } from "wouter";
 import { usePackageLabel } from "@/hooks/usePackageLabel";
 
@@ -18,6 +18,7 @@ export default function Dashboard() {
   const { data: residents } = trpc.residents.getWithActivePackage.useQuery();
   const { data: recentAttendances } = trpc.attendances.listAll.useQuery();
   const { data: atelierSettings } = trpc.atelierSettings.get.useQuery();
+  const { data: recentWixPayments } = trpc.packages.getRecentWixPaidPackages.useQuery();
 
   // Numéro d'étagère sélectionné (clic)
   const [selectedShelf, setSelectedShelf] = useState<number | null>(null);
@@ -180,6 +181,63 @@ export default function Dashboard() {
             </TableBody>
           </Table>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Derniers forfaits créés par paiement Wix */}
+      <Card className="mb-4 md:mb-8 overflow-hidden">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CreditCard className="h-5 w-5" />
+            Derniers Forfaits Payés (Wix)
+          </CardTitle>
+          <CardDescription>Forfaits créés automatiquement suite à un paiement par lien Wix</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {!recentWixPayments || recentWixPayments.length === 0 ? (
+            <p className="text-sm text-muted-foreground italic">Aucun forfait créé automatiquement pour le moment.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Résident</TableHead>
+                    <TableHead>Forfait</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Statut</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {recentWixPayments.map((p) => (
+                    <TableRow
+                      key={p.id}
+                      className="cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => setLocation(`/residents/${p.residentId}`)}
+                    >
+                      <TableCell className="font-medium">{p.residentName}</TableCell>
+                      <TableCell>{getPackageLabel(p.packageType)}</TableCell>
+                      <TableCell>{formatDateTime(p.createdAt)}</TableCell>
+                      <TableCell>
+                        {p.status === 'pending' ? (
+                          <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-600/20">
+                            En attente
+                          </span>
+                        ) : p.isActive ? (
+                          <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                            Actif
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center rounded-full bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-600/20">
+                            Terminé
+                          </span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
 

@@ -1,4 +1,4 @@
-import { eq, and, desc, gte, lte, isNull, inArray, ne } from "drizzle-orm";
+import { eq, and, desc, gte, lte, isNull, isNotNull, inArray, ne } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2";
 import { 
@@ -280,6 +280,30 @@ export async function getPackageByWixPaymentId(wixPaymentId: string) {
 
   const result = await db.select().from(packages).where(eq(packages.wixPaymentId, wixPaymentId)).limit(1);
   return result.length > 0 ? result[0] : null;
+}
+
+export async function getRecentWixPaidPackages(limit: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  return await db
+    .select({
+      id: packages.id,
+      residentId: packages.residentId,
+      packageType: packages.packageType,
+      totalHours: packages.totalHours,
+      isActive: packages.isActive,
+      status: packages.status,
+      wixPaymentId: packages.wixPaymentId,
+      createdAt: packages.createdAt,
+      residentFirstName: residents.firstName,
+      residentLastName: residents.lastName,
+    })
+    .from(packages)
+    .innerJoin(residents, eq(packages.residentId, residents.id))
+    .where(isNotNull(packages.wixPaymentId))
+    .orderBy(desc(packages.createdAt))
+    .limit(limit);
 }
 
 export async function updatePackage(id: number, data: Partial<InsertPackage>) {
