@@ -1,6 +1,5 @@
 import { Router, Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import { createHash } from "crypto";
 import * as db from "./db";
 
 /**
@@ -48,13 +47,7 @@ wixWebhookRoutes.post("/", async (req: Request, res: Response) => {
       console.error("[WixWebhook] WIX_WEBHOOK_PUBLIC_KEY absente de la configuration serveur.");
       return res.status(500).send("Server misconfigured: WIX_WEBHOOK_PUBLIC_KEY missing");
     }
-    const publicKey = process.env.WIX_WEBHOOK_PUBLIC_KEY ?? "";
-    const header = jwt.decode(req.body.trim(), { complete: true })?.header;
-    console.error(
-      `[WixWebhook] Échec de vérification (${err.name}): ${err.message} — ` +
-      `clé configurée: longueur ${publicKey.length}, sha256 ${createHash("sha256").update(publicKey).digest("hex")} — ` +
-      `en-tête JWT reçu: ${JSON.stringify(header)}`
-    );
+    console.error(`[WixWebhook] Échec de vérification (${err.name}): ${err.message}`);
     return res.status(400).send(`Invalid signature: ${err.name}`);
   }
 
@@ -63,7 +56,6 @@ wixWebhookRoutes.post("/", async (req: Request, res: Response) => {
   // de transport à corriger côté Wix.
   res.status(200).send();
 
-  console.log(`[WixWebhook] Événement décodé (diagnostic): ${JSON.stringify(event)}`);
   await processWixPaymentEvent(event);
 });
 
