@@ -17,6 +17,8 @@ export default function Settings() {
   const [reminderDaysInput, setReminderDaysInput] = useState("7");
   const [guideEmailEnabled, setGuideEmailEnabled] = useState(true);
   const [wixAutoActivatePackage, setWixAutoActivatePackage] = useState(true);
+  const [reminderSendHourInput, setReminderSendHourInput] = useState("9");
+  const [missedCheckoutCutoffHourInput, setMissedCheckoutCutoffHourInput] = useState("22");
 
   // Liens de paiement
   type PaymentLink = { label: string; url: string };
@@ -35,6 +37,8 @@ export default function Settings() {
       setReminderDaysInput(String(atelierSettings.reminderDaysBeforeExpiry ?? 7));
       setGuideEmailEnabled(atelierSettings.guideEmailEnabled ?? true);
       setWixAutoActivatePackage(atelierSettings.wixAutoActivatePackage ?? true);
+      setReminderSendHourInput(String(atelierSettings.reminderSendHour ?? 9));
+      setMissedCheckoutCutoffHourInput(String(atelierSettings.missedCheckoutCutoffHour ?? 22));
       // Charger les liens de paiement
       if (atelierSettings.paymentLinks) {
         try {
@@ -74,6 +78,24 @@ export default function Settings() {
       return;
     }
     updateAtelierSettingsMutation.mutate({ reminderDaysBeforeExpiry: n });
+  };
+
+  const handleSaveReminderSendHour = () => {
+    const n = parseInt(reminderSendHourInput, 10);
+    if (isNaN(n) || n < 0 || n > 23) {
+      toast.error("Valeur invalide", { description: "Entrez une heure entre 0 et 23." });
+      return;
+    }
+    updateAtelierSettingsMutation.mutate({ reminderSendHour: n });
+  };
+
+  const handleSaveMissedCheckoutCutoffHour = () => {
+    const n = parseInt(missedCheckoutCutoffHourInput, 10);
+    if (isNaN(n) || n < 0 || n > 23) {
+      toast.error("Valeur invalide", { description: "Entrez une heure entre 0 et 23." });
+      return;
+    }
+    updateAtelierSettingsMutation.mutate({ missedCheckoutCutoffHour: n });
   };
 
   const handleToggleGuideEmail = (enabled: boolean) => {
@@ -573,6 +595,46 @@ export default function Settings() {
             </div>
           </div>
 
+          {/* Heure d'envoi des rappels */}
+          <div className="space-y-2">
+            <Label className="font-semibold">Heure d'envoi des rappels automatiques</Label>
+            <p className="text-sm text-muted-foreground">Heure (0-23, heure de Paris) à laquelle les rappels d'expiration sont envoyés chaque jour</p>
+            <div className="flex items-center gap-2 max-w-xs">
+              <Input
+                type="number"
+                min={0}
+                max={23}
+                value={reminderSendHourInput}
+                onChange={(e) => setReminderSendHourInput(e.target.value)}
+                className="w-24"
+              />
+              <span className="text-sm text-muted-foreground">h</span>
+              <Button size="sm" onClick={handleSaveReminderSendHour} disabled={updateAtelierSettingsMutation.isPending}>
+                Enregistrer
+              </Button>
+            </div>
+          </div>
+
+          {/* Heure de clôture des pointages oubliés */}
+          <div className="space-y-2">
+            <Label className="font-semibold">Heure limite pour les pointages oubliés</Label>
+            <p className="text-sm text-muted-foreground">Heure (0-23, heure de Paris) à laquelle les pointages non clôturés sont fermés automatiquement chaque soir</p>
+            <div className="flex items-center gap-2 max-w-xs">
+              <Input
+                type="number"
+                min={0}
+                max={23}
+                value={missedCheckoutCutoffHourInput}
+                onChange={(e) => setMissedCheckoutCutoffHourInput(e.target.value)}
+                className="w-24"
+              />
+              <span className="text-sm text-muted-foreground">h</span>
+              <Button size="sm" onClick={handleSaveMissedCheckoutCutoffHour} disabled={updateAtelierSettingsMutation.isPending}>
+                Enregistrer
+              </Button>
+            </div>
+          </div>
+
           {/* Guide des bonnes pratiques */}
           <div className="flex items-center justify-between">
             <div className="space-y-1">
@@ -589,7 +651,8 @@ export default function Settings() {
           <div className="border-l-4 border-blue-500 pl-4">
             <h4 className="font-semibold mb-1 text-sm">Planification</h4>
             <p className="text-sm text-muted-foreground">
-              Les e-mails de rappel sont envoyés automatiquement <strong>tous les jours à 9h00</strong>.
+              Les e-mails de rappel sont envoyés automatiquement <strong>tous les jours à {reminderSendHourInput}h00</strong>,
+              et les pointages oubliés sont clôturés automatiquement <strong>tous les soirs à {missedCheckoutCutoffHourInput}h00</strong>.
               Testez l'envoi manuel depuis la page <strong>"Configuration E-mails"</strong>.
             </p>
           </div>

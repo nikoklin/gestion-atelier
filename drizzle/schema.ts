@@ -170,6 +170,8 @@ export const atelierSettings = mysqlTable("atelierSettings", {
   // Liens de paiement pour les emails (JSON stocké en texte)
   paymentLinks: text("paymentLinks"), // JSON: { links: [{ label: string, url: string }] }
   wixAutoActivatePackage: boolean("wixAutoActivatePackage").default(true).notNull(), // Forfait créé par paiement Wix : actif immédiatement (true) ou en attente de validation (false)
+  reminderSendHour: int("reminderSendHour").default(9).notNull(), // Heure (0-23, Europe/Paris) d'envoi des rappels automatiques
+  missedCheckoutCutoffHour: int("missedCheckoutCutoffHour").default(22).notNull(), // Heure (0-23, Europe/Paris) de clôture automatique des pointages oubliés
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 export type AtelierSettings = typeof atelierSettings.$inferSelect;
