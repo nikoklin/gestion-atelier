@@ -266,6 +266,19 @@ export async function getActivePackageByResidentId(residentId: number) {
   return null;
 }
 
+// Le forfait à afficher en priorité pour un résident : le forfait réellement
+// valide s'il y en a un, sinon le dernier créé (actif ou non) pour donner
+// quand même un statut visible (ex: badge "Expiré"). Utilisé à la fois par
+// la page personnelle du résident et la liste des résidents, pour éviter
+// que ces deux vues divergent sur "quel est le forfait du résident".
+export async function getDisplayPackageForResident(residentId: number) {
+  const activePackage = await getActivePackageByResidentId(residentId);
+  if (activePackage) return activePackage;
+
+  const allPackages = await getPackagesByResidentId(residentId);
+  return allPackages.length > 0 ? allPackages[0] : null;
+}
+
 export async function getPackageById(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

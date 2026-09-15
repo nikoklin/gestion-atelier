@@ -1,12 +1,14 @@
 import { eq, isNull } from "drizzle-orm";
-import { getDb } from "./db";
+import { getDb, getAtelierSettings } from "./db";
 import { attendances, residents } from "../drizzle/schema";
 import { sendEmail } from "./emailService";
 import { createFixCheckoutToken } from "./actionTokenService";
 import { getPublicSiteUrl } from "./_core/publicSiteUrl";
 
 /**
- * Vérifie les pointages non terminés et effectue un pointage automatique à 21h30
+ * Vérifie les pointages non terminés et effectue un pointage automatique à
+ * l'heure de clôture configurée dans Paramètres (missedCheckoutCutoffHour,
+ * 22h par défaut).
  * Envoie un email au résident et marque le résident comme ayant oublié de pointer
  */
 export async function checkAndProcessMissedCheckouts(): Promise<{ processed: number }> {
@@ -16,7 +18,10 @@ export async function checkAndProcessMissedCheckouts(): Promise<{ processed: num
     return { processed: 0 };
   }
 
-  console.log("[MissedCheckout] Checking for missed checkouts at 22:00");
+  const settings = await getAtelierSettings();
+  const cutoffHour = settings?.missedCheckoutCutoffHour ?? 22;
+
+  console.log(`[MissedCheckout] Checking for missed checkouts at ${cutoffHour}:00`);
 
   try {
     // Récupérer tous les pointages non terminés (checkOut = null)
@@ -51,9 +56,9 @@ export async function checkAndProcessMissedCheckouts(): Promise<{ processed: num
         continue;
       }
 
-      // Effectuer le pointage de sortie automatique à 21h30
+      // Effectuer le pointage de sortie automatique à l'heure de clôture configurée
       const checkOutTime = new Date();
-      checkOutTime.setHours(21, 30, 0, 0);
+      checkOutTime.setHours(cutoffHour, 0, 0, 0);
 
       // Calculer la durée de la session
       const checkInTime = new Date(attendance.checkInTime);
@@ -104,7 +109,7 @@ export async function checkAndProcessMissedCheckouts(): Promise<{ processed: num
           <li><strong>Départ automatique :</strong> ${checkOutTime.toLocaleString("fr-FR")}</li>
           <li><strong>Durée de la session :</strong> ${durationHours}h${durationMins.toString().padStart(2, "0")}</li>
         </ul>
-        <p>Un pointage de sortie automatique a été effectué à 21h30.</p>
+        <p>Un pointage de sortie automatique a été effectué.</p>
         ${fixCheckoutUrl ? `
         <p style="margin: 20px 0;">
           <strong>Si l'heure de départ est incorrecte</strong>, tu peux la corriger en cliquant ici (lien valable 48h) :<br><br>

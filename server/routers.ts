@@ -343,13 +343,7 @@ export const appRouter = router({
           throw new TRPCError({ code: "NOT_FOUND", message: "Résident non trouvé" });
         }
 
-        // Chercher d'abord un forfait actif, sinon prendre le dernier forfait (actif ou non)
-        let activePackage = await db.getActivePackageByResidentId(input.residentId);
-        if (!activePackage) {
-          // Pas de forfait actif : récupérer le dernier forfait (terminé ou expiré)
-          const allPkgs = await db.getPackagesByResidentId(input.residentId);
-          activePackage = allPkgs.length > 0 ? allPkgs[0] : null;
-        }
+        const activePackage = await db.getDisplayPackageForResident(input.residentId);
         // Afficher TOUS les pointages du résident (y compris ceux sans forfait,
         // ex: session enregistrée alors qu'aucun forfait n'était actif).
         const attendances = await db.getAttendancesByResidentId(input.residentId);
@@ -567,16 +561,12 @@ export const appRouter = router({
       const residents = await db.getActiveResidents();
       const residentsWithPackages = await Promise.all(
         residents.map(async (resident) => {
-          // Récupérer tous les forfaits du résident et garder le plus récent (ID le plus élevé)
-          const allPackages = await db.getPackagesByResidentId(resident.id);
-          const latestPackage = allPackages.length > 0 
-            ? allPackages.reduce((latest, pkg) => pkg.id > latest.id ? pkg : latest, allPackages[0])
-            : null;
+          const displayPackage = await db.getDisplayPackageForResident(resident.id);
           const lastReminder = await db.getLastReminderByResidentId(resident.id);
           const openAttendance = await db.getOpenAttendance(resident.id);
           return {
             ...resident,
-            activePackage: latestPackage,
+            activePackage: displayPackage,
             lastReminderDate: lastReminder?.sentAt || null,
             hasMissedCheckout: resident.hasMissedCheckout || false,
             missedCheckoutAttendanceId: resident.missedCheckoutAttendanceId || null,
