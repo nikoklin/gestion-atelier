@@ -988,6 +988,16 @@ export const appRouter = router({
           throw new TRPCError({ code: "BAD_REQUEST", message: "Le nombre de minutes doit être supérieur à 0" });
         }
 
+        const remainingMinutes = pkg.totalHours - pkg.usedHours;
+        if (subtractMinutes > remainingMinutes) {
+          const remH = Math.floor(Math.max(0, remainingMinutes) / 60);
+          const remM = Math.max(0, remainingMinutes) % 60;
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Impossible de retirer plus que les heures restantes (${remH}h${remM.toString().padStart(2, "0")}).`,
+          });
+        }
+
         // Le total du forfait reste fixe (celui de son type). Un retrait
         // augmente les heures utilisées d'autant (donc diminue les heures
         // restantes) ; fullRecalculateResident applique cet ajustement à
@@ -1290,24 +1300,9 @@ export const appRouter = router({
         const residentId = attendance.residentId;
         const packageId = attendance.packageId;
 
-        // Si c'est un pointage d'ajustement, il faut annuler son effet sur totalHours
-        // avant de supprimer le pointage, car recalculatePackageHours ne touche pas totalHours
-        if (packageId && attendance.attendanceType === 'adjustment_add' && attendance.durationMinutes) {
-          // L'ajout avait augmenté totalHours → on le diminue
-          const pkg = await db.getPackageById(packageId);
-          if (pkg) {
-            const newTotal = pkg.totalHours - attendance.durationMinutes;
-            await db.updatePackage(packageId, { totalHours: Math.max(0, newTotal) });
-          }
-        } else if (packageId && attendance.attendanceType === 'adjustment_subtract' && attendance.durationMinutes) {
-          // La soustraction avait diminué totalHours → on le réaugmente
-          const pkg = await db.getPackageById(packageId);
-          if (pkg) {
-            const newTotal = pkg.totalHours + attendance.durationMinutes;
-            await db.updatePackage(packageId, { totalHours: newTotal });
-          }
-        }
-
+        // totalHours du forfait reste fixe (voir packages.addHours/subtractHours) :
+        // supprimer un pointage d'ajustement n'a rien à corriger dessus, le
+        // recalcul ci-dessous relit les ajustements restants pour usedHours.
         await db.deleteAttendance(input.id);
         
         // Recalcul complet depuis la base après suppression
@@ -1323,6 +1318,28 @@ export const appRouter = router({
           }
         }
         
+        return { success: true };
+      }),
+
+    deleteAllByResident: protectedProcedure
+      .input(z.object({ residentId: z.number() }))
+      .mutation(async ({ input }) => {
+        const resident = await db.getResidentById(input.residentId);
+        if (!resident) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Résident non trouvé" });
+        }
+
+        await db.deleteAllAttendancesByResidentId(input.residentId);
+
+        // Plus aucun pointage : réinitialiser l'alerte de pointage oublié.
+        await db.updateResident(input.residentId, {
+          hasMissedCheckout: false,
+          missedCheckoutAttendanceId: null,
+        });
+
+        // Recalcul complet : remet usedHours/isActive à jour pour tous les forfaits.
+        await db.fullRecalculateResident(input.residentId);
+
         return { success: true };
       }),
 

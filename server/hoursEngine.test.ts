@@ -316,4 +316,16 @@ describe.skipIf(!process.env.DATABASE_URL)("Retrait/ajout d'heures : ajuste used
     expect(after!.usedHours).toBe(-50);
     expect(r!.outOfPackageMinutes).toBe(0);
   });
+
+  it("effacer tous les pointages (attendances.deleteAllByResident) remet usedHours à 0, totalHours inchangé", async () => {
+    await db.deleteAllAttendancesByResidentId(RID5);
+    await db.updateResident(RID5, { hasMissedCheckout: false, missedCheckoutAttendanceId: null });
+    await db.fullRecalculateResident(RID5);
+
+    const after = await db.getPackageById(990501);
+    const r = await db.getResidentById(RID5);
+    expect(after!.totalHours).toBe(600);
+    expect(after!.usedHours).toBe(0);
+    expect(r!.outOfPackageMinutes).toBe(0);
+  });
 });

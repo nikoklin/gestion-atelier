@@ -563,6 +563,13 @@ export async function deleteAttendancesByPackageId(packageId: number) {
     ));
 }
 
+export async function deleteAllAttendancesByResidentId(residentId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  return await db.delete(attendances).where(eq(attendances.residentId, residentId));
+}
+
 // ==================== Email Logs ====================
 
 export async function createEmailLog(log: InsertEmailLog) {

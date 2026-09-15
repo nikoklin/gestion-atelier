@@ -71,6 +71,7 @@ export default function ResidentPackages() {
   const [selectedAttendance, setSelectedAttendance] = useState<any>(null);
   const [editCheckInTime, setEditCheckInTime] = useState("");
   const [editCheckOutTime, setEditCheckOutTime] = useState("");
+  const [isDeleteAllAttendancesDialogOpen, setIsDeleteAllAttendancesDialogOpen] = useState(false);
 
   const utils = trpc.useUtils();
   const { data: resident } = trpc.residents.getById.useQuery({ id: residentId });
@@ -255,6 +256,19 @@ export default function ResidentPackages() {
       toast.success("Pointage supprimé avec succès");
       setIsDeleteAttendanceDialogOpen(false);
       setSelectedAttendance(null);
+      utils.packages.getByResidentId.invalidate({ residentId });
+      utils.residents.getById.invalidate({ id: residentId });
+      utils.residents.getWithActivePackage.invalidate();
+    },
+    onError: (error) => {
+      toast.error(`Erreur : ${error.message}`);
+    },
+  });
+
+  const deleteAllAttendancesMutation = trpc.attendances.deleteAllByResident.useMutation({
+    onSuccess: () => {
+      toast.success("Tous les pointages ont été effacés");
+      setIsDeleteAllAttendancesDialogOpen(false);
       utils.packages.getByResidentId.invalidate({ residentId });
       utils.residents.getById.invalidate({ id: residentId });
       utils.residents.getWithActivePackage.invalidate();
@@ -729,6 +743,16 @@ export default function ResidentPackages() {
                 <CalendarPlus className="mr-1 h-4 w-4" />
                 <span className="hidden sm:inline">Nouveau </span>Pointage
               </Button>
+              {attendances && attendances.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => setIsDeleteAllAttendancesDialogOpen(true)}
+                >
+                  <Trash2 className="mr-1 h-4 w-4" />
+                  <span className="hidden sm:inline">Effacer tous les </span>Pointages
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -1209,6 +1233,33 @@ export default function ResidentPackages() {
             </Button>
             <Button variant="destructive" onClick={confirmDeleteAttendance} disabled={deleteAttendanceMutation.isPending}>
               Supprimer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialogue de suppression de TOUS les pointages */}
+      <Dialog open={isDeleteAllAttendancesDialogOpen} onOpenChange={setIsDeleteAllAttendancesDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Effacer tous les pointages</DialogTitle>
+            <DialogDescription>
+              Cette action supprime définitivement les {attendances?.length ?? 0} pointage(s)
+              de {resident?.firstName} {resident?.lastName} (arrivées/départs et ajustements
+              +/- heures). Les heures utilisées de ses forfaits repartiront de zéro. Cette
+              action est irréversible.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteAllAttendancesDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteAllAttendancesMutation.mutate({ residentId })}
+              disabled={deleteAllAttendancesMutation.isPending}
+            >
+              Tout effacer
             </Button>
           </DialogFooter>
         </DialogContent>
