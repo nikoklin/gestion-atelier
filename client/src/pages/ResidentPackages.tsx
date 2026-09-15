@@ -47,6 +47,8 @@ export default function ResidentPackages() {
   );
   const [isAddHoursDialogOpen, setIsAddHoursDialogOpen] = useState(false);
   const [isExtendDateDialogOpen, setIsExtendDateDialogOpen] = useState(false);
+  const [isEditStartDateDialogOpen, setIsEditStartDateDialogOpen] = useState(false);
+  const [editStartDateValue, setEditStartDateValue] = useState("");
   const [selectedPackageId, setSelectedPackageId] = useState<number | null>(null);
   const [hoursToAdd, setHoursToAdd] = useState(0);
   const [minutesToAdd, setMinutesToAdd] = useState(0);
@@ -128,6 +130,20 @@ export default function ResidentPackages() {
       toast.success("Date prolongée avec succès");
       setIsExtendDateDialogOpen(false);
       setDaysToExtend(7);
+      utils.packages.getByResidentId.invalidate({ residentId });
+      utils.packages.getOutOfPackageHours.invalidate();
+      utils.residents.getWithActivePackage.invalidate();
+      utils.residents.getById.invalidate({ id: residentId });
+    },
+    onError: (error) => {
+      toast.error("Erreur: " + error.message);
+    },
+  });
+
+  const updateStartDateMutation = trpc.packages.updateStartDate.useMutation({
+    onSuccess: () => {
+      toast.success("Date de début modifiée avec succès");
+      setIsEditStartDateDialogOpen(false);
       utils.packages.getByResidentId.invalidate({ residentId });
       utils.packages.getOutOfPackageHours.invalidate();
       utils.residents.getWithActivePackage.invalidate();
@@ -669,6 +685,17 @@ export default function ResidentPackages() {
                         size="sm"
                         onClick={() => {
                           setSelectedPackageId(pkg.id);
+                          setEditStartDateValue(new Date(pkg.startDate).toISOString().split('T')[0]);
+                          setIsEditStartDateDialogOpen(true);
+                        }}
+                      >
+                        Date de début
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedPackageId(pkg.id);
                           setIsExtendDateDialogOpen(true);
                         }}
                       >
@@ -1084,6 +1111,49 @@ export default function ResidentPackages() {
               }}
             >
               Prolonger
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de modification de la date de début */}
+      <Dialog open={isEditStartDateDialogOpen} onOpenChange={setIsEditStartDateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Modifier la Date de Début</DialogTitle>
+            <DialogDescription>
+              Change la date de début du forfait. Les pointages sont réattribués
+              automatiquement selon la nouvelle plage de validité.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="editStartDate">Date de début</Label>
+              <input
+                id="editStartDate"
+                type="date"
+                value={editStartDateValue}
+                onChange={(e) => setEditStartDateValue(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditStartDateDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button
+              onClick={() => {
+                if (selectedPackageId && editStartDateValue) {
+                  updateStartDateMutation.mutate({
+                    packageId: selectedPackageId,
+                    startDate: new Date(editStartDateValue),
+                  });
+                }
+              }}
+              disabled={updateStartDateMutation.isPending || !editStartDateValue}
+            >
+              Enregistrer
             </Button>
           </DialogFooter>
         </DialogContent>

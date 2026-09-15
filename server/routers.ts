@@ -1058,6 +1058,31 @@ export const appRouter = router({
         return { success: true, newEndDate };
       }),
 
+    updateStartDate: protectedProcedure
+      .input(z.object({
+        packageId: z.number(),
+        startDate: z.date(),
+      }))
+      .mutation(async ({ input }) => {
+        const pkg = await db.getPackageById(input.packageId);
+        if (!pkg) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Forfait non trouvé" });
+        }
+        if (pkg.endDate && input.startDate > new Date(pkg.endDate)) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "La date de début ne peut pas être postérieure à la date de fin",
+          });
+        }
+
+        await db.updatePackage(input.packageId, { startDate: input.startDate });
+
+        // Réattribue les pointages selon la nouvelle plage de validité du forfait.
+        await db.fullRecalculateResident(pkg.residentId);
+
+        return { success: true };
+      }),
+
     delete: protectedProcedure
       .input(z.object({
         id: z.number(),
