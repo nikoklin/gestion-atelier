@@ -234,3 +234,69 @@ describe.skipIf(!process.env.DATABASE_URL)("Résident sans aucun forfait (règle
     expect(r!.outOfPackageMinutes).toBe(120);
   });
 });
+
+// Un retrait (ou ajout) d'heures sur un forfait dynamique (custom_*) via
+// packages.subtractHours/addHours met déjà totalHours à jour directement.
+// fullRecalculateResident ne doit PAS réappliquer en plus l'ajustement par
+// dessus (sinon il est compté deux fois à chaque recalcul, ce qui fausse la
+// capacité utilisée pour répartir les pointages réels).
+describe.skipIf(!process.env.DATABASE_URL)("Retrait d'heures sur un forfait dynamique (pas de double-compte)", () => {
+  const RID5 = 990005;
+  async function cleanup5() {
+    const database = await getDb();
+    if (!database) return;
+    await database.delete(attendances).where(eq(attendances.residentId, RID5));
+    await database.delete(packages).where(eq(packages.residentId, RID5));
+    await database.delete(residents).where(eq(residents.id, RID5));
+  }
+
+  beforeAll(async () => {
+    await cleanup5();
+    await db.createResident({
+      id: RID5, firstName: "TEST", lastName: "Subtract", email: "test-subtract@local", isActive: true,
+    } as any);
+    // Forfait dynamique de 600 min, un pointage réel de 550 min (dans la capacité).
+    await db.createPackage({
+      id: 990501, residentId: RID5, packageType: "custom_999", totalHours: 600, usedHours: 0,
+      startDate: d("2026-01-01"), endDate: d("2026-01-31"), isActive: true,
+    } as any);
+    await db.createAttendance({
+      residentId: RID5, packageId: 990501,
+      checkInTime: d("2026-01-15T09:00:00"), checkOutTime: d("2026-01-15T17:10:00"), durationMinutes: 550,
+    } as any);
+    await db.fullRecalculateResident(RID5);
+  });
+
+  afterAll(cleanup5);
+
+  it("retrait de 100 min : totalHours passe à 500 (comme packages.subtractHours)", async () => {
+    const pkg = await db.getPackageById(990501);
+    await db.updatePackage(990501, { totalHours: pkg!.totalHours - 100 });
+    await db.createAttendance({
+      residentId: RID5, packageId: 990501,
+      checkInTime: d("2026-01-16T09:00:00"), checkOutTime: d("2026-01-16T09:00:00"), durationMinutes: 100,
+      attendanceType: "adjustment_subtract", note: "Retrait de test",
+    } as any);
+    await db.fullRecalculateResident(RID5);
+
+    const after = await db.getPackageById(990501);
+    expect(after!.totalHours).toBe(500);
+  });
+
+  it("le pointage de 550 min déborde de 50 min (500 utilisées, 50 hors-forfait) — pas 150", async () => {
+    const after = await db.getPackageById(990501);
+    const r = await db.getResidentById(RID5);
+    expect(after!.usedHours).toBe(500);
+    expect(r!.outOfPackageMinutes).toBe(50);
+  });
+
+  it("des recalculs répétés ne creusent pas l'écart davantage", async () => {
+    await db.fullRecalculateResident(RID5);
+    await db.fullRecalculateResident(RID5);
+    const after = await db.getPackageById(990501);
+    const r = await db.getResidentById(RID5);
+    expect(after!.totalHours).toBe(500);
+    expect(after!.usedHours).toBe(500);
+    expect(r!.outOfPackageMinutes).toBe(50);
+  });
+});

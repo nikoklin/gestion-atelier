@@ -898,30 +898,39 @@ export async function fullRecalculateResident(residentId: number): Promise<{
   const pkgCapacities: { id: number; baseMinutes: number; startDate: Date; endDate: Date; deductedMinutes: number }[] = [];
 
   for (const pkg of allPackages) {
-    // Récupérer tous les ajustements de ce forfait
-    const adjustments = await db
-      .select()
-      .from(attendances)
-      .where(and(
-        eq(attendances.packageId, pkg.id),
-        ne(attendances.attendanceType, 'normal')
-      ));
+    // Pour les types custom_*, totalHours est déjà maintenu à jour directement
+    // par packages.addHours / packages.subtractHours (qui l'incrémentent ou le
+    // décrémentent au moment de l'action). Réappliquer ici la somme des
+    // ajustements historiques par-dessus compterait chaque ajustement deux
+    // fois, et l'écart s'aggraverait à chaque nouveau recalcul.
+    // Pour les types standard, la base est une constante fixe : on peut donc
+    // recalculer totalHours = base + ajustements sans risque de double-compte.
+    const isCustomType = pkg.packageType.startsWith('custom_');
+    let newTotalHours: number;
 
-    let adjustmentDelta = 0;
-    for (const adj of adjustments) {
-      if (!adj.durationMinutes) continue;
-      if (adj.attendanceType === 'adjustment_add') adjustmentDelta += adj.durationMinutes;
-      if (adj.attendanceType === 'adjustment_subtract') adjustmentDelta -= adj.durationMinutes;
+    if (isCustomType) {
+      newTotalHours = pkg.totalHours;
+    } else {
+      const adjustments = await db
+        .select()
+        .from(attendances)
+        .where(and(
+          eq(attendances.packageId, pkg.id),
+          ne(attendances.attendanceType, 'normal')
+        ));
+
+      let adjustmentDelta = 0;
+      for (const adj of adjustments) {
+        if (!adj.durationMinutes) continue;
+        if (adj.attendanceType === 'adjustment_add') adjustmentDelta += adj.durationMinutes;
+        if (adj.attendanceType === 'adjustment_subtract') adjustmentDelta -= adj.durationMinutes;
+      }
+
+      const base = standardPackageBaseMinutes[pkg.packageType] ?? pkg.totalHours;
+      newTotalHours = Math.max(0, base + adjustmentDelta);
     }
 
-    // Pour les types custom_*, utiliser la valeur totalHours déjà en base (définie à la création)
-    // Pour les types standard, utiliser la base fixe + ajustements
-    const isCustomType = pkg.packageType.startsWith('custom_');
-    const base = isCustomType ? pkg.totalHours : (standardPackageBaseMinutes[pkg.packageType] ?? pkg.totalHours);
-    const newTotalHours = Math.max(0, base + adjustmentDelta);
-
-    // Mettre à jour totalHours seulement si différent ET si type standard (ne pas écraser les custom)
-    if (!isCustomType && newTotalHours !== pkg.totalHours) {
+    if (newTotalHours !== pkg.totalHours) {
       await updatePackage(pkg.id, { totalHours: newTotalHours });
     }
 
