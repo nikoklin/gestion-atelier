@@ -115,6 +115,9 @@ const utils = trpc.useUtils();
       if (attendance) {
         setActiveTab("pointages");
         handleEditAttendance(attendance);
+        // Retirer le paramètre de l'URL pour ne pas rouvrir le dialog après
+        // le refetch déclenché par la validation (attendances change de référence).
+        window.history.replaceState({}, '', `/residents/${residentId}`);
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
