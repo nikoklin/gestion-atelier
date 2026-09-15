@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import * as db from "./db";
 import { getPublicSiteUrl } from "./_core/publicSiteUrl";
 
@@ -378,6 +380,14 @@ export async function checkAndSendReminders(): Promise<{ remindersSent: number; 
   }
 }
 
+// Le PDF est copié par `vite build` dans dist/public (voir vite.config.ts,
+// publicDir) ; en dev (tsx, non bundlé) il reste dans client/public.
+function resolveGuidePdfPath(): string {
+  const devPath = path.resolve(import.meta.dirname, "..", "client", "public", "guidedesbonnespratiques.pdf");
+  if (fs.existsSync(devPath)) return devPath;
+  return path.resolve(import.meta.dirname, "public", "guidedesbonnespratiques.pdf");
+}
+
 /**
  * Envoyer le guide des bonnes pratiques à un nouveau résident
  */
@@ -388,8 +398,7 @@ export async function sendGuideEmail(email: string, firstName: string, residentI
       return false;
     }
 
-    const siteUrl = getPublicSiteUrl();
-    const guideUrl = `${siteUrl}/guidedesbonnespratiques.pdf`;
+    const guidePdf = fs.readFileSync(resolveGuidePdfPath());
 
     const subject = `Bienvenue à l'atelier À Tour de Bras – Guide des bonnes pratiques`;
     const html = `
@@ -403,9 +412,8 @@ export async function sendGuideEmail(email: string, firstName: string, residentI
         <div style="padding: 32px;">
           <h2 style="color: #c8860a; font-size: 20px; margin-top: 0;">Bienvenue à l'atelier !</h2>
           <p style="line-height: 1.7;">Avant de te lancer, jette un œil à notre guide des bonnes pratiques : il rassemble tout ce qu'il faut savoir sur le fonctionnement de l'atelier, les règles communes et les petits gestes qui font la différence pour que chacun s'y sente bien.</p>
-          <p style="margin: 28px 0; text-align: center;">
-            <a href="${guideUrl}" style="display: inline-block; background-color: #c8860a; color: #fff; padding: 11px 22px; text-decoration: none; border-radius: 5px; font-size: 14px; font-weight: bold; font-family: Arial, sans-serif;">Télécharger le guide</a>
-          </p>
+          <p style="line-height: 1.7;">Si tu le souhaites, tu peux t'inscrire au <a href="https://chat.whatsapp.com/L5o3XOK6bKkJulLPl2k1Sy?s=cl&p=i&ilr=1" style="color: #c8860a;">groupe WhatsApp de l'atelier ici</a>.</p>
+          <p style="line-height: 1.7;">N'hésite pas à consulter le <a href="https://www.atourdebras-atelier.com/#planning" style="color: #c8860a;">planning de l'atelier</a> pour éviter de venir lors d'une privatisation par exemple.</p>
           <p style="line-height: 1.7;">N'hésite pas à nous contacter si tu as des questions. À très vite à l'atelier !</p>
           <p style="color: #c8860a; font-weight: bold; margin-bottom: 0;">L'équipe de l'atelier</p>
         </div>
@@ -419,7 +427,9 @@ export async function sendGuideEmail(email: string, firstName: string, residentI
       </div>
     `;
 
-    const sent = await sendEmail(email, subject, html);
+    const sent = await sendEmail(email, subject, html, false, [
+      { name: "guide-des-bonnes-pratiques.pdf", content: guidePdf.toString("base64") },
+    ]);
     if (sent) {
       console.log(`[Email] Guide sent to ${email}`);
     }
