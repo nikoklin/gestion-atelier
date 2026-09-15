@@ -6,7 +6,7 @@ import { createFixCheckoutToken } from "./actionTokenService";
 import { getPublicSiteUrl } from "./_core/publicSiteUrl";
 
 /**
- * Vérifie les pointages non terminés et effectue un pointage automatique à 22h
+ * Vérifie les pointages non terminés et effectue un pointage automatique à 21h30
  * Envoie un email au résident et marque le résident comme ayant oublié de pointer
  */
 export async function checkAndProcessMissedCheckouts(): Promise<{ processed: number }> {
@@ -51,9 +51,9 @@ export async function checkAndProcessMissedCheckouts(): Promise<{ processed: num
         continue;
       }
 
-      // Effectuer le pointage de sortie automatique à 22h
+      // Effectuer le pointage de sortie automatique à 21h30
       const checkOutTime = new Date();
-      checkOutTime.setHours(22, 0, 0, 0);
+      checkOutTime.setHours(21, 30, 0, 0);
 
       // Calculer la durée de la session
       const checkInTime = new Date(attendance.checkInTime);
@@ -104,7 +104,7 @@ export async function checkAndProcessMissedCheckouts(): Promise<{ processed: num
           <li><strong>Départ automatique :</strong> ${checkOutTime.toLocaleString("fr-FR")}</li>
           <li><strong>Durée de la session :</strong> ${durationHours}h${durationMins.toString().padStart(2, "0")}</li>
         </ul>
-        <p>Un pointage de sortie automatique a été effectué à 22h00.</p>
+        <p>Un pointage de sortie automatique a été effectué à 21h30.</p>
         ${fixCheckoutUrl ? `
         <p style="margin: 20px 0;">
           <strong>Si l'heure de départ est incorrecte</strong>, tu peux la corriger en cliquant ici (lien valable 48h) :<br><br>
