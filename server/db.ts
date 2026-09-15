@@ -886,60 +886,42 @@ export async function fullRecalculateResident(residentId: number): Promise<{
     };
   }
 
-  // 2. Pour chaque forfait, recalculer totalHours = base du type + ajustements
-  // Les types standard ont une base fixe ; les types custom_* utilisent la valeur en base
-  const standardPackageBaseMinutes: Record<string, number> = {
-    '15h_8w': 900,
-    '30h_8w': 1800,
-    '30h_4w': 1800,
-    '180h_6m': 10800,
-  };
-
-  const pkgCapacities: { id: number; baseMinutes: number; startDate: Date; endDate: Date; deductedMinutes: number }[] = [];
+  // 2. Le total de chaque forfait reste fixe (celui de son type, inchangé par
+  // packages.addHours/subtractHours). Un ajout d'heures diminue les heures
+  // utilisées (donc augmente les heures restantes) ; un retrait les augmente
+  // (donc diminue les heures restantes) — voir pkgUsed plus bas.
+  const pkgCapacities: {
+    id: number;
+    baseMinutes: number;
+    startDate: Date;
+    endDate: Date;
+    deductedMinutes: number;
+    manualUsedAdjustment: number;
+  }[] = [];
 
   for (const pkg of allPackages) {
-    // Pour les types custom_*, totalHours est déjà maintenu à jour directement
-    // par packages.addHours / packages.subtractHours (qui l'incrémentent ou le
-    // décrémentent au moment de l'action). Réappliquer ici la somme des
-    // ajustements historiques par-dessus compterait chaque ajustement deux
-    // fois, et l'écart s'aggraverait à chaque nouveau recalcul.
-    // Pour les types standard, la base est une constante fixe : on peut donc
-    // recalculer totalHours = base + ajustements sans risque de double-compte.
-    const isCustomType = pkg.packageType.startsWith('custom_');
-    let newTotalHours: number;
+    const adjustments = await db
+      .select()
+      .from(attendances)
+      .where(and(
+        eq(attendances.packageId, pkg.id),
+        ne(attendances.attendanceType, 'normal')
+      ));
 
-    if (isCustomType) {
-      newTotalHours = pkg.totalHours;
-    } else {
-      const adjustments = await db
-        .select()
-        .from(attendances)
-        .where(and(
-          eq(attendances.packageId, pkg.id),
-          ne(attendances.attendanceType, 'normal')
-        ));
-
-      let adjustmentDelta = 0;
-      for (const adj of adjustments) {
-        if (!adj.durationMinutes) continue;
-        if (adj.attendanceType === 'adjustment_add') adjustmentDelta += adj.durationMinutes;
-        if (adj.attendanceType === 'adjustment_subtract') adjustmentDelta -= adj.durationMinutes;
-      }
-
-      const base = standardPackageBaseMinutes[pkg.packageType] ?? pkg.totalHours;
-      newTotalHours = Math.max(0, base + adjustmentDelta);
-    }
-
-    if (newTotalHours !== pkg.totalHours) {
-      await updatePackage(pkg.id, { totalHours: newTotalHours });
+    let manualUsedAdjustment = 0;
+    for (const adj of adjustments) {
+      if (!adj.durationMinutes) continue;
+      if (adj.attendanceType === 'adjustment_add') manualUsedAdjustment -= adj.durationMinutes;
+      if (adj.attendanceType === 'adjustment_subtract') manualUsedAdjustment += adj.durationMinutes;
     }
 
     pkgCapacities.push({
       id: pkg.id,
-      baseMinutes: newTotalHours,
+      baseMinutes: pkg.totalHours,
       startDate: new Date(pkg.startDate),
       endDate: new Date(pkg.endDate),
       deductedMinutes: pkg.deductedMinutes ?? 0,
+      manualUsedAdjustment,
     });
   }
 
@@ -962,10 +944,14 @@ export async function fullRecalculateResident(residentId: number): Promise<{
     ))
     .orderBy(attendances.checkInTime);
 
-  // Initialiser les compteurs par forfait
+  // Initialiser les compteurs par forfait : minutes reportées du forfait
+  // précédent + ajustements manuels (+Heures/-Heures). Un ajout peut faire
+  // partir ce compteur sous 0 (bonus au-delà du total officiel du forfait) ;
+  // ce n'est volontairement pas plafonné à 0 pour que le geste ait un effet
+  // même sur un forfait tout juste créé et pas encore utilisé.
   const pkgUsed: Record<number, number> = {};
   for (const p of pkgCapacities) {
-    pkgUsed[p.id] = p.deductedMinutes; // Déduire les minutes reportées du forfait précédent
+    pkgUsed[p.id] = p.deductedMinutes + p.manualUsedAdjustment;
   }
 
   let totalOutOfPackageMinutes = 0;

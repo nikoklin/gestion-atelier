@@ -430,11 +430,15 @@ export default function ResidentPackages() {
   };
 
   const getUsedHours = (pkg: any) => {
-    // Afficher directement usedHours (inclut deductedMinutes + pointages réels)
+    // Afficher directement usedHours (inclut deductedMinutes + pointages réels).
+    // Peut être négatif : un ajout d'heures ("+ Heures") sur un forfait encore
+    // peu utilisé fait passer ce compteur sous 0 (bonus pas encore consommé).
     const used = getRealUsedMinutes(pkg);
-    const hours = Math.floor(used / 60);
-    const minutes = used % 60;
-    return `${hours}h${minutes > 0 ? minutes.toString().padStart(2, "0") : "00"}`;
+    const sign = used < 0 ? "-" : "";
+    const abs = Math.abs(used);
+    const hours = Math.floor(abs / 60);
+    const minutes = abs % 60;
+    return `${sign}${hours}h${minutes > 0 ? minutes.toString().padStart(2, "0") : "00"}`;
   };
 
   const formatDuration = (minutes: number | null) => {

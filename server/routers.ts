@@ -922,11 +922,9 @@ export const appRouter = router({
           throw new TRPCError({ code: "BAD_REQUEST", message: "Le nombre de minutes doit être supérieur à 0" });
         }
 
-        // Augmenter totalHours du forfait
-        const newTotalHours = pkg.totalHours + additionalMinutes;
-        await db.updatePackage(input.packageId, { totalHours: newTotalHours });
-
-        // Créer un pointage d'ajustement visible dans l'historique
+        // Le total du forfait reste fixe (celui de son type). Un ajout diminue
+        // les heures utilisées d'autant (donc augmente les heures restantes) ;
+        // fullRecalculateResident applique cet ajustement à chaque recalcul.
         const now = new Date();
         await db.createAttendance({
           residentId: pkg.residentId,
@@ -990,15 +988,10 @@ export const appRouter = router({
           throw new TRPCError({ code: "BAD_REQUEST", message: "Le nombre de minutes doit être supérieur à 0" });
         }
 
-        // Réduire totalHours du forfait
-        const newTotalHours = pkg.totalHours - subtractMinutes;
-        if (newTotalHours < 0) {
-          throw new TRPCError({ 
-            code: "BAD_REQUEST", 
-            message: "Impossible de soustraire plus d'heures que le total du forfait" 
-          });
-        }
-        await db.updatePackage(input.packageId, { totalHours: newTotalHours });
+        // Le total du forfait reste fixe (celui de son type). Un retrait
+        // augmente les heures utilisées d'autant (donc diminue les heures
+        // restantes) ; fullRecalculateResident applique cet ajustement à
+        // chaque recalcul.
 
         // Créer un pointage d'ajustement visible dans l'historique
         const now = new Date();

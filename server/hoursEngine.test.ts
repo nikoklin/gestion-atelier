@@ -235,12 +235,13 @@ describe.skipIf(!process.env.DATABASE_URL)("Résident sans aucun forfait (règle
   });
 });
 
-// Un retrait (ou ajout) d'heures sur un forfait dynamique (custom_*) via
-// packages.subtractHours/addHours met déjà totalHours à jour directement.
-// fullRecalculateResident ne doit PAS réappliquer en plus l'ajustement par
-// dessus (sinon il est compté deux fois à chaque recalcul, ce qui fausse la
-// capacité utilisée pour répartir les pointages réels).
-describe.skipIf(!process.env.DATABASE_URL)("Retrait d'heures sur un forfait dynamique (pas de double-compte)", () => {
+// packages.subtractHours/addHours ne touchent plus totalHours (qui reste
+// fixe, celui du type de forfait) : un retrait augmente usedHours, un ajout
+// le diminue (jusque sous 0 si besoin, pour qu'un geste commercial ait un
+// effet même sur un forfait pas encore utilisé). fullRecalculateResident
+// doit appliquer cet ajustement de façon stable (pas de double-compte aux
+// recalculs suivants).
+describe.skipIf(!process.env.DATABASE_URL)("Retrait/ajout d'heures : ajuste usedHours, pas totalHours", () => {
   const RID5 = 990005;
   async function cleanup5() {
     const database = await getDb();
@@ -269,9 +270,7 @@ describe.skipIf(!process.env.DATABASE_URL)("Retrait d'heures sur un forfait dyna
 
   afterAll(cleanup5);
 
-  it("retrait de 100 min : totalHours passe à 500 (comme packages.subtractHours)", async () => {
-    const pkg = await db.getPackageById(990501);
-    await db.updatePackage(990501, { totalHours: pkg!.totalHours - 100 });
+  it("retrait de 100 min (comme packages.subtractHours) : totalHours ne bouge pas", async () => {
     await db.createAttendance({
       residentId: RID5, packageId: 990501,
       checkInTime: d("2026-01-16T09:00:00"), checkOutTime: d("2026-01-16T09:00:00"), durationMinutes: 100,
@@ -280,13 +279,13 @@ describe.skipIf(!process.env.DATABASE_URL)("Retrait d'heures sur un forfait dyna
     await db.fullRecalculateResident(RID5);
 
     const after = await db.getPackageById(990501);
-    expect(after!.totalHours).toBe(500);
+    expect(after!.totalHours).toBe(600);
   });
 
-  it("le pointage de 550 min déborde de 50 min (500 utilisées, 50 hors-forfait) — pas 150", async () => {
+  it("le pointage de 550 min + le retrait de 100 débordent de 50 min (600 utilisées, 50 hors-forfait)", async () => {
     const after = await db.getPackageById(990501);
     const r = await db.getResidentById(RID5);
-    expect(after!.usedHours).toBe(500);
+    expect(after!.usedHours).toBe(600);
     expect(r!.outOfPackageMinutes).toBe(50);
   });
 
@@ -295,8 +294,26 @@ describe.skipIf(!process.env.DATABASE_URL)("Retrait d'heures sur un forfait dyna
     await db.fullRecalculateResident(RID5);
     const after = await db.getPackageById(990501);
     const r = await db.getResidentById(RID5);
-    expect(after!.totalHours).toBe(500);
-    expect(after!.usedHours).toBe(500);
+    expect(after!.totalHours).toBe(600);
+    expect(after!.usedHours).toBe(600);
     expect(r!.outOfPackageMinutes).toBe(50);
+  });
+
+  it("un ajout de 700 min (bonus) fait passer usedHours sous 0 : totalHours ne bouge pas, plus de hors-forfait", async () => {
+    // État courant : usedHours=600 (deductedMinutes 0 + retrait 100 + réel 550, plafonné à 600).
+    // Un ajout de 700 min doit ramener la base utilisée à 100-700=-600 avant
+    // réattribution des 550 réelles : usedHours final = -600+550 = -50.
+    await db.createAttendance({
+      residentId: RID5, packageId: 990501,
+      checkInTime: d("2026-01-17T09:00:00"), checkOutTime: d("2026-01-17T09:00:00"), durationMinutes: 700,
+      attendanceType: "adjustment_add", note: "Ajout de test (geste commercial)",
+    } as any);
+    await db.fullRecalculateResident(RID5);
+
+    const after = await db.getPackageById(990501);
+    const r = await db.getResidentById(RID5);
+    expect(after!.totalHours).toBe(600);
+    expect(after!.usedHours).toBe(-50);
+    expect(r!.outOfPackageMinutes).toBe(0);
   });
 });
