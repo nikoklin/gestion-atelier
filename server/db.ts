@@ -251,6 +251,8 @@ export async function getActivePackageByResidentId(residentId: number) {
   const now = new Date();
   // Chercher le premier forfait valide : heures restantes > 0 ET date non dépassée
   for (const pkg of allPkgs) {
+    // Un forfait en attente (en file ou en validation) n'est pas encore le forfait du résident.
+    if (pkg.status === 'pending') continue;
     const remainingHours = pkg.totalHours - pkg.usedHours;
     const isExpiredByDate = pkg.endDate && now > new Date(pkg.endDate);
     if (remainingHours > 0 && !isExpiredByDate) {
@@ -343,6 +345,9 @@ export async function getAllPackages() {
       isActive: packages.isActive,
       reminderSent: packages.reminderSent,
       expirationEmailSent: packages.expirationEmailSent,
+      status: packages.status,
+      autoStart: packages.autoStart,
+      shelfEmailSent: packages.shelfEmailSent,
       createdAt: packages.createdAt,
       updatedAt: packages.updatedAt,
     })
@@ -368,6 +373,9 @@ export async function getAllActivePackages() {
       isActive: packages.isActive,
       reminderSent: packages.reminderSent,
       expirationEmailSent: packages.expirationEmailSent,
+      status: packages.status,
+      autoStart: packages.autoStart,
+      shelfEmailSent: packages.shelfEmailSent,
       createdAt: packages.createdAt,
       updatedAt: packages.updatedAt,
     })
@@ -865,20 +873,155 @@ export async function recalculatePackageHours(packageId: number): Promise<{
  *  6. Mettre à jour usedHours et isActive de chaque forfait.
  *  7. Recalculer outOfPackageMinutes du résident.
  */
-export async function fullRecalculateResident(residentId: number): Promise<{
+type RecalcResult = {
   packagesProcessed: number;
   attendancesProcessed: number;
   totalOutOfPackageMinutes: number;
-}> {
+};
+
+export async function fullRecalculateResident(residentId: number): Promise<RecalcResult> {
+  const result = await recalculateResidentCore(residentId);
+  // Si le forfait en cours vient de finir, le forfait payé d'avance (en file)
+  // démarre ici : couvre le recalcul de 00:05, chaque départ, les ajustements...
+  if (await activateNextQueuedPackage(residentId)) {
+    return await recalculateResidentCore(residentId);
+  }
+  return result;
+}
+
+// Appelé quand un forfait en file démarre. Enregistré par emailService (pas
+// d'import direct : emailService dépend déjà de db) ; sans écouteur (tests),
+// aucun e-mail n'est envoyé.
+export type QueuedPackageActivation = {
+  residentId: number;
+  packageId: number;
+  packageType: string;
+  totalHours: number;
+  startDate: Date;
+  endDate: Date;
+};
+let queuedActivationListener: ((info: QueuedPackageActivation) => Promise<void>) | null = null;
+export function setQueuedActivationListener(
+  listener: ((info: QueuedPackageActivation) => Promise<void>) | null
+) {
+  queuedActivationListener = listener;
+}
+
+// Fait démarrer le plus ancien forfait payé d'avance (status 'pending' +
+// autoStart) quand le résident n'a plus de forfait valable. Début = fin du
+// forfait précédent (date de fin, ou dernier pointage s'il a été épuisé
+// avant), pour qu'il n'y ait ni trou ni heures hors forfait entre les deux.
+export async function activateNextQueuedPackage(residentId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+
+  const queued = await db
+    .select()
+    .from(packages)
+    .where(and(
+      eq(packages.residentId, residentId),
+      eq(packages.status, 'pending'),
+      eq(packages.autoStart, true)
+    ))
+    .orderBy(packages.createdAt, packages.id);
+  if (queued.length === 0) return false;
+  if (await getActivePackageByResidentId(residentId)) return false;
+
+  const next = queued[0];
+  const now = new Date();
+
+  // Fin du forfait précédent = la plus tôt entre sa date de fin (si passée) et
+  // le moment où ses heures ont été épuisées.
+  const others = (await getPackagesByResidentId(residentId)).filter(
+    (p) => p.status !== 'pending' && p.id !== next.id
+  );
+  const previous = others.sort(
+    (a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime()
+  )[0];
+  let start = now;
+  if (previous) {
+    const candidates: Date[] = [];
+    const previousEnd = new Date(previous.endDate);
+    if (previousEnd <= now) candidates.push(previousEnd);
+    if (previous.totalHours - previous.usedHours <= 0) {
+      const lastAttendance = await db
+        .select({ checkOutTime: attendances.checkOutTime })
+        .from(attendances)
+        .where(and(
+          eq(attendances.packageId, previous.id),
+          eq(attendances.attendanceType, 'normal')
+        ))
+        .orderBy(desc(attendances.checkInTime))
+        .limit(1);
+      const exhaustedAt = lastAttendance[0]?.checkOutTime;
+      candidates.push(exhaustedAt ? new Date(exhaustedAt) : now);
+    }
+    if (candidates.length > 0) {
+      start = new Date(Math.min(...candidates.map((d) => d.getTime())));
+    }
+  }
+
+  let durationDays = 0;
+  if (next.packageType.startsWith('custom_')) {
+    const type = await getPackageTypeById(parseInt(next.packageType.replace('custom_', ''), 10));
+    if (type) durationDays = type.durationWeeks * 7;
+  }
+  if (!durationDays) {
+    // Type introuvable : conserver la durée prévue à la création.
+    durationDays = Math.max(
+      1,
+      Math.round((new Date(next.endDate).getTime() - new Date(next.startDate).getTime()) / 86400000)
+    );
+  }
+  const end = new Date(start);
+  end.setDate(end.getDate() + durationDays);
+
+  await updatePackage(next.id, {
+    status: 'active',
+    isActive: true,
+    startDate: start,
+    endDate: end,
+    deductedMinutes: 0,
+    usedHours: 0,
+  } as any);
+
+  // Les pointages depuis `start` sont maintenant couverts par ce forfait ; on
+  // ne reporte que les heures hors forfait qui restent après cette réattribution.
+  await recalculateResidentCore(residentId);
+  const resident = await getResidentById(residentId);
+  const carry = resident?.outOfPackageMinutes ?? 0;
+  if (carry > 0) await updatePackage(next.id, { deductedMinutes: carry } as any);
+
+  console.log(
+    `[QueuedPackage] Forfait #${next.id} démarré pour le résident ${residentId} (début ${start.toISOString()}, fin ${end.toISOString()}, reporté ${carry}min).`
+  );
+
+  if (queuedActivationListener) {
+    await queuedActivationListener({
+      residentId,
+      packageId: next.id,
+      packageType: next.packageType,
+      totalHours: next.totalHours,
+      startDate: start,
+      endDate: end,
+    }).catch((err) => console.error("[QueuedPackage] Écouteur d'activation en échec:", err));
+  }
+  return true;
+}
+
+async function recalculateResidentCore(residentId: number): Promise<RecalcResult> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // 1. Charger tous les forfaits du résident triés par startDate
-  const allPackages = await db
+  // 1. Charger les forfaits du résident triés par startDate. Les forfaits en
+  // attente (en file ou en validation) ne participent pas au moteur : ils
+  // n'absorbent aucun pointage et leur isActive/deductedMinutes est laissé tel quel.
+  const allPackages = (await db
     .select()
     .from(packages)
     .where(eq(packages.residentId, residentId))
-    .orderBy(packages.startDate);
+    .orderBy(packages.startDate)
+  ).filter((p) => p.status !== 'pending');
 
   if (allPackages.length === 0) {
     // Aucun forfait, jamais : par définition, TOUS les pointages du résident

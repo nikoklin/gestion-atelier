@@ -349,9 +349,16 @@ export const appRouter = router({
         // ex: session enregistrée alors qu'aucun forfait n'était actif).
         const attendances = await db.getAttendancesByResidentId(input.residentId);
 
+        // Forfait déjà payé qui démarrera à la fin du forfait en cours.
+        const queuedPackages = (await db.getPackagesByResidentId(input.residentId))
+          .filter((p) => p.status === 'pending' && p.autoStart)
+          .sort((a, b) => a.id - b.id);
+        const nextPackage = queuedPackages[0] ?? null;
+
         return {
           resident,
           activePackage,
+          nextPackage,
           attendances,
         };
       }),

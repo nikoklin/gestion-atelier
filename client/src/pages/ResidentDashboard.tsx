@@ -163,7 +163,7 @@ export default function ResidentDashboard() {
     );
   }
 
-  const { resident, activePackage, attendances } = data;
+  const { resident, activePackage, nextPackage, attendances } = data;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -287,6 +287,12 @@ export default function ResidentDashboard() {
                     <p className="text-lg font-semibold">{activePackage.endDate ? formatDate(activePackage.endDate) : <span className="text-muted-foreground italic">En attente</span>}</p>
                   </div>
                 </div>
+                {nextPackage && (
+                  <div className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800 ring-1 ring-inset ring-amber-600/20">
+                    Forfait suivant déjà payé : <strong>{getPackageLabel(nextPackage.packageType)}</strong>.
+                    Il démarrera automatiquement à la fin de ton forfait actuel.
+                  </div>
+                )}
                 <div className="pt-4 border-t">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Calendar className="h-4 w-4" />

@@ -68,6 +68,8 @@ export const packages = mysqlTable("packages", {
   reminderSent: boolean("reminderSent").default(false).notNull(), // E-mail de rappel envoyé (7 jours avant)
   expirationEmailSent: boolean("expirationEmailSent").default(false).notNull(), // E-mail d'expiration envoyé
   wixPaymentId: varchar("wixPaymentId", { length: 100 }), // ID du paiement Wix à l'origine de la création (évite les doublons si le webhook est renvoyé)
+  autoStart: boolean("autoStart").default(false).notNull(), // Forfait payé d'avance, en file : démarre tout seul quand le forfait en cours est fini
+  shelfEmailSent: boolean("shelfEmailSent").default(false).notNull(), // E-mail "étagère à vider" envoyé (J+7 après la fin du forfait)
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => ({
@@ -114,7 +116,7 @@ export const emailLogs = mysqlTable("emailLogs", {
     .references(() => residents.id, { onDelete: 'cascade' }),
   packageId: int("packageId")
     .references(() => packages.id, { onDelete: 'set null' }),
-  emailType: mysqlEnum("emailType", ["reminder", "expiration", "session_summary", "guide"]).notNull(),
+  emailType: mysqlEnum("emailType", ["reminder", "expiration", "session_summary", "guide", "shelf_release", "integrity_alert", "payment_queued"]).notNull(),
   recipientEmail: varchar("recipientEmail", { length: 320 }).notNull(),
   subject: varchar("subject", { length: 255 }).notNull(),
   sentAt: timestamp("sentAt").defaultNow().notNull(),

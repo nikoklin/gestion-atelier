@@ -629,7 +629,7 @@ export default function ResidentPackages() {
                   <TableCell>
                     {(pkg as any).status === 'pending' ? (
                       <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-600/20">
-                        En attente
+                        {(pkg as any).autoStart ? "En attente – démarre automatiquement" : "En attente"}
                       </span>
                     ) : pkg.isActive ? (
                       isPackageExpired(pkg) ? (

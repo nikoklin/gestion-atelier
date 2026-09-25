@@ -108,9 +108,38 @@ export async function processWixPaymentEvent(event: any): Promise<void> {
       return;
     }
 
+    const settings = await db.getAtelierSettings();
+    const autoActivate = settings?.wixAutoActivatePackage ?? true;
+
     const activePackage = await db.getActivePackageByResidentId(resident.id);
     if (activePackage && (activePackage.totalHours - activePackage.usedHours) > 0) {
-      console.error(`[WixWebhook] Résident ${resident.id} a déjà un forfait actif avec des heures restantes — forfait NON créé pour le paiement ${wixPaymentId}, à traiter manuellement.`);
+      // Payé d'avance : le forfait est mis en file et démarrera à la fin du forfait en cours
+      // (démarrage automatique si le réglage "actif immédiatement" est activé, sinon validation manuelle).
+      const expectedStart = new Date(activePackage.endDate);
+      const expectedEnd = new Date(expectedStart);
+      expectedEnd.setDate(expectedEnd.getDate() + matchedType.durationWeeks * 7);
+      const queuedPackageId = await db.createPackage({
+        residentId: resident.id,
+        packageType: `custom_${matchedType.id}`,
+        totalHours: matchedType.totalMinutes,
+        usedHours: 0,
+        deductedMinutes: 0,
+        startDate: expectedStart,
+        endDate: expectedEnd,
+        isActive: false,
+        status: 'pending',
+        autoStart: autoActivate,
+        reminderSent: false,
+        expirationEmailSent: false,
+        wixPaymentId,
+      } as any);
+      console.log(`[WixWebhook] Forfait #${queuedPackageId} payé d'avance mis en file pour ${resident.firstName} ${resident.lastName} (paiement ${wixPaymentId}, ${paidAmount}€, ${matchedType.label}).`);
+      if (autoActivate && resident.email) {
+        const { sendPaymentQueuedEmail } = await import("./emailService");
+        await sendPaymentQueuedEmail(
+          resident.email, resident.firstName, matchedType.label, expectedStart, resident.id, queuedPackageId
+        ).catch((err) => console.error("[WixWebhook] Échec envoi e-mail de paiement reçu:", err));
+      }
       return;
     }
 
@@ -119,9 +148,6 @@ export async function processWixPaymentEvent(event: any): Promise<void> {
       console.error(`[WixWebhook] Résident ${resident.id} a un pointage en cours — forfait NON créé pour le paiement ${wixPaymentId}, à traiter manuellement.`);
       return;
     }
-
-    const settings = await db.getAtelierSettings();
-    const autoActivate = settings?.wixAutoActivatePackage ?? true;
 
     const outOfPackageMinutes = resident.outOfPackageMinutes ?? 0;
     const startDate = new Date();

@@ -84,7 +84,15 @@ export async function performCheckout(options: CheckoutOptions): Promise<Checkou
 
   // Recalculer depuis la base (usedHours plafonné, outOfPackageMinutes, remainingMinutes)
   const recalc = await db.recalculatePackageHours(packageId);
-  const remainingMinutes = recalc.remainingMinutes;
+
+  // Si ce départ a épuisé le forfait et qu'un forfait payé d'avance a pris le
+  // relais (voir db.activateNextQueuedPackage), le résident n'est pas à court :
+  // pas d'e-mail « forfait terminé », et le temps restant est celui du nouveau forfait.
+  const successor = await db.getActivePackageByResidentId(residentId);
+  const tookOver = !!successor && successor.id !== packageId;
+  const remainingMinutes = tookOver
+    ? Math.max(0, successor!.totalHours - successor!.usedHours)
+    : recalc.remainingMinutes;
 
   // Vérifier si le forfait est expiré (par date OU par heures) en utilisant le helper
   // Recharger le forfait après recalcul pour avoir les valeurs à jour
@@ -121,7 +129,7 @@ export async function performCheckout(options: CheckoutOptions): Promise<Checkou
   }
 
   // Vérifier si le forfait vient d'être épuisé et envoyer un e-mail d'expiration
-  const isNowExpired = remainingMinutes <= 0 || packageExpired;
+  const isNowExpired = !tookOver && (remainingMinutes <= 0 || packageExpired);
   if (isNowExpired && !pkg.expirationEmailSent && residentEmail && residentFirstName) {
     const { sendExpirationEmail } = await import('./emailService');
     await sendExpirationEmail(

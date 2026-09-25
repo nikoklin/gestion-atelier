@@ -329,3 +329,171 @@ describe.skipIf(!process.env.DATABASE_URL)("Retrait/ajout d'heures : ajuste used
     expect(r!.outOfPackageMinutes).toBe(0);
   });
 });
+
+// Forfait payé d'avance : mis en file (status 'pending' + autoStart), ignoré par
+// le moteur tant que le forfait en cours est valable, puis démarré tout seul à la
+// fin du forfait en cours (date de fin ou heures épuisées), sans trou ni
+// double-compte des heures hors forfait. Résidents sans e-mail : aucun envoi.
+describe.skipIf(!process.env.DATABASE_URL)("Forfait payé d'avance en file (démarrage automatique)", () => {
+  const LONG_DAYS = 4000; // durée longue pour que le test reste valable des années
+  const addDays = (date: Date, days: number) => new Date(date.getTime() + days * 86400000);
+  const RIDS = [990010, 990011, 990012, 990013, 990014];
+
+  async function cleanupQ() {
+    const database = await getDb();
+    if (!database) return;
+    for (const id of RIDS) {
+      await database.delete(attendances).where(eq(attendances.residentId, id));
+      await database.delete(packages).where(eq(packages.residentId, id));
+      await database.delete(residents).where(eq(residents.id, id));
+    }
+  }
+
+  async function newResident(id: number) {
+    await db.createResident({ id, firstName: "TEST", lastName: `Queue${id}`, email: "", isActive: true } as any);
+  }
+
+  beforeAll(cleanupQ);
+  afterAll(cleanupQ);
+
+  it("un forfait en file ne prend aucun pointage tant que le forfait en cours est valable", async () => {
+    const rid = RIDS[0];
+    await newResident(rid);
+    await db.createPackage({
+      id: 9901001, residentId: rid, packageType: "custom_999", totalHours: 600, usedHours: 0,
+      startDate: d("2026-01-01"), endDate: d("2099-01-01"), isActive: true,
+    } as any);
+    // Forfait en file dont la plage commence AVANT celle du forfait actif : s'il
+    // participait au moteur, il absorberait le pointage.
+    await db.createPackage({
+      id: 9901002, residentId: rid, packageType: "custom_999", totalHours: 900, usedHours: 0,
+      startDate: d("2025-12-01"), endDate: d("2099-06-01"), isActive: false, status: "pending", autoStart: true,
+    } as any);
+    await db.createAttendance({
+      residentId: rid, packageId: null,
+      checkInTime: d("2026-02-10T09:00:00Z"), checkOutTime: d("2026-02-10T10:00:00Z"), durationMinutes: 60,
+    } as any);
+    await db.fullRecalculateResident(rid);
+
+    const a = await db.getPackageById(9901001);
+    const b = await db.getPackageById(9901002);
+    expect(a!.usedHours).toBe(60);
+    expect(a!.isActive).toBe(true);
+    expect(b!.status).toBe("pending");
+    expect(b!.isActive).toBe(false);
+    expect(b!.usedHours).toBe(0);
+    expect((await db.getActivePackageByResidentId(rid))!.id).toBe(9901001);
+  });
+
+  it("à la date de fin du forfait en cours, le forfait en file démarre à cette date et absorbe les pointages du trou", async () => {
+    const rid = RIDS[1];
+    await newResident(rid);
+    await db.createPackage({
+      id: 9901101, residentId: rid, packageType: "custom_999", totalHours: 600, usedHours: 0,
+      startDate: d("2026-01-01"), endDate: d("2026-02-01"), isActive: true,
+    } as any);
+    await db.createPackage({
+      id: 9901102, residentId: rid, packageType: "custom_999", totalHours: 900, usedHours: 0,
+      startDate: d("2026-02-01"), endDate: addDays(d("2026-02-01"), LONG_DAYS), isActive: false, status: "pending", autoStart: true,
+    } as any);
+    await db.createAttendance({
+      residentId: rid, packageId: null,
+      checkInTime: d("2026-01-10T09:00:00Z"), checkOutTime: d("2026-01-10T10:40:00Z"), durationMinutes: 100,
+    } as any);
+    // Pointage après la fin du forfait A (hors forfait sans le forfait suivant).
+    await db.createAttendance({
+      residentId: rid, packageId: null,
+      checkInTime: d("2026-02-01T10:00:00Z"), checkOutTime: d("2026-02-01T11:00:00Z"), durationMinutes: 60,
+    } as any);
+    await db.fullRecalculateResident(rid);
+
+    const a = await db.getPackageById(9901101);
+    const b = await db.getPackageById(9901102);
+    const r = await db.getResidentById(rid);
+    expect(a!.isActive).toBe(false);
+    expect(b!.status).toBe("active");
+    expect(b!.isActive).toBe(true);
+    expect(new Date(b!.startDate).toISOString()).toBe("2026-02-01T00:00:00.000Z");
+    expect(b!.usedHours).toBe(60); // le pointage du 1er février est absorbé
+    expect(b!.deductedMinutes).toBe(0); // rien à reporter : pas de double-compte
+    expect(r!.outOfPackageMinutes).toBe(0);
+  });
+
+  it("quand les heures sont épuisées avant la date de fin, le forfait en file démarre et reprend le débordement", async () => {
+    const rid = RIDS[2];
+    await newResident(rid);
+    await db.createPackage({
+      id: 9901201, residentId: rid, packageType: "custom_999", totalHours: 600, usedHours: 0,
+      startDate: d("2026-01-01"), endDate: d("2099-01-01"), isActive: true,
+    } as any);
+    await db.createPackage({
+      id: 9901202, residentId: rid, packageType: "custom_999", totalHours: 900, usedHours: 0,
+      startDate: d("2099-01-01"), endDate: addDays(d("2099-01-01"), LONG_DAYS), isActive: false, status: "pending", autoStart: true,
+    } as any);
+    // 700 min sur un forfait de 600 : le forfait est épuisé, 100 min débordent.
+    await db.createAttendance({
+      residentId: rid, packageId: null,
+      checkInTime: d("2026-03-01T09:00:00Z"), checkOutTime: d("2026-03-01T20:40:00Z"), durationMinutes: 700,
+    } as any);
+    // Pointage suivant : couvert par le nouveau forfait.
+    await db.createAttendance({
+      residentId: rid, packageId: null,
+      checkInTime: d("2026-03-05T09:00:00Z"), checkOutTime: d("2026-03-05T10:00:00Z"), durationMinutes: 60,
+    } as any);
+    await db.fullRecalculateResident(rid);
+
+    const a = await db.getPackageById(9901201);
+    const b = await db.getPackageById(9901202);
+    const r = await db.getResidentById(rid);
+    expect(a!.usedHours).toBe(600);
+    expect(a!.isActive).toBe(false);
+    expect(b!.status).toBe("active");
+    expect(new Date(b!.startDate).toISOString()).toBe("2026-03-01T20:40:00.000Z"); // fin du dernier pointage
+    expect(b!.deductedMinutes).toBe(100); // débordement reporté
+    expect(b!.usedHours).toBe(160); // 100 reportées + 60 du 5 mars
+    expect(r!.outOfPackageMinutes).toBe(0);
+  });
+
+  it("un forfait en attente de validation manuelle (sans autoStart) ne démarre jamais tout seul", async () => {
+    const rid = RIDS[3];
+    await newResident(rid);
+    await db.createPackage({
+      id: 9901301, residentId: rid, packageType: "custom_999", totalHours: 600, usedHours: 0,
+      startDate: d("2026-01-01"), endDate: d("2026-02-01"), isActive: true,
+    } as any);
+    await db.createPackage({
+      id: 9901302, residentId: rid, packageType: "custom_999", totalHours: 900, usedHours: 0,
+      startDate: d("2026-02-01"), endDate: addDays(d("2026-02-01"), LONG_DAYS), isActive: false, status: "pending", autoStart: false,
+    } as any);
+    await db.fullRecalculateResident(rid);
+    const b = await db.getPackageById(9901302);
+    expect(b!.status).toBe("pending");
+    expect(b!.isActive).toBe(false);
+    expect(await db.getActivePackageByResidentId(rid)).toBeNull();
+  });
+
+  it("un seul forfait en file démarre à la fois, et les recalculs suivants sont stables", async () => {
+    const rid = RIDS[4];
+    await newResident(rid);
+    await db.createPackage({
+      id: 9901401, residentId: rid, packageType: "custom_999", totalHours: 600, usedHours: 0,
+      startDate: d("2026-01-01"), endDate: d("2026-02-01"), isActive: true,
+    } as any);
+    for (const id of [9901402, 9901403]) {
+      await db.createPackage({
+        id, residentId: rid, packageType: "custom_999", totalHours: 900, usedHours: 0,
+        startDate: d("2026-02-01"), endDate: addDays(d("2026-02-01"), LONG_DAYS), isActive: false, status: "pending", autoStart: true,
+      } as any);
+    }
+    await db.fullRecalculateResident(rid);
+    await db.fullRecalculateResident(rid);
+    await db.fullRecalculateResident(rid);
+
+    const first = await db.getPackageById(9901402);
+    const second = await db.getPackageById(9901403);
+    expect(first!.status).toBe("active");
+    expect(second!.status).toBe("pending");
+    expect(second!.isActive).toBe(false);
+    expect((await db.getActivePackageByResidentId(rid))!.id).toBe(9901402);
+  });
+});

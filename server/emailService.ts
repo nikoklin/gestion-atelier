@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import * as db from "./db";
 import { getPublicSiteUrl } from "./_core/publicSiteUrl";
+import { formatParisDate } from "./_core/timezone";
 
 // Envoi via l'API HTTPS de Brevo (https://api.brevo.com/v3/smtp/email).
 // NE PAS repasser par du SMTP direct (port 25/465/587) : les hébergeurs
@@ -80,6 +81,26 @@ function replaceTemplateVariables(
   return result;
 }
 
+// Rend le corps du rappel. {{remainingHours}} est un nombre d'heures entières :
+// les modèles écrits "{{remainingHours}}h" (dont celui enregistré en base) sont
+// complétés par les minutes restantes, pour afficher "1h45" et non "1h".
+export function renderReminderBody(
+  bodyTemplate: string,
+  variables: Record<string, string | number>,
+  remainingMinutesTotal: number
+): string {
+  const remaining = Math.max(0, remainingMinutesTotal);
+  const withMinutes = bodyTemplate.replace(
+    /\{\{remainingHours\}\}h(?!\s*\{\{remainingMinutes\}\})/g,
+    "{{remainingHours}}h{{remainingMinutes}}"
+  );
+  return replaceTemplateVariables(withMinutes, {
+    ...variables,
+    remainingHours: Math.floor(remaining / 60),
+    remainingMinutes: String(remaining % 60).padStart(2, "0"),
+  });
+}
+
 // Envoyer un e-mail de rappel (forfait expirant dans 7 jours)
 export async function sendReminderEmail(
   email: string,
@@ -100,13 +121,11 @@ export async function sendReminderEmail(
   const bodyTemplate = template?.body || `
     <h2>Bonjour {{residentName}},</h2>
     <p>Ton forfait de <strong>{{totalHours}}h</strong> arrive à expiration dans 7 jours.</p>
-    <p>Il te reste <strong>{{remainingHours}}h</strong> à utiliser.</p>
+    <p>Il te reste <strong>{{remainingHours}}h{{remainingMinutes}}</strong> à utiliser.</p>
     <p>N'hésite pas à renouveler ton forfait pour continuer à profiter de l'atelier !</p>
   `;
 
-  // Convertir les minutes en heures pour l'affichage
-  const remainingMinutes = pkg.totalHours - pkg.usedHours;
-  const remainingHours = Math.floor(remainingMinutes / 60);
+  const remainingMinutesTotal = pkg.totalHours - pkg.usedHours;
   const totalHours = Math.floor(pkg.totalHours / 60);
 
   const baseUrl = getPublicSiteUrl();
@@ -127,14 +146,13 @@ export async function sendReminderEmail(
     }
   } catch (e) { /* non bloquant */ }
 
-  const body = replaceTemplateVariables(bodyTemplate, {
+  const body = renderReminderBody(bodyTemplate, {
     residentName,
     totalHours: totalHours,
-    remainingHours: Math.max(0, remainingHours),
-    endDate: pkg.endDate ? new Date(pkg.endDate).toLocaleDateString("fr-FR") : "N/A",
+    endDate: pkg.endDate ? formatParisDate(pkg.endDate) : "N/A",
     dashboardUrl,
     paymentLinks: paymentLinksHtml,
-  });
+  }, remainingMinutesTotal);
 
   const success = await sendEmail(email, subject, body, silent);
   await db.createEmailLog({ residentId, packageId, emailType: 'reminder', recipientEmail: email, subject, success }).catch(() => {});
@@ -190,7 +208,7 @@ export async function sendExpirationEmail(
     residentName,
     totalHours: totalHours,
     usedHours: usedHours,
-    endDate: pkg.endDate ? new Date(pkg.endDate).toLocaleDateString("fr-FR") : "N/A",
+    endDate: pkg.endDate ? formatParisDate(pkg.endDate) : "N/A",
     dashboardUrl,
     paymentLinks: paymentLinksHtml,
   });
@@ -317,8 +335,16 @@ export async function checkAndSendReminders(): Promise<{ remindersSent: number; 
     const sevenDaysFromNow = new Date(now.getTime() + reminderDays * 24 * 60 * 60 * 1000);
 
     // Grouper les forfaits par résident et garder le plus récent (ID le plus élevé)
+    // Un résident qui a déjà payé la suite (forfait en file) n'a besoin ni du
+    // rappel ni de l'e-mail d'expiration : son prochain forfait démarre seul.
+    const residentsWithQueuedPackage = new Set(
+      allPackages.filter((p) => p.status === 'pending' && p.autoStart).map((p) => p.residentId)
+    );
+
     const latestPackagesByResident = new Map<number, typeof allPackages[0]>();
     for (const pkg of allPackages) {
+      if (pkg.status === 'pending') continue;
+      if (residentsWithQueuedPackage.has(pkg.residentId)) continue;
       const existing = latestPackagesByResident.get(pkg.residentId);
       if (!existing || pkg.id > existing.id) {
         latestPackagesByResident.set(pkg.residentId, pkg);
@@ -446,6 +472,33 @@ export async function sendGuideEmail(email: string, firstName: string, residentI
 }
 
 /**
+ * Paiement reçu alors que le forfait en cours n'est pas fini : le nouveau
+ * forfait est en file et démarrera tout seul.
+ */
+export async function sendPaymentQueuedEmail(
+  email: string,
+  firstName: string,
+  packageLabel: string,
+  expectedStart: Date,
+  residentId: number,
+  packageId: number
+): Promise<boolean> {
+  const startStr = formatParisDate(expectedStart, { day: '2-digit', month: 'long', year: 'numeric' });
+  const subject = `Paiement reçu – ton prochain forfait démarrera automatiquement`;
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+      <h2 style="color: #2c5f2e;">Bonjour ${firstName},</h2>
+      <p>Nous avons bien reçu ton paiement pour le forfait <strong>${packageLabel}</strong>. Merci !</p>
+      <p>Ton forfait actuel n'est pas encore terminé : le nouveau démarrera automatiquement à la fin de l'actuel (aux alentours du <strong>${startStr}</strong>, ou dès que ses heures seront épuisées si c'est avant). Tu n'as rien à faire.</p>
+      <p>À bientôt à l'atelier !</p>
+    </div>
+  `;
+  const sent = await sendEmail(email, subject, html);
+  await db.createEmailLog({ residentId, packageId, emailType: 'payment_queued', recipientEmail: email, subject, success: sent }).catch(() => {});
+  return sent;
+}
+
+/**
  * Envoyer un email de confirmation d'activation de forfait au résident
  */
 export async function sendPackageActivatedEmail(
@@ -465,9 +518,9 @@ export async function sendPackageActivatedEmail(
     }
     const siteUrl = getPublicSiteUrl();
     const dashboardUrl = `${siteUrl}/resident/dashboard?id=${residentId}`;
-    const startStr = startDate.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+    const startStr = formatParisDate(startDate, { day: '2-digit', month: 'long', year: 'numeric' });
     const endStr = endDate
-      ? endDate.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
+      ? formatParisDate(endDate, { day: '2-digit', month: 'long', year: 'numeric' })
       : 'Non définie';
     const totalHoursDisplay = Math.floor(totalHours / 60);
 
@@ -518,3 +571,25 @@ export async function sendPackageActivatedEmail(
     return false;
   }
 }
+
+// Quand un forfait payé d'avance démarre (voir db.activateNextQueuedPackage),
+// le résident reçoit le même e-mail de confirmation qu'une activation manuelle.
+db.setQueuedActivationListener(async (info) => {
+  const resident = await db.getResidentById(info.residentId);
+  if (!resident?.email) return;
+  let label = info.packageType;
+  if (info.packageType.startsWith("custom_")) {
+    const type = await db.getPackageTypeById(parseInt(info.packageType.replace("custom_", ""), 10));
+    if (type) label = type.label;
+  }
+  await sendPackageActivatedEmail(
+    resident.email,
+    resident.firstName,
+    label,
+    info.startDate,
+    info.endDate,
+    info.totalHours,
+    resident.id,
+    info.packageId
+  );
+});
