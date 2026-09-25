@@ -9,7 +9,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Users, Package, Clock, Layers, CreditCard } from "lucide-react";
+import { Users, Package, Clock, Layers, CreditCard, PackageOpen } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { useLocation } from "wouter";
 import { usePackageLabel } from "@/hooks/usePackageLabel";
 
@@ -19,6 +21,16 @@ export default function Dashboard() {
   const { data: recentAttendances } = trpc.attendances.listAll.useQuery();
   const { data: atelierSettings } = trpc.atelierSettings.get.useQuery();
   const { data: recentWixPayments } = trpc.packages.getRecentWixPaidPackages.useQuery();
+  const { data: shelvesToEmpty } = trpc.residents.getShelvesToEmpty.useQuery();
+  const utils = trpc.useUtils();
+  const releaseShelfMutation = trpc.residents.releaseShelf.useMutation({
+    onSuccess: (result) => {
+      toast.success(result.emailSent ? "Étagère remise en non occupée — le résident a été prévenu par e-mail" : "Étagère remise en non occupée");
+      utils.residents.getShelvesToEmpty.invalidate();
+      utils.residents.getWithActivePackage.invalidate();
+    },
+    onError: (error) => toast.error("Erreur : " + error.message),
+  });
 
   // Numéro d'étagère sélectionné (clic)
   const [selectedShelf, setSelectedShelf] = useState<number | null>(null);
@@ -240,6 +252,65 @@ export default function Dashboard() {
           )}
         </CardContent>
       </Card>
+
+      {/* Étagères à vider : résidents déjà prévenus qui gardent encore leur étagère */}
+      {shelvesToEmpty && shelvesToEmpty.length > 0 && (
+        <Card className="border-amber-300">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <PackageOpen className="h-5 w-5" />
+              Étagères à vider
+            </CardTitle>
+            <CardDescription>
+              Forfait terminé depuis plus d'une semaine et non prolongé. Une fois l'étagère vidée, clique sur « Étagère vidée » : elle redevient non occupée et le résident en est informé par e-mail.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Résident</TableHead>
+                    <TableHead>Étagère</TableHead>
+                    <TableHead>Forfait terminé le</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {shelvesToEmpty.map((s) => (
+                    <TableRow key={s.residentId}>
+                      <TableCell>
+                        <button
+                          className="font-medium hover:underline text-left"
+                          onClick={() => setLocation(`/residents/${s.residentId}`)}
+                        >
+                          {s.firstName} {s.lastName}
+                        </button>
+                      </TableCell>
+                      <TableCell>n°{s.shelfNumber}</TableCell>
+                      <TableCell>{new Date(s.finishedAt).toLocaleDateString("fr-FR")}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={releaseShelfMutation.isPending}
+                          onClick={() => {
+                            if (confirm(`Confirmer que l'étagère n°${s.shelfNumber} de ${s.firstName} ${s.lastName} est vidée ? Un e-mail sera envoyé au résident.`)) {
+                              releaseShelfMutation.mutate({ residentId: s.residentId });
+                            }
+                          }}
+                        >
+                          Étagère vidée
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Grille des étagères */}
       {totalShelves > 0 && (

@@ -281,6 +281,94 @@ export async function getDisplayPackageForResident(residentId: number) {
   return allPackages.length > 0 ? allPackages[0] : null;
 }
 
+// ─── Étagères à vider ──────────────────────────────────────────────────────
+
+export const SHELF_RELEASE_DELAY_DAYS = 7;
+
+export type ShelfSituation = {
+  residentId: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  shelfNumber: string;
+  packageId: number;
+  finishedAt: Date;
+  noticeSent: boolean;
+};
+
+// Résidents actifs qui gardent une étagère alors que leur dernier forfait est
+// fini (date de fin passée, ou heures épuisées) et qu'ils n'ont ni forfait
+// valable ni forfait payé en attente. finishedAt = moment où le forfait s'est
+// terminé (le plus tôt entre la date de fin et le dernier pointage qui l'a épuisé).
+export async function findFinishedPackageShelves(
+  now: Date = new Date(),
+  onlyResidentIds?: number[]
+): Promise<ShelfSituation[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  let rows = await db
+    .select()
+    .from(residents)
+    .where(and(eq(residents.isActive, true), eq(residents.isDeleted, false)));
+  rows = rows.filter((r) => (r.shelfNumber ?? "").trim() !== "");
+  if (onlyResidentIds) rows = rows.filter((r) => onlyResidentIds.includes(r.id));
+
+  const result: ShelfSituation[] = [];
+  for (const r of rows) {
+    const pkgs = await getPackagesByResidentId(r.id); // du plus récent au plus ancien
+    if (pkgs.length === 0) continue;
+    // A déjà payé (ou attend la validation d'un forfait) : l'étagère reste.
+    if (pkgs.some((p) => p.status === "pending")) continue;
+    // Un forfait encore valable : l'étagère reste.
+    if (pkgs.some((p) => p.totalHours - p.usedHours > 0 && new Date(p.endDate) >= now)) continue;
+
+    const latest = pkgs[0];
+    const ends: Date[] = [];
+    const endDate = new Date(latest.endDate);
+    if (endDate <= now) ends.push(endDate);
+    if (latest.totalHours - latest.usedHours <= 0) {
+      const lastAttendance = await db
+        .select({ checkOutTime: attendances.checkOutTime })
+        .from(attendances)
+        .where(and(eq(attendances.packageId, latest.id), eq(attendances.attendanceType, "normal")))
+        .orderBy(desc(attendances.checkInTime))
+        .limit(1);
+      const exhaustedAt = lastAttendance[0]?.checkOutTime;
+      ends.push(exhaustedAt ? new Date(exhaustedAt) : endDate);
+    }
+    if (ends.length === 0) continue;
+
+    result.push({
+      residentId: r.id,
+      firstName: r.firstName,
+      lastName: r.lastName,
+      email: r.email,
+      shelfNumber: (r.shelfNumber as string).trim(),
+      packageId: latest.id,
+      finishedAt: new Date(Math.min(...ends.map((d) => d.getTime()))),
+      noticeSent: latest.shelfEmailSent,
+    });
+  }
+  return result;
+}
+
+// À prévenir : forfait fini depuis au moins 7 jours et e-mail pas encore envoyé.
+export async function findShelfReleaseCandidates(
+  now: Date = new Date(),
+  onlyResidentIds?: number[]
+): Promise<ShelfSituation[]> {
+  const limit = now.getTime() - SHELF_RELEASE_DELAY_DAYS * 86400000;
+  return (await findFinishedPackageShelves(now, onlyResidentIds)).filter(
+    (c) => !c.noticeSent && c.finishedAt.getTime() <= limit
+  );
+}
+
+// Déjà prévenus et qui gardent encore leur étagère : à vider, puis à libérer par l'atelier.
+export async function findShelvesToEmpty(now: Date = new Date()): Promise<ShelfSituation[]> {
+  return (await findFinishedPackageShelves(now)).filter((c) => c.noticeSent);
+}
+
 export async function getPackageById(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

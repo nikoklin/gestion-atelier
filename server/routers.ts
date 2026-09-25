@@ -554,6 +554,31 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    // Étagère vidée par l'atelier : elle redevient non occupée et le résident en est informé par e-mail.
+    releaseShelf: protectedProcedure
+      .input(z.object({ residentId: z.number() }))
+      .mutation(async ({ input }) => {
+        const resident = await db.getResidentById(input.residentId);
+        if (!resident) throw new TRPCError({ code: "NOT_FOUND", message: "Résident non trouvé" });
+        const shelfNumber = (resident.shelfNumber ?? "").trim();
+        await db.updateResident(input.residentId, { shelfNumber: null });
+
+        let emailSent = false;
+        if (shelfNumber) {
+          const { sendShelfReleasedEmail } = await import("./shelfService");
+          emailSent = await sendShelfReleasedEmail(resident, shelfNumber).catch((err) => {
+            console.error("[Shelf] Échec de l'e-mail au résident:", err);
+            return false;
+          });
+        }
+        return { success: true, emailSent };
+      }),
+
+    // Résidents déjà prévenus (forfait fini depuis 7 jours, non prolongé) qui gardent encore leur étagère.
+    getShelvesToEmpty: protectedProcedure.query(async () => {
+      return await db.findShelvesToEmpty();
+    }),
+
     listArchived: protectedProcedure.query(async () => {
       return await db.getArchivedResidents();
     }),

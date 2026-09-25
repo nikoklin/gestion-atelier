@@ -1,5 +1,6 @@
 import cron from "node-cron";
 import { checkAndSendReminders } from "./emailService";
+import { checkAndSendShelfReleaseNotices } from "./shelfService";
 import { performDailyBackup } from "./scheduledBackup";
 import { checkAndProcessMissedCheckouts } from "./missedCheckoutService";
 import { recalculateAllResidents, getAtelierSettings } from "./db";
@@ -32,6 +33,11 @@ export function startScheduler() {
     if (getCurrentHourInParis() !== targetHour) return;
     console.log(`[Scheduler] Running daily email check at ${targetHour}:00 (Europe/Paris)`);
     await checkAndSendReminders();
+    try {
+      await checkAndSendShelfReleaseNotices();
+    } catch (error) {
+      console.error("[Scheduler] Shelf release notices failed:", error);
+    }
   }, { timezone: "Europe/Paris" });
 
   // Recalcul quotidien de tous les résidents à 00h05 : désactive les forfaits

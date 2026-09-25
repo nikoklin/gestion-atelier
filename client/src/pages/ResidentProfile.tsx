@@ -92,6 +92,18 @@ export default function ResidentProfile() {
     : null;
   const activePackage = packages?.find((p: any) => p.isActive);
 
+  // Étagère à vider (forfait fini depuis 7 jours, non prolongé)
+  const { data: shelvesToEmpty } = trpc.residents.getShelvesToEmpty.useQuery();
+  const releaseShelfMutation = trpc.residents.releaseShelf.useMutation({
+    onSuccess: (result) => {
+      toast.success(result.emailSent ? "Étagère remise en non occupée — le résident a été prévenu par e-mail" : "Étagère remise en non occupée");
+      utils.residents.getShelvesToEmpty.invalidate();
+      utils.residents.getById.invalidate({ id: residentId });
+      utils.residents.getWithActivePackage.invalidate();
+    },
+    onError: (error) => toast.error(`Erreur : ${error.message}`),
+  });
+
   // Récupérer l'historique des e-mails
   const { data: emailLogs, isLoading: emailLogsLoading } = trpc.emailLogs.getByResidentId.useQuery(
     { residentId },
@@ -643,6 +655,25 @@ const utils = trpc.useUtils();
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Étagère</p>
                   <p>{resident.shelfNumber || "Non attribuée"}</p>
+                  {resident.shelfNumber && shelvesToEmpty?.some((s) => s.residentId === resident.id) && (
+                    <div className="mt-2 space-y-2">
+                      <p className="text-sm text-amber-700">
+                        Forfait terminé depuis plus d'une semaine : cette étagère est à vider.
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={releaseShelfMutation.isPending}
+                        onClick={() => {
+                          if (confirm(`Confirmer que l'étagère n°${resident.shelfNumber} est vidée ? Un e-mail sera envoyé au résident.`)) {
+                            releaseShelfMutation.mutate({ residentId: resident.id });
+                          }
+                        }}
+                      >
+                        Étagère vidée
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
               {resident.artistSignature && (

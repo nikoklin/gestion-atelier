@@ -155,6 +155,12 @@ export function dashboardUrlFor(residentId: number): string {
   return `${getPublicSiteUrl()}/resident/dashboard?id=${residentId}`;
 }
 
+// Adresse qui reçoit les e-mails destinés à l'atelier (alertes, étagères à vider) :
+// variable d'environnement ATELIER_NOTIFICATION_EMAIL, sinon l'adresse d'expédition.
+export function getAtelierNotificationEmail(): string | null {
+  return process.env.ATELIER_NOTIFICATION_EMAIL || process.env.EMAIL_USER || null;
+}
+
 // Les modèles modifiables (reminder, expiration, session_summary) sont enregistrés
 // avec leur propre <div style="font-family: Arial…"> extérieur : on le retire à
 // l'envoi pour ne garder que le contenu, et on passe les liens en doré.

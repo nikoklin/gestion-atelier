@@ -27,10 +27,11 @@ export const emailRouter = router({
     let resetCount = 0;
 
     for (const pkg of latestPackages) {
-      if (pkg.reminderSent || pkg.expirationEmailSent) {
+      if (pkg.reminderSent || pkg.expirationEmailSent || pkg.shelfEmailSent) {
         await db.updatePackage(pkg.id, {
           reminderSent: false,
           expirationEmailSent: false,
+          shelfEmailSent: false,
         });
         resetCount++;
       }
@@ -51,10 +52,11 @@ export const emailRouter = router({
       let resetCount = 0;
 
       for (const pkg of packages) {
-        if (pkg.isActive && (pkg.reminderSent || pkg.expirationEmailSent)) {
+        if (pkg.isActive && (pkg.reminderSent || pkg.expirationEmailSent || pkg.shelfEmailSent)) {
           await db.updatePackage(pkg.id, {
             reminderSent: false,
             expirationEmailSent: false,
+            shelfEmailSent: false,
           });
           resetCount++;
         }
