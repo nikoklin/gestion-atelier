@@ -78,65 +78,6 @@ export default function Dashboard() {
         <p className="text-muted-foreground">Vue d'ensemble de l'atelier</p>
       </div>
 
-      {/* Étagères à vider : résidents déjà prévenus qui gardent encore leur étagère */}
-      {shelvesToEmpty && shelvesToEmpty.length > 0 && (
-        <Card className="border-amber-300 mb-4 md:mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <PackageOpen className="h-5 w-5" />
-              Étagères à vider
-            </CardTitle>
-            <CardDescription>
-              Forfait terminé depuis plus d'une semaine et non prolongé. Une fois l'étagère vidée, clique sur « Étagère vidée » : elle redevient non occupée et le résident en est informé par e-mail.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Résident</TableHead>
-                    <TableHead>Étagère</TableHead>
-                    <TableHead>Forfait terminé le</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {shelvesToEmpty.map((s) => (
-                    <TableRow key={s.residentId}>
-                      <TableCell>
-                        <button
-                          className="font-medium hover:underline text-left"
-                          onClick={() => setLocation(`/residents/${s.residentId}`)}
-                        >
-                          {s.firstName} {s.lastName}
-                        </button>
-                      </TableCell>
-                      <TableCell>n°{s.shelfNumber}</TableCell>
-                      <TableCell>{new Date(s.finishedAt).toLocaleDateString("fr-FR")}</TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={releaseShelfMutation.isPending}
-                          onClick={() => {
-                            if (confirm(`Confirmer que l'étagère n°${s.shelfNumber} de ${s.firstName} ${s.lastName} est vidée ? Un e-mail sera envoyé au résident.`)) {
-                              releaseShelfMutation.mutate({ residentId: s.residentId });
-                            }
-                          }}
-                        >
-                          Étagère vidée
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Cards résumé */}
       <div className="grid gap-3 grid-cols-1 sm:grid-cols-3 mb-4 md:mb-8">
         <Card>
@@ -178,8 +119,8 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {totalShelves > 0 && (
-          <Card>
+        {(totalShelves > 0 || (shelvesToEmpty && shelvesToEmpty.length > 0)) && (
+          <Card className={shelvesToEmpty && shelvesToEmpty.length > 0 ? "border-amber-400 ring-1 ring-amber-300" : ""}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Étagères</CardTitle>
               <Layers className="h-4 w-4 text-muted-foreground" />
@@ -189,6 +130,43 @@ export default function Dashboard() {
               <span className={`text-xs font-medium ${freeCount === 0 ? 'text-red-600' : 'text-green-600'}`}>
                 {freeCount} libre{freeCount > 1 ? 's' : ''}
               </span>
+
+              {/* Étagères à vider : déjà prévenus, l'atelier doit encore les vider puis confirmer */}
+              {shelvesToEmpty && shelvesToEmpty.length > 0 && (
+                <div className="mt-3 rounded-md bg-amber-50 p-3 space-y-3">
+                  <p className="flex items-center gap-1 text-sm font-semibold text-amber-800">
+                    <PackageOpen className="h-4 w-4" />
+                    {shelvesToEmpty.length} étagère{shelvesToEmpty.length > 1 ? "s" : ""} à vider
+                  </p>
+                  {shelvesToEmpty.map((s) => (
+                    <div key={s.residentId} className="flex items-center justify-between gap-2">
+                      <button
+                        className="text-left text-sm hover:underline"
+                        onClick={() => setLocation(`/residents/${s.residentId}`)}
+                      >
+                        <span className="font-medium">n°{s.shelfNumber} · {s.firstName} {s.lastName}</span>
+                        <br />
+                        <span className="text-xs text-muted-foreground">
+                          forfait terminé le {new Date(s.finishedAt).toLocaleDateString("fr-FR")}
+                        </span>
+                      </button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="shrink-0"
+                        disabled={releaseShelfMutation.isPending}
+                        onClick={() => {
+                          if (confirm(`Confirmer que l'étagère n°${s.shelfNumber} de ${s.firstName} ${s.lastName} est vidée ? Un e-mail sera envoyé au résident.`)) {
+                            releaseShelfMutation.mutate({ residentId: s.residentId });
+                          }
+                        }}
+                      >
+                        Étagère vidée
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         )}

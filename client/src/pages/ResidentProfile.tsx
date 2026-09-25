@@ -655,25 +655,6 @@ const utils = trpc.useUtils();
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Étagère</p>
                   <p>{resident.shelfNumber || "Non attribuée"}</p>
-                  {resident.shelfNumber && shelvesToEmpty?.some((s) => s.residentId === resident.id) && (
-                    <div className="mt-2 space-y-2">
-                      <p className="text-sm text-amber-700">
-                        Forfait terminé depuis plus d'une semaine : cette étagère est à vider.
-                      </p>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={releaseShelfMutation.isPending}
-                        onClick={() => {
-                          if (confirm(`Confirmer que l'étagère n°${resident.shelfNumber} est vidée ? Un e-mail sera envoyé au résident.`)) {
-                            releaseShelfMutation.mutate({ residentId: resident.id });
-                          }
-                        }}
-                      >
-                        Étagère vidée
-                      </Button>
-                    </div>
-                  )}
                 </div>
               </div>
               {resident.artistSignature && (
@@ -886,6 +867,35 @@ const utils = trpc.useUtils();
               )}
             </CardContent>
           </Card>
+
+          {/* Étagère à vider : sous les notes, bien visible */}
+          {resident.shelfNumber && shelvesToEmpty?.some((s) => s.residentId === resident.id) && (
+            <Card className="mt-6 border-amber-300">
+              <CardHeader>
+                <CardTitle>Étagère à vider</CardTitle>
+                <CardDescription>
+                  Forfait terminé depuis plus d'une semaine et non prolongé.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p>
+                  L'étagère <strong>n°{resident.shelfNumber}</strong> est à vider. Une fois vidée, clique sur
+                  « Étagère vidée » : elle redevient non occupée et le résident en est informé par e-mail.
+                </p>
+                <Button
+                  variant="outline"
+                  disabled={releaseShelfMutation.isPending}
+                  onClick={() => {
+                    if (confirm(`Confirmer que l'étagère n°${resident.shelfNumber} est vidée ? Un e-mail sera envoyé au résident.`)) {
+                      releaseShelfMutation.mutate({ residentId: resident.id });
+                    }
+                  }}
+                >
+                  Étagère vidée
+                </Button>
+              </CardContent>
+            </Card>
+          )}
             </div>
           </div>
         </TabsContent>
