@@ -34,8 +34,9 @@ export default function FixCheckout() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!checkoutTime || !token) return;
-    fixMutation.mutate({ token, checkoutTime });
+    const time = checkoutTime || currentCheckOut;
+    if (!time || !token) return;
+    fixMutation.mutate({ token, time });
   };
 
   if (!token) {
@@ -108,16 +109,10 @@ export default function FixCheckout() {
     );
   }
 
-  // Formater la date de check-in pour l'affichage
-  const checkInDate = tokenInfo.checkInTime ? new Date(tokenInfo.checkInTime) : null;
-  const checkInFormatted = checkInDate
-    ? checkInDate.toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })
-    : "";
-
-  // Valeur par défaut pour l'input datetime-local (date du check-in, heure 22:00)
-  const defaultCheckout = checkInDate
-    ? `${checkInDate.getFullYear()}-${String(checkInDate.getMonth() + 1).padStart(2, "0")}-${String(checkInDate.getDate()).padStart(2, "0")}T22:00`
-    : "";
+  // Affichage en heure de Paris (fourni par le serveur) ; seule l'heure est modifiable,
+  // la date reste celle de l'arrivée.
+  const checkInFormatted = `${tokenInfo.checkInDateDisplay} à ${tokenInfo.checkInTimeDisplay}`;
+  const currentCheckOut = tokenInfo.currentCheckOutTimeDisplay ?? "";
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -135,15 +130,15 @@ export default function FixCheckout() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-600">
               <p><strong>Arrivée :</strong> {checkInFormatted}</p>
-              <p><strong>Sortie automatique :</strong> 22h00 (à corriger)</p>
+              <p><strong>Sortie automatique :</strong> {currentCheckOut} (à corriger)</p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="checkoutTime">Heure de sortie réelle</Label>
+              <Label htmlFor="checkoutTime">Heure de sortie réelle (le {tokenInfo.checkInDateDisplay})</Label>
               <Input
                 id="checkoutTime"
-                type="datetime-local"
-                value={checkoutTime || defaultCheckout}
+                type="time"
+                value={checkoutTime || currentCheckOut}
                 onChange={(e) => setCheckoutTime(e.target.value)}
                 required
                 className="w-full"

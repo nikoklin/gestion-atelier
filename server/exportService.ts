@@ -2,6 +2,7 @@ import ExcelJS from "exceljs";
 import { getDb } from "./db";
 import { attendances, packages, residents } from "../drizzle/schema";
 import { desc, eq } from "drizzle-orm";
+import { formatParisDate, formatParisDateTime } from "./_core/timezone";
 
 /**
  * Génère un fichier Excel contenant l'historique des pointages et des forfaits
@@ -62,10 +63,10 @@ export async function generateExcelExport(): Promise<Buffer> {
       id: attendance.id,
       resident: `${attendance.residentFirstName} ${attendance.residentLastName}`,
       checkInTime: attendance.checkInTime
-        ? new Date(attendance.checkInTime).toLocaleString("fr-FR")
+        ? formatParisDateTime(attendance.checkInTime)
         : "",
       checkOutTime: attendance.checkOutTime
-        ? new Date(attendance.checkOutTime).toLocaleString("fr-FR")
+        ? formatParisDateTime(attendance.checkOutTime)
         : "En cours",
       durationMinutes: attendance.durationMinutes || 0,
       status: attendance.checkOutTime ? "Terminé" : "En cours",
@@ -145,10 +146,10 @@ export async function generateExcelExport(): Promise<Buffer> {
       usedHours: usedHours.toFixed(2),
       remainingHours: remainingHours.toFixed(2),
       startDate: pkg.startDate
-        ? new Date(pkg.startDate).toLocaleDateString("fr-FR")
+        ? formatParisDate(pkg.startDate)
         : "",
       endDate: pkg.endDate
-        ? new Date(pkg.endDate).toLocaleDateString("fr-FR")
+        ? formatParisDate(pkg.endDate)
         : "",
       isActive: pkg.isActive ? "Oui" : "Non",
     });

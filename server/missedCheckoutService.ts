@@ -4,6 +4,7 @@ import { attendances, residents } from "../drizzle/schema";
 import { sendEmail } from "./emailService";
 import { createFixCheckoutToken } from "./actionTokenService";
 import { getPublicSiteUrl } from "./_core/publicSiteUrl";
+import { formatParisDateTime, getParisDateString, parisDateTimeToDate } from "./_core/timezone";
 
 /**
  * Vérifie les pointages non terminés et effectue un pointage automatique à
@@ -57,8 +58,8 @@ export async function checkAndProcessMissedCheckouts(): Promise<{ processed: num
       }
 
       // Effectuer le pointage de sortie automatique à l'heure de clôture configurée
-      const checkOutTime = new Date();
-      checkOutTime.setHours(cutoffHour, 0, 0, 0);
+      // (heure de Paris : le serveur tourne en UTC).
+      const checkOutTime = parisDateTimeToDate(getParisDateString(new Date()), cutoffHour, 0);
 
       // Calculer la durée de la session
       const checkInTime = new Date(attendance.checkInTime);
@@ -105,8 +106,8 @@ export async function checkAndProcessMissedCheckouts(): Promise<{ processed: num
         <p>Nous avons remarqué que tu as oublié de pointer en partant de l'atelier aujourd'hui.</p>
         <p><strong>Détails du pointage :</strong></p>
         <ul>
-          <li><strong>Arrivée :</strong> ${checkInTime.toLocaleString("fr-FR")}</li>
-          <li><strong>Départ automatique :</strong> ${checkOutTime.toLocaleString("fr-FR")}</li>
+          <li><strong>Arrivée :</strong> ${formatParisDateTime(checkInTime)}</li>
+          <li><strong>Départ automatique :</strong> ${formatParisDateTime(checkOutTime)}</li>
           <li><strong>Durée de la session :</strong> ${durationHours}h${durationMins.toString().padStart(2, "0")}</li>
         </ul>
         <p>Un pointage de sortie automatique a été effectué.</p>
@@ -116,7 +117,6 @@ export async function checkAndProcessMissedCheckouts(): Promise<{ processed: num
           <a href="${fixCheckoutUrl}" style="background-color: #e67e22; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">✏️ Corriger mon heure de sortie</a>
         </p>` : ''}
         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-        <p>Merci de penser à pointer en partant la prochaine fois.</p>
         <p>Bonne journée.<br>Nicolas – <em>À Tour de Bras</em></p>
         </div>
       `;

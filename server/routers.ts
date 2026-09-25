@@ -10,6 +10,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import * as db from "./db";
 import { validateToken, markTokenUsed } from "./actionTokenService";
+import { formatParisDate, formatParisTime, getParisDateString, parisDateTimeToDate } from "./_core/timezone";
 import * as emailService from "./emailService";
 import { eq } from "drizzle-orm";
 import { attendances } from "../drizzle/schema";
@@ -1584,10 +1585,20 @@ export const appRouter = router({
           residentFirstName: resident?.firstName || '',
           checkInTime: attendance[0].checkInTime,
           currentCheckOutTime: attendance[0].checkOutTime,
+          // Affichage en heure de Paris, indépendant du fuseau du navigateur.
+          checkInDateDisplay: formatParisDate(attendance[0].checkInTime),
+          checkInTimeDisplay: formatParisTime(attendance[0].checkInTime),
+          currentCheckOutTimeDisplay: attendance[0].checkOutTime
+            ? formatParisTime(attendance[0].checkOutTime)
+            : null,
         };
       }),
     applyFixCheckout: publicProcedure
-      .input(z.object({ token: z.string(), checkoutTime: z.string() }))
+      .input(z.object({
+        token: z.string(),
+        // Heure seule (HH:mm) : la date reste celle de l'arrivée.
+        time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Heure invalide"),
+      }))
       .mutation(async ({ input }) => {
         const tokenData = await validateToken(input.token);
         if (!tokenData || tokenData.actionType !== 'fix_checkout' || !tokenData.attendanceId) {
@@ -1598,7 +1609,8 @@ export const appRouter = router({
         const attendance = await database.select().from(attendances).where(eq(attendances.id, tokenData.attendanceId)).limit(1);
         if (!attendance.length) throw new TRPCError({ code: 'NOT_FOUND', message: 'Pointage introuvable' });
         const checkInTime = new Date(attendance[0].checkInTime);
-        const checkOutTime = new Date(input.checkoutTime);
+        const [hour, minute] = input.time.split(':').map(Number);
+        const checkOutTime = parisDateTimeToDate(getParisDateString(checkInTime), hour, minute);
         if (checkOutTime <= checkInTime) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: "L'heure de sortie doit être après l'heure d'arrivée" });
         }
