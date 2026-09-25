@@ -62,6 +62,111 @@ export async function sendEmail(
   }
 }
 
+// Enveloppe commune de TOUS les e-mails : même design que l'e-mail de bienvenue
+// (en-tête doré, pied de page adresse/contact). À appliquer à l'endroit où chaque
+// e-mail est construit, pas dans sendEmail (le guide serait habillé deux fois).
+// Clôture commune à tous les e-mails aux résidents : "Bonne journée." puis
+// "L'équipe de l'atelier" à la ligne (même paragraphe, donc sans espace), en texte
+// normal. Jamais de prénom.
+const EMAIL_CLOSING_HTML = `<p style="margin: 24px 0 0;">Bonne journée.<br>L'équipe de l'atelier</p>`;
+
+// Vrai pour un paragraphe qui ne contient que "Bonne journée." et/ou la signature
+// de l'équipe (ceux des modèles enregistrés ou des anciens e-mails) : ils sont
+// retirés pour n'avoir qu'une seule clôture, identique partout.
+function isClosingParagraph(paragraphHtml: string): boolean {
+  const text = paragraphHtml
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+  return text !== "" && /^(bonne journée\.?)?\s*(l['’]équipe de l['’]atelier\.?)?$/.test(text);
+}
+
+export function wrapEmailHtml(
+  rawInnerHtml: string,
+  options: { closing?: boolean; dashboardUrl?: string; actionButton?: { href: string; label: string } } = {}
+): string {
+  // Signature "À Tour de Bras" en italique (présente dans les modèles enregistrés) : retirée partout.
+  const withoutItalicSignature = rawInnerHtml.replace(
+    /(?:\s*<br\b[^>]*>)?\s*<em\b[^>]*>\s*À Tour de Bras\s*<\/em>/gi,
+    ""
+  );
+  // Avec dashboardUrl : le bouton « Consulter mon espace personnel » arrive tout
+  // à la fin, après la clôture. Les paragraphes des modèles enregistrés qui
+  // contiennent déjà un lien texte vers l'espace perso sont retirés (le bouton les remplace).
+  let body = withoutItalicSignature;
+  if (options.dashboardUrl) {
+    const escaped = options.dashboardUrl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const paragraphWithDashboardLink = new RegExp(
+      `<p\\b[^>]*>(?:(?!<\\/p>)[\\s\\S])*?<a\\b[^>]*href="${escaped}"[^>]*>[^<]*<\\/a>\\s*<\\/p>`,
+      "gi"
+    );
+    body = body.replace(paragraphWithDashboardLink, "");
+  }
+  const withClosing =
+    (options.closing ?? true)
+      ? body.replace(/<p\b[^>]*>[\s\S]*?<\/p>/gi, (paragraph) =>
+          isClosingParagraph(paragraph) ? "" : paragraph
+        ) + EMAIL_CLOSING_HTML
+      : body;
+  const endButton = options.actionButton
+    ? emailButton(options.actionButton.href, options.actionButton.label)
+    : options.dashboardUrl
+      ? emailButton(options.dashboardUrl, "Consulter mon espace personnel")
+      : "";
+  const innerHtml = withClosing + endButton;
+  return `
+      <div style="font-family: Georgia, 'Times New Roman', serif; max-width: 600px; margin: 0 auto; background-color: #fffdf7; color: #3a2e1e;">
+        <!-- En-tête -->
+        <div style="background-color: #c8860a; padding: 28px 32px; border-radius: 8px 8px 0 0;">
+          <h1 style="margin: 0; font-size: 22px; color: #fff; letter-spacing: 1px;">À Tour de Bras</h1>
+          <p style="margin: 4px 0 0; font-size: 13px; color: #fde8b0; font-style: italic;">Atelier de céramique – Paris 12e</p>
+        </div>
+        <!-- Corps -->
+        <div style="padding: 32px; line-height: 1.7;">
+          ${innerHtml}
+        </div>
+        <!-- Pied de page -->
+        <div style="background-color: #f5ead8; padding: 16px 32px; border-radius: 0 0 8px 8px; border-top: 2px solid #e8c87a;">
+          <p style="margin: 0; font-size: 12px; color: #7a6040; font-family: Arial, sans-serif;">
+            À Tour de Bras – 13 Rue Abel, 75012 Paris &nbsp;|&nbsp;
+            <a href="mailto:contact@atourdebras-atelier.com" style="color: #c8860a;">contact@atourdebras-atelier.com</a>
+          </p>
+        </div>
+      </div>
+    `;
+}
+
+// Bouton d'action compatible Gmail/iPhone : un simple lien avec fond se coupe sur
+// plusieurs lignes en petit écran ; le tableau garde le fond d'un seul bloc et
+// le texte centré.
+export function emailButton(href: string, label: string): string {
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" width="100%" style="max-width: 360px; margin: 36px auto 8px;">
+          <tr>
+            <td align="center" bgcolor="#c8860a" style="background-color: #c8860a; border-radius: 6px;">
+              <a href="${href}" style="display: block; padding: 18px 12px; color: #ffffff; font-family: Arial, sans-serif; font-size: 17px; font-weight: bold; line-height: 24px; text-align: center; text-decoration: none;">${label}</a>
+            </td>
+          </tr>
+        </table>`;
+}
+
+export function dashboardUrlFor(residentId: number): string {
+  return `${getPublicSiteUrl()}/resident/dashboard?id=${residentId}`;
+}
+
+// Les modèles modifiables (reminder, expiration, session_summary) sont enregistrés
+// avec leur propre <div style="font-family: Arial…"> extérieur : on le retire à
+// l'envoi pour ne garder que le contenu, et on passe les liens en doré.
+// L'éditeur et la base restent inchangés.
+export function prepareTemplateBodyForWrap(html: string): string {
+  const outerDiv = /^\s*<div\b[^>]*font-family[^>]*>([\s\S]*)<\/div>\s*$/i;
+  const inner = outerDiv.test(html) ? html.replace(outerDiv, "$1") : html;
+  return inner.replace(/<a\b[^>]*>/gi, (tag) =>
+    tag.replace(/#c0392b|rgb\(192,\s*57,\s*43\)|#2c5f2e/gi, "#c8860a")
+  );
+}
+
 // Fonction pour récupérer un template d'e-mail
 async function getEmailTemplate(templateType: "reminder" | "expiration" | "session_summary"): Promise<{ subject: string; body: string } | null> {
   const template = await db.getEmailTemplate(templateType);
@@ -154,7 +259,7 @@ export async function sendReminderEmail(
     paymentLinks: paymentLinksHtml,
   }, remainingMinutesTotal);
 
-  const success = await sendEmail(email, subject, body, silent);
+  const success = await sendEmail(email, subject, wrapEmailHtml(prepareTemplateBodyForWrap(body), { dashboardUrl }), silent);
   await db.createEmailLog({ residentId, packageId, emailType: 'reminder', recipientEmail: email, subject, success }).catch(() => {});
   return success;
 }
@@ -213,7 +318,7 @@ export async function sendExpirationEmail(
     paymentLinks: paymentLinksHtml,
   });
 
-  const success = await sendEmail(email, subject, body, silent);
+  const success = await sendEmail(email, subject, wrapEmailHtml(prepareTemplateBodyForWrap(body), { dashboardUrl }), silent);
   await db.createEmailLog({ residentId, packageId, emailType: 'expiration', recipientEmail: email, subject, success }).catch(() => {});
   return success;
 }
@@ -299,28 +404,11 @@ export async function sendSessionSummaryEmail(
     outOfPackageStr,
   });
 
-  const success = await sendEmail(email, subject, body, silent);
+  const success = await sendEmail(email, subject, wrapEmailHtml(prepareTemplateBodyForWrap(body), { dashboardUrl }), silent);
   if (residentId) {
     await db.createEmailLog({ residentId, packageId: packageId ?? null, emailType: 'session_summary', recipientEmail: email, subject, success }).catch(() => {});
   }
   return success;
-}
-
-// Envoyer un e-mail de pointage oublié
-export async function sendMissedCheckoutEmail(
-  email: string,
-  residentName: string,
-  silent: boolean = false
-): Promise<boolean> {
-  const subject = "Oubli de pointage de départ";
-  const body = `
-    <h2>Bonjour ${residentName},</h2>
-    <p>Il semble que tu aies oublié de pointer en partant de l'atelier.</p>
-    <p>Nous avons automatiquement fermé ta session à 22h00.</p>
-    <p>N'oublie pas de pointer en partant la prochaine fois !</p>
-  `;
-
-  return sendEmail(email, subject, body, silent);
 }
 
 // Fonction principale pour vérifier et envoyer les rappels
@@ -427,31 +515,14 @@ export async function sendGuideEmail(email: string, firstName: string, residentI
     const guidePdf = fs.readFileSync(resolveGuidePdfPath());
 
     const subject = `Bienvenue à l'atelier À Tour de Bras – Guide des bonnes pratiques`;
-    const html = `
-      <div style="font-family: Georgia, 'Times New Roman', serif; max-width: 600px; margin: 0 auto; background-color: #fffdf7; color: #3a2e1e;">
-        <!-- En-tête -->
-        <div style="background-color: #c8860a; padding: 28px 32px; border-radius: 8px 8px 0 0;">
-          <h1 style="margin: 0; font-size: 22px; color: #fff; letter-spacing: 1px;">À Tour de Bras</h1>
-          <p style="margin: 4px 0 0; font-size: 13px; color: #fde8b0; font-style: italic;">Atelier de céramique – Paris 12e</p>
-        </div>
-        <!-- Corps -->
-        <div style="padding: 32px;">
-          <h2 style="color: #c8860a; font-size: 20px; margin-top: 0;">Bienvenue à l'atelier !</h2>
+    const html = wrapEmailHtml(`
+          <h2 style="color: #000000; font-size: 20px; margin-top: 0;">Bienvenue à l'atelier !</h2>
           <p style="line-height: 1.7;">Avant de te lancer, jette un œil à notre guide des bonnes pratiques : il rassemble tout ce qu'il faut savoir sur le fonctionnement de l'atelier, les règles communes et les petits gestes qui font la différence pour que chacun s'y sente bien.</p>
           <p style="line-height: 1.7;">Si tu le souhaites, tu peux t'inscrire au <a href="https://chat.whatsapp.com/L5o3XOK6bKkJulLPl2k1Sy?s=cl&p=i&ilr=1" style="color: #c8860a;">groupe WhatsApp de l'atelier ici</a>.</p>
           <p style="line-height: 1.7;">N'hésite pas à consulter le <a href="https://www.atourdebras-atelier.com/#planning" style="color: #c8860a;">planning de l'atelier</a> pour éviter de venir lors d'une privatisation par exemple.</p>
+
           <p style="line-height: 1.7;">N'hésite pas à nous contacter si tu as des questions. À très vite à l'atelier !</p>
-          <p style="color: #c8860a; font-weight: bold; margin-bottom: 0;">L'équipe de l'atelier</p>
-        </div>
-        <!-- Pied de page -->
-        <div style="background-color: #f5ead8; padding: 16px 32px; border-radius: 0 0 8px 8px; border-top: 2px solid #e8c87a;">
-          <p style="margin: 0; font-size: 12px; color: #7a6040; font-family: Arial, sans-serif;">
-            À Tour de Bras – 13 Rue Abel, 75012 Paris &nbsp;|&nbsp;
-            <a href="mailto:contact@atourdebras-atelier.com" style="color: #c8860a;">contact@atourdebras-atelier.com</a>
-          </p>
-        </div>
-      </div>
-    `;
+    `, { dashboardUrl: residentId ? dashboardUrlFor(residentId) : `${getPublicSiteUrl()}/resident/login` });
 
     const sent = await sendEmail(email, subject, html, false, [
       { name: "guide-des-bonnes-pratiques.pdf", content: guidePdf.toString("base64") },
@@ -485,14 +556,12 @@ export async function sendPaymentQueuedEmail(
 ): Promise<boolean> {
   const startStr = formatParisDate(expectedStart, { day: '2-digit', month: 'long', year: 'numeric' });
   const subject = `Paiement reçu – ton prochain forfait démarrera automatiquement`;
-  const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-      <h2 style="color: #2c5f2e;">Bonjour ${firstName},</h2>
+  const html = wrapEmailHtml(`
+      <p style="margin-top: 0;">Bonjour ${firstName},</p>
       <p>Nous avons bien reçu ton paiement pour le forfait <strong>${packageLabel}</strong>. Merci !</p>
       <p>Ton forfait actuel n'est pas encore terminé : le nouveau démarrera automatiquement à la fin de l'actuel (aux alentours du <strong>${startStr}</strong>, ou dès que ses heures seront épuisées si c'est avant). Tu n'as rien à faire.</p>
       <p>À bientôt à l'atelier !</p>
-    </div>
-  `;
+  `, { dashboardUrl: dashboardUrlFor(residentId) });
   const sent = await sendEmail(email, subject, html);
   await db.createEmailLog({ residentId, packageId, emailType: 'payment_queued', recipientEmail: email, subject, success: sent }).catch(() => {});
   return sent;
@@ -524,11 +593,10 @@ export async function sendPackageActivatedEmail(
       : 'Non définie';
     const totalHoursDisplay = Math.floor(totalHours / 60);
 
-    const subject = `Votre forfait a été activé – À Tour de Bras`;
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-        <h2 style="color: #2c5f2e;">Bonjour ${firstName},</h2>
-        <p>Votre forfait <strong>${packageLabel}</strong> vient d'être activé.</p>
+    const subject = `Ton forfait a été activé – À Tour de Bras`;
+    const html = wrapEmailHtml(`
+        <p style="margin-top: 0;">Bonjour ${firstName},</p>
+        <p>Ton forfait <strong>${packageLabel}</strong> vient d'être activé.</p>
         <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
           <tr>
             <td style="padding: 8px; border: 1px solid #eee; background: #f9f9f9; font-weight: bold;">Forfait</td>
@@ -547,19 +615,7 @@ export async function sendPackageActivatedEmail(
             <td style="padding: 8px; border: 1px solid #eee;">${endStr}</td>
           </tr>
         </table>
-        <p style="margin: 24px 0;">
-          <a href="${dashboardUrl}" style="background-color: #2c5f2e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
-            Consulter mon espace personnel
-          </a>
-        </p>
-        <p>À bientôt à l'atelier !</p>
-        <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
-        <p style="color: #666; font-size: 12px;">
-          À Tour de Bras – 13 Rue Abel, 75012 Paris<br>
-          <a href="mailto:contact@atourdebras-atelier.com">contact@atourdebras-atelier.com</a>
-        </p>
-      </div>
-    `;
+    `, { dashboardUrl });
     const sent = await sendEmail(email, subject, html);
     if (sent) {
       await db.createEmailLog({ residentId, packageId, emailType: 'reminder', recipientEmail: email, subject, success: true }).catch(() => {});

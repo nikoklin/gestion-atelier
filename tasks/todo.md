@@ -5,10 +5,10 @@ Décisions : contrôle quotidien par règles (pas d'IA) ; adresse atelier = cont
 (env `ATELIER_NOTIFICATION_EMAIL`, repli `EMAIL_USER`) ; étagère libérée par clic « Étagère vidée » ;
 forfait payé d'avance démarre dès la fin du forfait en cours ; liens de paiement : Wix ou Square à trancher.
 
-- [ ] Étape 0 : commit/push du correctif « 1h45 » du rappel (avec accord)
+- [x] Étape 0 : correctif « 1h45 » du rappel (poussé avec la phase 1)
 - [x] Migration 0034 (autoStart, shelfEmailSent, enum emailLogs) appliquée en base
 - [x] Phase 1 : forfait payé d'avance en file + démarrage automatique (5 tests + scénario webhook réel OK ; à commit/push)
-- [ ] Phase 2 : design unique des e-mails
+- [x] Phase 2 : design unique des e-mails (poussé)
 - [ ] Phase 3 : e-mail « étagère à vider » J+7 + bouton « Étagère vidée »
 - [ ] Phase 4 : contrôle quotidien d'incohérences + alerte e-mail
 - [ ] Phase 5 : liens de paiement provisoires (après décision Wix/Square)

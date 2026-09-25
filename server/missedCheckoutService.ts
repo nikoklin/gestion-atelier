@@ -1,10 +1,36 @@
 import { eq, isNull } from "drizzle-orm";
 import { getDb, getAtelierSettings } from "./db";
 import { attendances, residents } from "../drizzle/schema";
-import { sendEmail } from "./emailService";
+import { sendEmail, wrapEmailHtml } from "./emailService";
 import { createFixCheckoutToken } from "./actionTokenService";
 import { getPublicSiteUrl } from "./_core/publicSiteUrl";
 import { formatParisDateTime, getParisDateString, parisDateTimeToDate } from "./_core/timezone";
+
+export const MISSED_CHECKOUT_EMAIL_SUBJECT = "Pointage de sortie automatique - Gestion d'Atelier";
+
+// Corps de l'e-mail envoyé quand un départ oublié est clôturé automatiquement.
+export function renderMissedCheckoutEmail(params: {
+  firstName: string;
+  checkInTime: Date;
+  checkOutTime: Date;
+  durationMinutes: number;
+  fixCheckoutUrl: string;
+}): string {
+  const durationHours = Math.floor(params.durationMinutes / 60);
+  const durationMins = params.durationMinutes % 60;
+  return wrapEmailHtml(`
+        <p style="margin-top: 0;">Bonjour ${params.firstName},</p>
+        <p>Nous avons remarqué que tu as oublié de pointer en partant de l'atelier aujourd'hui.</p>
+        <p><strong>Détails du pointage :</strong></p>
+        <ul>
+          <li><strong>Arrivée :</strong> ${formatParisDateTime(params.checkInTime)}</li>
+          <li><strong>Départ automatique :</strong> ${formatParisDateTime(params.checkOutTime)}</li>
+          <li><strong>Durée de la session :</strong> ${durationHours}h${durationMins.toString().padStart(2, "0")}</li>
+        </ul>
+        <p>Un pointage de sortie automatique a été effectué.</p>
+        ${params.fixCheckoutUrl ? `<p><strong>Si l'heure de départ est incorrecte</strong>, tu peux la corriger avec le bouton ci-dessous (lien valable 48h).</p>` : ''}
+      `, params.fixCheckoutUrl ? { actionButton: { href: params.fixCheckoutUrl, label: "Corriger mon heure de sortie" } } : {});
+}
 
 /**
  * Vérifie les pointages non terminés et effectue un pointage automatique à
@@ -83,10 +109,6 @@ export async function checkAndProcessMissedCheckouts(): Promise<{ processed: num
         })
         .where(eq(residents.id, attendance.residentId));
 
-      // Formater la durée pour l'email
-      const durationHours = Math.floor(durationMinutes / 60);
-      const durationMins = durationMinutes % 60;
-
       // Générer un token de correction
       const baseUrl = getPublicSiteUrl();
       let fixCheckoutUrl = '';
@@ -98,28 +120,14 @@ export async function checkAndProcessMissedCheckouts(): Promise<{ processed: num
       }
 
       // Envoyer un email au résident
-      const emailSubject = "Pointage de sortie automatique - Gestion d'Atelier";
-      const emailContent = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-        <h2 style="color: #2c5f2e;">Pointage de sortie automatique</h2>
-        <p>Bonjour ${attendance.resident.firstName},</p>
-        <p>Nous avons remarqué que tu as oublié de pointer en partant de l'atelier aujourd'hui.</p>
-        <p><strong>Détails du pointage :</strong></p>
-        <ul>
-          <li><strong>Arrivée :</strong> ${formatParisDateTime(checkInTime)}</li>
-          <li><strong>Départ automatique :</strong> ${formatParisDateTime(checkOutTime)}</li>
-          <li><strong>Durée de la session :</strong> ${durationHours}h${durationMins.toString().padStart(2, "0")}</li>
-        </ul>
-        <p>Un pointage de sortie automatique a été effectué.</p>
-        ${fixCheckoutUrl ? `
-        <p style="margin: 20px 0;">
-          <strong>Si l'heure de départ est incorrecte</strong>, tu peux la corriger en cliquant ici (lien valable 48h) :<br><br>
-          <a href="${fixCheckoutUrl}" style="background-color: #e67e22; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">✏️ Corriger mon heure de sortie</a>
-        </p>` : ''}
-        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-        <p>Bonne journée.<br>Nicolas – <em>À Tour de Bras</em></p>
-        </div>
-      `;
+      const emailSubject = MISSED_CHECKOUT_EMAIL_SUBJECT;
+      const emailContent = renderMissedCheckoutEmail({
+        firstName: attendance.resident.firstName,
+        checkInTime,
+        checkOutTime,
+        durationMinutes,
+        fixCheckoutUrl,
+      });
 
       try {
         await sendEmail(
