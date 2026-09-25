@@ -1,5 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Mail, Clock, Download, Layers, Package, Plus, Pencil, Trash2, Check, X, Link as LinkIcon } from "lucide-react";
+import { Mail, Clock, Download, Layers, Package, Plus, Pencil, Trash2, Check, X, Link as LinkIcon, ShieldCheck } from "lucide-react";
+import { useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -108,6 +109,12 @@ export default function Settings() {
     updateAtelierSettingsMutation.mutate({ wixAutoActivatePackage: enabled });
   };
   
+  // Contrôle d'incohérences à la demande (il tourne aussi chaque nuit à 00h05)
+  const [, setLocation] = useLocation();
+  const integrityMutation = trpc.atelierSettings.runIntegrityCheck.useMutation({
+    onError: (error) => toast.error("Erreur : " + error.message),
+  });
+
   const exportMutation = trpc.export.generateExcel.useMutation({
     onSuccess: (data) => {
       // Convertir le base64 en blob et télécharger
@@ -656,6 +663,66 @@ export default function Settings() {
               Testez l'envoi manuel depuis la page <strong>"Configuration E-mails"</strong>.
             </p>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5" />
+            Contrôle des incohérences
+          </CardTitle>
+          <CardDescription>
+            Chaque nuit à 00h05, l'application recalcule les heures puis vérifie que les données sont cohérentes
+            (pointages jamais clôturés, heures qui ne collent pas, forfaits qui se chevauchent, e-mails en échec…).
+            Tu reçois un e-mail seulement s'il y a quelque chose à vérifier.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Button
+            variant="outline"
+            onClick={() => integrityMutation.mutate()}
+            disabled={integrityMutation.isPending}
+          >
+            {integrityMutation.isPending ? "Contrôle en cours…" : "Lancer le contrôle maintenant"}
+          </Button>
+
+          {integrityMutation.data && (
+            integrityMutation.data.anomalies.length === 0 ? (
+              <Alert>
+                <AlertDescription>Aucune incohérence détectée. Tout est en ordre.</AlertDescription>
+              </Alert>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm font-medium">
+                  {integrityMutation.data.anomalies.length} point{integrityMutation.data.anomalies.length > 1 ? "s" : ""} à vérifier :
+                </p>
+                <ul className="space-y-2">
+                  {integrityMutation.data.anomalies.map((a, i) => (
+                    <li
+                      key={i}
+                      className={`rounded-md border p-3 text-sm ${a.severity === "error" ? "border-red-300 bg-red-50" : "border-amber-300 bg-amber-50"}`}
+                    >
+                      <span className="font-semibold">
+                        {a.severity === "error" ? "À corriger" : "À traiter"}
+                        {a.residentName ? ` · ${a.residentName}` : ""}
+                      </span>
+                      <br />
+                      {a.message}
+                      {a.residentId && (
+                        <>
+                          {" "}
+                          <button className="underline" onClick={() => setLocation(`/residents/${a.residentId}`)}>
+                            Ouvrir la fiche
+                          </button>
+                        </>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )
+          )}
         </CardContent>
       </Card>
     </div>

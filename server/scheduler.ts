@@ -3,7 +3,8 @@ import { checkAndSendReminders } from "./emailService";
 import { checkAndSendShelfReleaseNotices } from "./shelfService";
 import { performDailyBackup } from "./scheduledBackup";
 import { checkAndProcessMissedCheckouts } from "./missedCheckoutService";
-import { recalculateAllResidents, getAtelierSettings } from "./db";
+import { getAtelierSettings } from "./db";
+import { runNightlyMaintenance } from "./integrityCheck";
 
 let schedulerStarted = false;
 
@@ -43,10 +44,10 @@ export function startScheduler() {
   // Recalcul quotidien de tous les résidents à 00h05 : désactive les forfaits
   // dont la date de fin est passée et maintient la cohérence des heures.
   cron.schedule("5 0 * * *", async () => {
-    console.log("[Scheduler] Running daily recalculation at 00:05");
+    console.log("[Scheduler] Running daily recalculation and integrity check at 00:05");
     try {
-      const res = await recalculateAllResidents();
-      console.log(`[Scheduler] Daily recalculation done: ${res.residents} residents`);
+      const res = await runNightlyMaintenance();
+      console.log(`[Scheduler] Daily recalculation done: ${res.residents} residents, ${res.anomalies} point(s) à vérifier`);
     } catch (error) {
       console.error("[Scheduler] Daily recalculation failed:", error);
     }

@@ -10,7 +10,7 @@ forfait payé d'avance démarre dès la fin du forfait en cours ; liens de paiem
 - [x] Phase 1 : forfait payé d'avance en file + démarrage automatique (5 tests + scénario webhook réel OK ; à commit/push)
 - [x] Phase 2 : design unique des e-mails (poussé)
 - [x] Phase 3 : e-mail « étagère à vider » J+7 + bouton « Étagère vidée » (poussé ; l'e-mail au résident part au clic « Étagère vidée », l'atelier est alerté à J+7)
-- [ ] Phase 4 : contrôle quotidien d'incohérences + alerte e-mail
+- [x] Phase 4 : contrôle quotidien d'incohérences + alerte e-mail (poussé)
 - [ ] Phase 5 : liens de paiement provisoires (après décision Wix/Square)
 
 ## À signaler à Nicolas

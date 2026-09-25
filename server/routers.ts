@@ -15,10 +15,7 @@ import * as emailService from "./emailService";
 import { eq } from "drizzle-orm";
 import { attendances } from "../drizzle/schema";
 
-// Solde maximum d'heures hors-forfait en attente avant blocage du pointage
-// (arrivée kiosque ou saisie manuelle) — au-delà, il faut régulariser
-// (nouveau forfait avec report, ou abandon) avant de pouvoir pointer à nouveau.
-const OUT_OF_PACKAGE_LIMIT_MINUTES = 5 * 60;
+import { OUT_OF_PACKAGE_LIMIT_MINUTES } from "./limits";
 
 // Helper pour calculer la date de fin selon le type de forfait
 function calculateEndDate(startDate: Date, packageType: string): Date {
@@ -1532,6 +1529,12 @@ export const appRouter = router({
   }),
 
   atelierSettings: router({
+    // Lance le contrôle d'incohérences à la demande (sans envoyer d'e-mail) pour vérifier sans attendre la nuit.
+    runIntegrityCheck: protectedProcedure.mutation(async () => {
+      const { runIntegrityCheck } = await import("./integrityCheck");
+      return { anomalies: await runIntegrityCheck(), checkedAt: new Date() };
+    }),
+
     get: protectedProcedure
       .query(async () => {
         const settings = await db.getAtelierSettings();
