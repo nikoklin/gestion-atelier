@@ -146,7 +146,7 @@ describe.skipIf(!process.env.DATABASE_URL)("Annuler (page de gestion des forfait
     await db.fullRecalculateResident(RID);
   });
 
-  it("création d'un forfait avec « ne pas déduire » : une seule action à annuler (forfait + abandon)", async () => {
+  it("création d'un forfait : les heures hors forfait sont reportées d'office, et l'annulation remet tout", async () => {
     await db.createResident({ id: RID2, firstName: "TEST", lastName: "Undo2", email: "", isActive: true } as any);
     await db.createAttendance({ residentId: RID2, packageId: null,
       checkInTime: daysAgo(2), checkOutTime: new Date(daysAgo(2).getTime() + 3600000), durationMinutes: 60 } as any);
@@ -154,15 +154,27 @@ describe.skipIf(!process.env.DATABASE_URL)("Annuler (page de gestion des forfait
     const before2 = await state(RID2);
     expect(before2.out).toBe(60);
 
+    // Forfait qui commence aujourd'hui : le pointage d'avant-hier reste hors forfait et est reporté.
     const types = await db.getActivePackageTypes();
-    await caller.packages.create({ residentId: RID2, packageTypeId: types[0].id, deductOutOfPackageHours: false, outOfPackageMinutes: 0 });
-    const after2 = await state(RID2);
-    expect(after2.pkgs).toHaveLength(1);
-    expect(after2.out).toBe(0);
+    const created = await caller.packages.create({ residentId: RID2, packageTypeId: types[0].id, startDate: new Date() });
+    const pkg = await db.getPackageById(created.packageId!);
+    expect(pkg!.deductedMinutes).toBe(60);
+    expect(pkg!.usedHours).toBe(60);
+    expect((await state(RID2)).out).toBe(0);
     expect((await caller.undo.getLast({ residentId: RID2 }))?.remaining).toBe(1);
 
     await caller.undo.undoLast({ residentId: RID2 });
     expect(await state(RID2)).toEqual(before2);
+  });
+
+  it("forfait daté en arrière : le pointage couvert par ses dates est absorbé, pas compté deux fois", async () => {
+    const types = await db.getActivePackageTypes();
+    const created = await caller.packages.create({ residentId: RID2, packageTypeId: types[0].id, startDate: daysAgo(5) });
+    const pkg = await db.getPackageById(created.packageId!);
+    expect(pkg!.deductedMinutes).toBe(0);
+    expect(pkg!.usedHours).toBe(60);
+    expect((await state(RID2)).out).toBe(0);
+    await caller.undo.undoLast({ residentId: RID2 });
   });
 });
 

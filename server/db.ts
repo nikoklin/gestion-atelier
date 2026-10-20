@@ -974,6 +974,16 @@ export async function recalculatePackageHours(packageId: number): Promise<{
  *  6. Mettre à jour usedHours et isActive de chaque forfait.
  *  7. Recalculer outOfPackageMinutes du résident.
  */
+// Heures hors forfait en attente = débordements restants − heures abandonnées.
+// Les heures abandonnées ne peuvent pas dépasser les débordements qui existent
+// encore : si des pointages sont effacés, le crédit d'abandon diminue d'autant.
+// Sinon un crédit orphelin absorberait en silence les futurs débordements.
+function settleOutOfPackage(grossMinutes: number, settled: number): { pending: number; settled: number } {
+  const gross = Math.max(0, grossMinutes);
+  const effectiveSettled = Math.min(Math.max(0, settled), gross);
+  return { pending: gross - effectiveSettled, settled: effectiveSettled };
+}
+
 type RecalcResult = {
   packagesProcessed: number;
   attendancesProcessed: number;
@@ -1140,9 +1150,12 @@ async function recalculateResidentCore(residentId: number): Promise<RecalcResult
       (sum, att) => sum + (att.durationMinutes ?? 0), 0
     );
     const resident = await getResidentById(residentId);
-    const settled = resident?.settledOutOfPackageMinutes ?? 0;
-    const pendingOutOfPackageMinutes = Math.max(0, totalOutOfPackageMinutes - settled);
-    await updateResident(residentId, { outOfPackageMinutes: pendingOutOfPackageMinutes });
+    const storedSettled = resident?.settledOutOfPackageMinutes ?? 0;
+    const { pending: pendingOutOfPackageMinutes, settled } = settleOutOfPackage(totalOutOfPackageMinutes, storedSettled);
+    await updateResident(residentId, {
+      outOfPackageMinutes: pendingOutOfPackageMinutes,
+      ...(settled !== storedSettled ? { settledOutOfPackageMinutes: settled } : {}),
+    });
     return {
       packagesProcessed: 0,
       attendancesProcessed: orphanAttendances.length,
@@ -1285,10 +1298,16 @@ async function recalculateResidentCore(residentId: number): Promise<RecalcResult
   // Sans ces soustractions, les heures déjà traitées seraient recomptées à
   // chaque recalcul (« heures fantômes »).
   const resident = await getResidentById(residentId);
-  const settled = resident?.settledOutOfPackageMinutes ?? 0;
+  const storedSettled = resident?.settledOutOfPackageMinutes ?? 0;
   const totalDeducted = pkgCapacities.reduce((sum, p) => sum + p.deductedMinutes, 0);
-  const pendingOutOfPackageMinutes = Math.max(0, totalOutOfPackageMinutes - totalDeducted - settled);
-  await updateResident(residentId, { outOfPackageMinutes: pendingOutOfPackageMinutes });
+  const { pending: pendingOutOfPackageMinutes, settled } = settleOutOfPackage(
+    totalOutOfPackageMinutes - totalDeducted,
+    storedSettled
+  );
+  await updateResident(residentId, {
+    outOfPackageMinutes: pendingOutOfPackageMinutes,
+    ...(settled !== storedSettled ? { settledOutOfPackageMinutes: settled } : {}),
+  });
 
   console.log(
     `[fullRecalculateResident] resident=${residentId} packages=${pkgCapacities.length} attendances=${attendancesProcessed} débordements=${totalOutOfPackageMinutes}min reporté=${totalDeducted}min enAttente=${pendingOutOfPackageMinutes}min`

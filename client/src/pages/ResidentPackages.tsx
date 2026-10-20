@@ -58,9 +58,6 @@ export default function ResidentPackages() {
   const [hoursToSubtract, setHoursToSubtract] = useState(0);
   const [minutesToSubtract, setMinutesToSubtract] = useState(0);
   const [daysToSubtract, setDaysToSubtract] = useState(1);
-  const [isOutOfPackageWarningOpen, setIsOutOfPackageWarningOpen] = useState(false);
-  const [deductOutOfPackageHours, setDeductOutOfPackageHours] = useState(true);
-  const [outOfPackageMinutes, setOutOfPackageMinutes] = useState(0);
 
   // États pour la création de pointage
   const [isCreateAttendanceDialogOpen, setIsCreateAttendanceDialogOpen] = useState(false);
@@ -411,13 +408,12 @@ export default function ResidentPackages() {
   };
 
   // Construit l'objet de création selon le type sélectionné (statique ou dynamique)
-  const buildCreateInput = (extra?: { deductOutOfPackageHours?: boolean; outOfPackageMinutes?: number }) => ({
+  const buildCreateInput = () => ({
     residentId,
     ...(selectedPackageTypeId
       ? { packageTypeId: selectedPackageTypeId }
       : { packageType: packageType as "15h_8w" | "30h_8w" | "30h_4w" | "180h_6m" }),
     startDate: new Date(startDate),
-    ...extra,
   });
 
   const handleCreate = () => {
@@ -426,39 +422,9 @@ export default function ResidentPackages() {
       return;
     }
 
-    // Forfait en cours : le nouveau part en file d'attente, sans report d'heures
-    // hors forfait (elles seront reprises à son démarrage automatique).
-    if (hasValidPackage) {
-      createMutation.mutate(buildCreateInput());
-      return;
-    }
-
-    // Vérifier si un forfait actif a déjà des heures déduites lors de sa création
-    const hasActivePackageWithDeduction = packages && packages.length > 0
-      ? packages.some(pkg => pkg.isActive && pkg.deductedMinutes && pkg.deductedMinutes > 0)
-      : false;
-
-    if (hasActivePackageWithDeduction) {
-      createMutation.mutate(buildCreateInput());
-      return;
-    }
-    
-    const totalOutOfPackageMinutes = totalOutOfPackageMinutesFromBackend;
-    if (totalOutOfPackageMinutes > 0) {
-      setOutOfPackageMinutes(totalOutOfPackageMinutes);
-      setIsOutOfPackageWarningOpen(true);
-    } else {
-      createMutation.mutate(buildCreateInput());
-    }
-  };
-  
-  const handleConfirmCreate = () => {
-    createMutation.mutate(buildCreateInput({
-      deductOutOfPackageHours,
-      outOfPackageMinutes: deductOutOfPackageHours ? outOfPackageMinutes : 0,
-    }));
-    setIsOutOfPackageWarningOpen(false);
-    setDeductOutOfPackageHours(true);
+    // Les heures hors forfait en attente sont toujours reportées sur le nouveau
+    // forfait (à sa création, ou à son démarrage s'il part en file d'attente).
+    createMutation.mutate(buildCreateInput());
   };
 
   const { getPackageLabel } = usePackageLabel();
@@ -1256,6 +1222,12 @@ export default function ResidentPackages() {
                 </SelectContent>
               </Select>
             </div>
+            {totalOutOfPackageMinutesFromBackend > 0 && (
+              <p className="rounded-md bg-amber-50 p-3 text-sm text-amber-800">
+                {Math.floor(totalOutOfPackageMinutesFromBackend / 60)}h{String(totalOutOfPackageMinutesFromBackend % 60).padStart(2, "0")} d'heures hors forfait
+                seront reportées automatiquement sur ce forfait{hasValidPackage ? " à son démarrage" : ""}.
+              </p>
+            )}
             {!hasValidPackage && (
             <div className="grid gap-2">
               <Label htmlFor="startDate">Date de début</Label>
@@ -1445,50 +1417,6 @@ export default function ResidentPackages() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialogue d'avertissement pour heures hors forfait */}
-      <Dialog open={isOutOfPackageWarningOpen} onOpenChange={(open) => {
-        setIsOutOfPackageWarningOpen(open);
-        if (!open) setDeductOutOfPackageHours(true); // Réinitialiser pour la prochaine fois
-      }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="text-orange-600">Heures Hors Forfait Détectées</DialogTitle>
-            <DialogDescription>
-              Ce résident a accumulé <strong className="text-red-600">
-                {Math.floor(outOfPackageMinutes / 60)}h{String(outOfPackageMinutes % 60).padStart(2, '0')}
-              </strong> d'heures hors forfait.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="flex items-start space-x-2">
-              <input
-                type="checkbox"
-                id="deductHours"
-                checked={deductOutOfPackageHours}
-                onChange={(e) => setDeductOutOfPackageHours(e.target.checked)}
-                className="mt-1"
-              />
-              <label htmlFor="deductHours" className="text-sm">
-                Déduire ces heures du nouveau forfait
-                {deductOutOfPackageHours && (
-                  <span className="block text-xs text-muted-foreground mt-1">
-                    Le nouveau forfait commencera avec {Math.floor(outOfPackageMinutes / 60)}h{String(outOfPackageMinutes % 60).padStart(2, '0')} déjà utilisées
-                  </span>
-                )}
-              </label>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setIsOutOfPackageWarningOpen(false);
-              setDeductOutOfPackageHours(true);
-            }}>
-              Annuler
-            </Button>
-            <Button onClick={handleConfirmCreate}>Confirmer et Créer</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

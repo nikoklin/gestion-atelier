@@ -497,3 +497,65 @@ describe.skipIf(!process.env.DATABASE_URL)("Forfait payé d'avance en file (dém
     expect((await db.getActivePackageByResidentId(rid))!.id).toBe(9901402);
   });
 });
+
+// Heures abandonnées (« ne pas déduire ») dont les pointages ont ensuite été
+// effacés : le crédit d'abandon ne doit pas absorber les débordements suivants.
+describe.skipIf(!process.env.DATABASE_URL)("Crédit d'abandon orphelin (heures abandonnées puis pointages effacés)", () => {
+  const RS = 990015;
+  async function cleanupS() {
+    const database = await getDb();
+    if (!database) return;
+    await database.delete(attendances).where(eq(attendances.residentId, RS));
+    await database.delete(packages).where(eq(packages.residentId, RS));
+    await database.delete(residents).where(eq(residents.id, RS));
+  }
+  beforeAll(cleanupS);
+  afterAll(cleanupS);
+
+  it("scénario Niko Klein : forfait épuisé avec 2 min de dépassement + forfait en file → les 2 min sont reportées", async () => {
+    // 3126 min « abandonnées » enregistrées, mais plus aucun pointage correspondant.
+    await db.createResident({ id: RS, firstName: "TEST", lastName: "Settled", email: "", isActive: true, settledOutOfPackageMinutes: 3126 } as any);
+    await db.createPackage({ id: 9901501, residentId: RS, packageType: "custom_999", totalHours: 600, usedHours: 0,
+      startDate: d("2026-01-01"), endDate: d("2099-01-01"), isActive: true } as any);
+    await db.createPackage({ id: 9901502, residentId: RS, packageType: "custom_999", totalHours: 900, usedHours: 0,
+      startDate: d("2099-01-01"), endDate: d("2099-03-01"), isActive: false, status: "pending", autoStart: true } as any);
+    await db.createAttendance({ residentId: RS, packageId: null,
+      checkInTime: d("2026-03-01T09:00:00Z"), checkOutTime: d("2026-03-01T18:58:00Z"), durationMinutes: 598 } as any);
+    await db.fullRecalculateResident(RS);
+    expect((await db.getResidentById(RS))!.settledOutOfPackageMinutes).toBe(0); // crédit orphelin retiré
+
+    // Départ qui épuise le forfait avec 2 minutes de dépassement.
+    await db.createAttendance({ residentId: RS, packageId: null,
+      checkInTime: d("2026-03-02T09:00:00Z"), checkOutTime: d("2026-03-02T09:04:00Z"), durationMinutes: 4 } as any);
+    await db.fullRecalculateResident(RS);
+
+    const next = await db.getPackageById(9901502);
+    const r = await db.getResidentById(RS);
+    expect(next!.status).toBe("active");
+    expect(next!.deductedMinutes).toBe(2);
+    expect(next!.usedHours).toBe(2);
+    expect(r!.outOfPackageMinutes).toBe(0);
+  });
+
+  it("un abandon encore justifié reste pris en compte (débordement ancien abandonné, nouveau compté)", async () => {
+    const database = await getDb();
+    await database!.delete(attendances).where(eq(attendances.residentId, RS));
+    await database!.delete(packages).where(eq(packages.residentId, RS));
+    await db.updateResident(RS, { settledOutOfPackageMinutes: 0 } as any);
+
+    // 60 min sans forfait, abandonnées.
+    await db.createAttendance({ residentId: RS, packageId: null,
+      checkInTime: d("2026-01-10T09:00:00Z"), checkOutTime: d("2026-01-10T10:00:00Z"), durationMinutes: 60 } as any);
+    await db.fullRecalculateResident(RS);
+    await db.clearOutOfPackageHours(RS);
+    expect((await db.getResidentById(RS))!.outOfPackageMinutes).toBe(0);
+
+    // Nouveau débordement de 15 min : il compte, les 60 abandonnées ne reviennent pas.
+    await db.createAttendance({ residentId: RS, packageId: null,
+      checkInTime: d("2026-01-11T09:00:00Z"), checkOutTime: d("2026-01-11T09:15:00Z"), durationMinutes: 15 } as any);
+    await db.fullRecalculateResident(RS);
+    const r = await db.getResidentById(RS);
+    expect(r!.outOfPackageMinutes).toBe(15);
+    expect(r!.settledOutOfPackageMinutes).toBe(60);
+  });
+});

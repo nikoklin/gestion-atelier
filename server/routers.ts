@@ -377,7 +377,7 @@ export const appRouter = router({
         if ((resident.outOfPackageMinutes ?? 0) >= OUT_OF_PACKAGE_LIMIT_MINUTES) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: "Le solde d'heures hors-forfait a atteint la limite de 5h. Il faut régulariser (nouveau forfait ou abandon) avant de pouvoir pointer à nouveau.",
+            message: "Le solde d'heures hors-forfait a atteint la limite de 5h. Il faut régulariser (nouveau forfait, ou « + Heures » sur le forfait) avant de pouvoir pointer à nouveau.",
           });
         }
 
@@ -680,23 +680,12 @@ export const appRouter = router({
         }));
       }),
 
-    clearOutOfPackageHours: protectedProcedure
-      .input(z.object({ residentId: z.number() }))
-      .mutation(async ({ input }) => {
-        return withUndo(input.residentId, "abandon des heures hors forfait", async () => {
-        await db.clearOutOfPackageHours(input.residentId);
-        return { success: true };
-      });
-      }),
-
     create: protectedProcedure
       .input(z.object({
         residentId: z.number(),
         packageType: z.enum(["15h_8w", "30h_8w", "30h_4w", "180h_6m"]).optional(),
         packageTypeId: z.number().int().optional(), // ID d'un type de forfait dynamique
         startDate: z.date().optional(),
-        deductOutOfPackageHours: z.boolean().optional(),
-        outOfPackageMinutes: z.number().optional(),
       }))
       .mutation(async ({ input }) => {
         return withUndo(input.residentId, "création d'un forfait", async () => {
@@ -752,14 +741,6 @@ export const appRouter = router({
           return { success: true, queued: true, packageId: queuedPackageId, expectedStart };
         }
 
-        let initialUsedHours = 0;
-        
-        // Ajouter les heures hors forfait si demandé
-        let deductedMinutes = 0;
-        if (input.deductOutOfPackageHours && input.outOfPackageMinutes) {
-          initialUsedHours += input.outOfPackageMinutes;
-          deductedMinutes = input.outOfPackageMinutes; // Enregistrer les minutes déduites
-        }
 
         // Bloquer la création si un pointage est en cours
         const openAttendance = await db.getOpenAttendance(input.residentId);
@@ -770,18 +751,12 @@ export const appRouter = router({
           });
         }
 
-        // « Ne pas déduire » : les heures hors forfait en attente sont abandonnées
-        // dans la même action (une seule ligne à annuler).
-        if (input.deductOutOfPackageHours === false) {
-          await db.clearOutOfPackageHours(input.residentId);
-        }
-
         const newPackageId = await db.createPackage({
           residentId: input.residentId,
           packageType: resolvedPackageType,
           totalHours,
-          usedHours: initialUsedHours,
-          deductedMinutes, // Enregistrer les minutes déduites pour éviter de les proposer à nouveau
+          usedHours: 0,
+          deductedMinutes: 0,
           startDate,
           endDate: resolvedEndDate,
           isActive: true,
@@ -789,12 +764,17 @@ export const appRouter = router({
           expirationEmailSent: false,
         });
 
-        // Recalcul complet du résident via le moteur unique (règle « par date ») :
-        // impute chaque pointage au forfait valable à sa date, applique la
-        // déduction reportée (deductedMinutes, stockée sur le nouveau forfait)
-        // et met à jour le cumul hors-forfait EN ATTENTE.
+        // Les heures hors forfait en attente sont toujours reportées sur le nouveau
+        // forfait. On recalcule d'abord (les pointages compris dans les dates du
+        // forfait lui sont rattachés, sans compter comme hors forfait), puis on
+        // reporte seulement ce qui reste : pas de double compte.
         if (newPackageId) {
           await db.fullRecalculateResident(input.residentId);
+          const carry = (await db.getResidentById(input.residentId))?.outOfPackageMinutes ?? 0;
+          if (carry > 0) {
+            await db.updatePackage(newPackageId, { deductedMinutes: carry });
+            await db.fullRecalculateResident(input.residentId);
+          }
         }
 
         return { success: true, queued: false, packageId: newPackageId, expectedStart: null as Date | null };
@@ -1213,7 +1193,7 @@ export const appRouter = router({
         if ((resident.outOfPackageMinutes ?? 0) >= OUT_OF_PACKAGE_LIMIT_MINUTES) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: "Le solde d'heures hors-forfait a atteint la limite de 5h. Il faut régulariser (nouveau forfait ou abandon) avant de pouvoir pointer à nouveau.",
+            message: "Le solde d'heures hors-forfait a atteint la limite de 5h. Il faut régulariser (nouveau forfait, ou « + Heures » sur le forfait) avant de pouvoir pointer à nouveau.",
           });
         }
 
