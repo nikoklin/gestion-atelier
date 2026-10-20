@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, ArrowLeft, Clock, Trash2, RefreshCw, CalendarPlus, Pencil } from "lucide-react";
+import { Plus, ArrowLeft, Clock, Trash2, RefreshCw, CalendarPlus, Pencil, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function ResidentPackages() {
@@ -78,22 +78,44 @@ export default function ResidentPackages() {
   const utils = trpc.useUtils();
   const { data: resident } = trpc.residents.getById.useQuery({ id: residentId });
   const { data: pkgData, isLoading } = trpc.packages.getByResidentId.useQuery({ residentId });
+
+  // Bouton « Annuler » : dernière action mémorisée pour ce résident. Toutes les
+  // actions de la page rechargent les forfaits ; on relit alors l'historique.
+  const { data: lastUndo, refetch: refetchLastUndo } = trpc.undo.getLast.useQuery(
+    { residentId },
+    { enabled: residentId > 0 }
+  );
+  useEffect(() => {
+    refetchLastUndo();
+  }, [pkgData, refetchLastUndo]);
+  const undoMutation = trpc.undo.undoLast.useMutation({
+    onSuccess: (result) => {
+      toast.success(`Action annulée : ${result.label}`);
+      utils.packages.getByResidentId.invalidate({ residentId });
+      utils.packages.getOutOfPackageHours.invalidate();
+      utils.residents.getById.invalidate({ id: residentId });
+      utils.residents.getWithActivePackage.invalidate();
+      refetchLastUndo();
+    },
+    onError: (error) => {
+      toast.error(error.message, { duration: 8000 });
+      refetchLastUndo();
+    },
+  });
+  const formatAgo = (date: Date | string) => {
+    const minutes = Math.max(0, Math.round((Date.now() - new Date(date).getTime()) / 60000));
+    if (minutes < 1) return "à l'instant";
+    if (minutes < 60) return `il y a ${minutes} min`;
+    const hours = Math.round(minutes / 60);
+    if (hours < 24) return `il y a ${hours} h`;
+    const days = Math.round(hours / 24);
+    return `il y a ${days} jour${days > 1 ? "s" : ""}`;
+  };
   const packages = pkgData?.packages;
   const attendances = pkgData?.attendances;
   
   // Les heures hors forfait sont maintenant stockées directement dans resident.outOfPackageMinutes
   const totalOutOfPackageMinutesFromBackend = resident?.outOfPackageMinutes || 0;
-
-  const clearOutOfPackageHoursMutation = trpc.packages.clearOutOfPackageHours.useMutation({
-    onSuccess: () => {
-      toast.success("Heures hors forfait effacées");
-      utils.packages.getByResidentId.invalidate();
-      utils.packages.getOutOfPackageHours.invalidate();
-    },
-    onError: (error) => {
-      toast.error("Erreur: " + error.message);
-    },
-  });
 
   const createMutation = trpc.packages.create.useMutation({
     onSuccess: () => {
@@ -421,9 +443,6 @@ export default function ResidentPackages() {
       deductOutOfPackageHours,
       outOfPackageMinutes: deductOutOfPackageHours ? outOfPackageMinutes : 0,
     }));
-    if (!deductOutOfPackageHours) {
-      clearOutOfPackageHoursMutation.mutate({ residentId });
-    }
     setIsOutOfPackageWarningOpen(false);
     setDeductOutOfPackageHours(true);
   };
@@ -539,10 +558,24 @@ export default function ResidentPackages() {
 
   return (
     <div className="container py-4 md:py-8">
-      <div className="mb-4">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <Button variant="outline" size="sm" onClick={() => setLocation(`/residents/${residentId}`)}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Retour au profil
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={!lastUndo || undoMutation.isPending}
+          title={lastUndo ? `${lastUndo.remaining} action${lastUndo.remaining > 1 ? "s" : ""} annulable${lastUndo.remaining > 1 ? "s" : ""}` : "Aucune action à annuler"}
+          onClick={() => {
+            if (lastUndo && confirm(`Annuler « ${lastUndo.label} » (${formatAgo(lastUndo.createdAt)}) ?`)) {
+              undoMutation.mutate({ residentId });
+            }
+          }}
+        >
+          <Undo2 className="mr-2 h-4 w-4" />
+          {lastUndo ? `Annuler : ${lastUndo.label}` : "Annuler"}
         </Button>
       </div>
 

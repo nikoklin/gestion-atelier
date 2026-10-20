@@ -246,6 +246,13 @@
       "when": 1790348115008,
       "tag": "0034_chief_typhoid_mary",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "5",
+      "when": 1792509399958,
+      "tag": "0035_cool_vance_astro",
+      "breakpoints": true
     }
   ]
 }

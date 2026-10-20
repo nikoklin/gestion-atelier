@@ -10,6 +10,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import * as db from "./db";
 import { validateToken, markTokenUsed } from "./actionTokenService";
+import { withUndo, residentOfPackage, residentOfAttendance } from "./undoService";
 import { formatParisDate, formatParisTime, getParisDateString, parisDateTimeToDate } from "./_core/timezone";
 import * as emailService from "./emailService";
 import { eq } from "drizzle-orm";
@@ -682,8 +683,10 @@ export const appRouter = router({
     clearOutOfPackageHours: protectedProcedure
       .input(z.object({ residentId: z.number() }))
       .mutation(async ({ input }) => {
+        return withUndo(input.residentId, "abandon des heures hors forfait", async () => {
         await db.clearOutOfPackageHours(input.residentId);
         return { success: true };
+      });
       }),
 
     create: protectedProcedure
@@ -696,6 +699,7 @@ export const appRouter = router({
         outOfPackageMinutes: z.number().optional(),
       }))
       .mutation(async ({ input }) => {
+        return withUndo(input.residentId, "création d'un forfait", async () => {
         // Résoudre le type de forfait : dynamique (packageTypeId) ou statique (packageType)
         let totalHours: number;
         let resolvedPackageType: string;
@@ -748,6 +752,12 @@ export const appRouter = router({
           });
         }
 
+        // « Ne pas déduire » : les heures hors forfait en attente sont abandonnées
+        // dans la même action (une seule ligne à annuler).
+        if (input.deductOutOfPackageHours === false) {
+          await db.clearOutOfPackageHours(input.residentId);
+        }
+
         const newPackageId = await db.createPackage({
           residentId: input.residentId,
           packageType: resolvedPackageType,
@@ -770,6 +780,7 @@ export const appRouter = router({
         }
 
         return { success: true };
+      });
       }),
 
     update: protectedProcedure
@@ -788,6 +799,7 @@ export const appRouter = router({
     activatePending: protectedProcedure
       .input(z.object({ packageId: z.number() }))
       .mutation(async ({ input }) => {
+        return withUndo(await residentOfPackage(input.packageId), "activation d'un forfait en attente", async () => {
         const pkg = await db.getPackageById(input.packageId);
         if (!pkg) throw new TRPCError({ code: 'NOT_FOUND', message: 'Forfait introuvable.' });
         // Calculer la date de début et de fin à partir d'aujourd'hui
@@ -830,6 +842,7 @@ export const appRouter = router({
           }
         } catch (e) { /* non bloquant */ }
         return { success: true };
+      });
       }),
 
     listAll: protectedProcedure.query(async () => {
@@ -934,6 +947,7 @@ export const appRouter = router({
         note: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
+        return withUndo(await residentOfPackage(input.packageId), `ajout de ${input.hours}h${String(input.minutes).padStart(2, "0")}`, async () => {
         const pkg = await db.getPackageById(input.packageId);
         if (!pkg) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Forfait non trouvé" });
@@ -962,6 +976,7 @@ export const appRouter = router({
         await db.recalculatePackageHours(input.packageId);
 
         return { success: true, addedMinutes: additionalMinutes };
+      });
       }),
 
     extendDate: protectedProcedure
@@ -970,6 +985,7 @@ export const appRouter = router({
         days: z.number().min(1),
       }))
       .mutation(async ({ input }) => {
+        return withUndo(await residentOfPackage(input.packageId), `prolongation de ${input.days} jour${input.days > 1 ? "s" : ""}`, async () => {
         const pkg = await db.getPackageById(input.packageId);
         if (!pkg) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Forfait non trouvé" });
@@ -990,6 +1006,7 @@ export const appRouter = router({
         await db.fullRecalculateResident(pkg.residentId);
 
         return { success: true, newEndDate };
+      });
       }),
 
     subtractHours: protectedProcedure
@@ -1000,6 +1017,7 @@ export const appRouter = router({
         note: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
+        return withUndo(await residentOfPackage(input.packageId), `retrait de ${input.hours}h${String(input.minutes).padStart(2, "0")}`, async () => {
         const pkg = await db.getPackageById(input.packageId);
         if (!pkg) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Forfait non trouvé" });
@@ -1041,6 +1059,7 @@ export const appRouter = router({
         await db.recalculatePackageHours(input.packageId);
 
         return { success: true, subtractedMinutes: subtractMinutes };
+      });
       }),
 
     subtractDays: protectedProcedure
@@ -1049,6 +1068,7 @@ export const appRouter = router({
         days: z.number().min(1),
       }))
       .mutation(async ({ input }) => {
+        return withUndo(await residentOfPackage(input.packageId), `retrait de ${input.days} jour${input.days > 1 ? "s" : ""}`, async () => {
         const pkg = await db.getPackageById(input.packageId);
         if (!pkg) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Forfait non trouvé" });
@@ -1078,6 +1098,7 @@ export const appRouter = router({
         await db.fullRecalculateResident(pkg.residentId);
 
         return { success: true, newEndDate };
+      });
       }),
 
     updateStartDate: protectedProcedure
@@ -1086,6 +1107,7 @@ export const appRouter = router({
         startDate: z.date(),
       }))
       .mutation(async ({ input }) => {
+        return withUndo(await residentOfPackage(input.packageId), "changement de la date de début", async () => {
         const pkg = await db.getPackageById(input.packageId);
         if (!pkg) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Forfait non trouvé" });
@@ -1103,6 +1125,7 @@ export const appRouter = router({
         await db.fullRecalculateResident(pkg.residentId);
 
         return { success: true };
+      });
       }),
 
     delete: protectedProcedure
@@ -1110,6 +1133,7 @@ export const appRouter = router({
         id: z.number(),
       }))
       .mutation(async ({ input }) => {
+        return withUndo(await residentOfPackage(input.id), "suppression d'un forfait", async () => {
         const pkg = await db.getPackageById(input.id);
         if (!pkg) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Forfait non trouvé" });
@@ -1129,6 +1153,7 @@ export const appRouter = router({
         await db.fullRecalculateResident(residentId);
 
         return { success: true };
+      });
       }),
 
   }),
@@ -1261,6 +1286,7 @@ export const appRouter = router({
         checkOutTime: z.string().nullable(),
       }))
       .mutation(async ({ input }) => {
+        return withUndo(await residentOfAttendance(input.id), "modification d'un pointage", async () => {
         const attendance = await db.getAttendanceById(input.id);
         if (!attendance) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Pointage non trouvé" });
@@ -1334,11 +1360,13 @@ export const appRouter = router({
         }
 
         return { success: true };
+      });
       }),
 
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
+        return withUndo(await residentOfAttendance(input.id), "suppression d'un pointage", async () => {
         const attendance = await db.getAttendanceById(input.id);
         if (!attendance) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Pointage non trouvé" });
@@ -1366,11 +1394,13 @@ export const appRouter = router({
         }
         
         return { success: true };
+      });
       }),
 
     deleteAllByResident: protectedProcedure
       .input(z.object({ residentId: z.number() }))
       .mutation(async ({ input }) => {
+        return withUndo(input.residentId, "effacement de tous les pointages", async () => {
         const resident = await db.getResidentById(input.residentId);
         if (!resident) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Résident non trouvé" });
@@ -1388,6 +1418,7 @@ export const appRouter = router({
         await db.fullRecalculateResident(input.residentId);
 
         return { success: true };
+      });
       }),
 
     create: protectedProcedure
@@ -1397,6 +1428,7 @@ export const appRouter = router({
         checkOutTime: z.string().nullable(),
       }))
       .mutation(async ({ input }) => {
+        return withUndo(input.residentId, "ajout d'un pointage", async () => {
         const resident = await db.getResidentById(input.residentId);
         if (!resident) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Résident non trouvé" });
@@ -1467,6 +1499,7 @@ export const appRouter = router({
         }
 
         return { success: true, attendanceId };
+      });
       }),
   }),
 
@@ -1527,6 +1560,30 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         await db.deleteNote(input.id);
         return { success: true };
+      }),
+  }),
+
+  undo: router({
+    // Dernière action annulable sur la page de gestion des forfaits du résident.
+    getLast: protectedProcedure
+      .input(z.object({ residentId: z.number() }))
+      .query(async ({ input }) => {
+        const { getLastUndoAction } = await import("./undoService");
+        return await getLastUndoAction(input.residentId);
+      }),
+
+    undoLast: protectedProcedure
+      .input(z.object({ residentId: z.number() }))
+      .mutation(async ({ input }) => {
+        const { undoLastAction, UndoConflictError } = await import("./undoService");
+        try {
+          return await undoLastAction(input.residentId);
+        } catch (err) {
+          if (err instanceof UndoConflictError) {
+            throw new TRPCError({ code: "CONFLICT", message: err.message });
+          }
+          throw err;
+        }
       }),
   }),
 

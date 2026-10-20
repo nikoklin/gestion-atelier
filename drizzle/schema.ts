@@ -215,3 +215,20 @@ export const actionTokens = mysqlTable("actionTokens", {
 
 export type ActionToken = typeof actionTokens.$inferSelect;
 export type InsertActionToken = typeof actionTokens.$inferInsert;
+
+/**
+ * Historique « Annuler » de la page de gestion des forfaits : état (forfaits,
+ * pointages, champs du résident) avant et après chaque action, par résident.
+ */
+export const undoActions = mysqlTable("undoActions", {
+  id: int("id").autoincrement().primaryKey(),
+  residentId: int("residentId").notNull().references(() => residents.id, { onDelete: 'cascade' }),
+  label: varchar("label", { length: 255 }).notNull(),
+  beforeState: mediumtext("beforeState").notNull(),
+  afterState: mediumtext("afterState").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  residentIdIdx: index("undoActions_residentId_idx").on(table.residentId),
+}));
+
+export type UndoAction = typeof undoActions.$inferSelect;
