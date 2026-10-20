@@ -40,7 +40,7 @@ export function renderShelfNoticeForAtelier(c: db.ShelfSituation): { subject: st
       `
         <p style="margin-top: 0;">Le forfait de <strong>${name}</strong> est terminé depuis le ${formatParisDate(c.finishedAt, { day: "2-digit", month: "long", year: "numeric" })} et n'a pas été prolongé.</p>
         <p>Son étagère <strong>n°${c.shelfNumber}</strong> est à vider.</p>
-        <p>Une fois l'étagère vidée, ouvre sa fiche et clique sur « Étagère vidée » : elle redevient non occupée, ${c.email ? "et le résident en est informé par e-mail." : "mais aucune adresse e-mail n'est enregistrée pour ce résident : il faudra le prévenir directement."}</p>
+        <p>Une fois l'étagère vidée, ouvre sa fiche et clique sur « Étagère vidée » : elle redevient non occupée, ${c.email ? "le résident en est informé par e-mail" : "le résident n'a pas d'adresse e-mail enregistrée (il faudra le prévenir directement)"} et il passe dans les résidents archivés.</p>
       `,
       {
         closing: false,

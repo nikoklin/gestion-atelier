@@ -549,6 +549,29 @@ export async function sendGuideEmail(email: string, firstName: string, residentI
 }
 
 /**
+ * Un résident archivé a repayé un forfait en ligne : rien n'est créé
+ * automatiquement, l'atelier doit le désarchiver puis créer le forfait.
+ */
+export async function sendArchivedResidentPaymentAlert(
+  resident: { id: number; firstName: string; lastName: string; email: string },
+  amount: string,
+  wixPaymentId: string
+): Promise<boolean> {
+  const to = getAtelierNotificationEmail();
+  if (!to) return false;
+  const name = `${resident.firstName} ${resident.lastName}`;
+  const subject = `Paiement reçu d'un résident archivé – ${name}`;
+  const html = wrapEmailHtml(`
+      <p style="margin-top: 0;"><strong>${name}</strong> (${resident.email}) vient de payer <strong>${amount} €</strong> en ligne, mais ce résident est archivé : aucun forfait n'a été créé automatiquement.</p>
+      <p>Pour traiter le paiement : ouvre la page des résidents archivés, restaure ce résident, puis crée son forfait (et réattribue-lui une étagère).</p>
+      <p style="color: #7a6040; font-size: 13px;">Référence du paiement Wix : ${wixPaymentId}</p>
+    `, { closing: false, actionButton: { href: `${getPublicSiteUrl()}/archived`, label: "Ouvrir les résidents archivés" } });
+  const sent = await sendEmail(to, subject, html);
+  await db.createEmailLog({ residentId: resident.id, packageId: null, emailType: 'payment_queued', recipientEmail: to, subject, success: sent }).catch(() => {});
+  return sent;
+}
+
+/**
  * Paiement reçu alors que le forfait en cours n'est pas fini : le nouveau
  * forfait est en file et démarrera tout seul.
  */

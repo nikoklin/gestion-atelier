@@ -96,10 +96,12 @@ export default function ResidentProfile() {
   const { data: shelvesToEmpty } = trpc.residents.getShelvesToEmpty.useQuery();
   const releaseShelfMutation = trpc.residents.releaseShelf.useMutation({
     onSuccess: (result) => {
-      toast.success(result.emailSent ? "Étagère remise en non occupée — le résident a été prévenu par e-mail" : "Étagère remise en non occupée");
+      toast.success(result.emailSent ? "Étagère libérée, résident prévenu par e-mail et archivé" : "Étagère libérée et résident archivé");
       utils.residents.getShelvesToEmpty.invalidate();
-      utils.residents.getById.invalidate({ id: residentId });
       utils.residents.getWithActivePackage.invalidate();
+      utils.residents.listArchived.invalidate();
+      // Le résident est archivé : sa fiche n'est plus accessible, retour à la liste.
+      setLocation("/residents");
     },
     onError: (error) => toast.error(`Erreur : ${error.message}`),
   });
@@ -880,13 +882,13 @@ const utils = trpc.useUtils();
               <CardContent className="space-y-3">
                 <p>
                   L'étagère <strong>n°{resident.shelfNumber}</strong> est à vider. Une fois vidée, clique sur
-                  « Étagère vidée » : elle redevient non occupée et le résident en est informé par e-mail.
+                  « Étagère vidée » : elle redevient non occupée, le résident en est informé par e-mail puis il est archivé.
                 </p>
                 <Button
                   variant="outline"
                   disabled={releaseShelfMutation.isPending}
                   onClick={() => {
-                    if (confirm(`Confirmer que l'étagère n°${resident.shelfNumber} est vidée ? Un e-mail sera envoyé au résident.`)) {
+                    if (confirm(`Confirmer que l'étagère n°${resident.shelfNumber} est vidée ? Un e-mail sera envoyé au résident, puis il sera archivé.`)) {
                       releaseShelfMutation.mutate({ residentId: resident.id });
                     }
                   }}

@@ -96,6 +96,17 @@ export async function processWixPaymentEvent(event: any): Promise<void> {
 
     const resident = await db.getResidentByEmail(buyerEmail);
     if (!resident) {
+      const archived = await db.getArchivedResidentByEmail(buyerEmail);
+      if (archived) {
+        // Ancien résident archivé (étagère vidée) qui repaie : rien n'est créé
+        // automatiquement, l'atelier est prévenu pour le traiter à la main.
+        console.error(`[WixWebhook] Paiement ${wixPaymentId} (${amount}€) d'un résident ARCHIVÉ (${archived.id}, ${buyerEmail}) — forfait NON créé, atelier prévenu.`);
+        const { sendArchivedResidentPaymentAlert } = await import("./emailService");
+        await sendArchivedResidentPaymentAlert(archived, amount, wixPaymentId).catch((err) =>
+          console.error("[WixWebhook] Échec de l'alerte à l'atelier:", err)
+        );
+        return;
+      }
       console.error(`[WixWebhook] Aucun résident trouvé pour l'e-mail ${buyerEmail} (paiement ${wixPaymentId}, ${amount}€) — forfait NON créé, à traiter manuellement.`);
       return;
     }

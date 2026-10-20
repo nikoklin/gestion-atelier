@@ -25,9 +25,10 @@ export default function Dashboard() {
   const utils = trpc.useUtils();
   const releaseShelfMutation = trpc.residents.releaseShelf.useMutation({
     onSuccess: (result) => {
-      toast.success(result.emailSent ? "Étagère remise en non occupée — le résident a été prévenu par e-mail" : "Étagère remise en non occupée");
+      toast.success(result.emailSent ? "Étagère libérée, résident prévenu par e-mail et archivé" : "Étagère libérée et résident archivé");
       utils.residents.getShelvesToEmpty.invalidate();
       utils.residents.getWithActivePackage.invalidate();
+      utils.residents.listArchived.invalidate();
     },
     onError: (error) => toast.error("Erreur : " + error.message),
   });
@@ -156,7 +157,7 @@ export default function Dashboard() {
                         className="shrink-0"
                         disabled={releaseShelfMutation.isPending}
                         onClick={() => {
-                          if (confirm(`Confirmer que l'étagère n°${s.shelfNumber} de ${s.firstName} ${s.lastName} est vidée ? Un e-mail sera envoyé au résident.`)) {
+                          if (confirm(`Confirmer que l'étagère n°${s.shelfNumber} de ${s.firstName} ${s.lastName} est vidée ? Un e-mail sera envoyé au résident, puis il sera archivé.`)) {
                             releaseShelfMutation.mutate({ residentId: s.residentId });
                           }
                         }}

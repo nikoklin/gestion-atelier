@@ -551,7 +551,8 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    // Étagère vidée par l'atelier : elle redevient non occupée et le résident en est informé par e-mail.
+    // Étagère vidée par l'atelier : elle redevient non occupée, le résident en est informé par
+    // e-mail puis il est archivé (récupérable depuis la page des résidents archivés).
     releaseShelf: protectedProcedure
       .input(z.object({ residentId: z.number() }))
       .mutation(async ({ input }) => {
@@ -568,7 +569,8 @@ export const appRouter = router({
             return false;
           });
         }
-        return { success: true, emailSent };
+        await db.deleteResident(input.residentId);
+        return { success: true, emailSent, archived: true };
       }),
 
     // Résidents déjà prévenus (forfait fini depuis 7 jours, non prolongé) qui gardent encore leur étagère.

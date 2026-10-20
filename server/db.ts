@@ -204,6 +204,19 @@ export async function deleteResident(id: number) {
   return await db.update(residents).set({ isDeleted: true, isActive: false }).where(eq(residents.id, id));
 }
 
+// Résident archivé (étagère vidée ou supprimé) ayant cette adresse : sert à
+// repérer un ancien résident qui repaie un forfait.
+export async function getArchivedResidentByEmail(email: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.select().from(residents)
+    .where(and(eq(residents.email, email), eq(residents.isDeleted, true)))
+    .orderBy(desc(residents.updatedAt))
+    .limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
 export async function getArchivedResidents() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
