@@ -165,3 +165,51 @@ describe.skipIf(!process.env.DATABASE_URL)("Annuler (page de gestion des forfait
     expect(await state(RID2)).toEqual(before2);
   });
 });
+
+describe.skipIf(!process.env.DATABASE_URL)("Création manuelle pendant un forfait en cours → file d'attente", () => {
+  const RQ = 990052;
+  async function cleanupQ() {
+    const database = await getDb();
+    if (!database) return;
+    await database.delete(attendances).where(eq(attendances.residentId, RQ));
+    await database.delete(packages).where(eq(packages.residentId, RQ));
+    await database.delete(residents).where(eq(residents.id, RQ));
+  }
+  beforeAll(cleanupQ);
+  afterAll(cleanupQ);
+
+  it("le nouveau forfait part en file, démarre à la fin de l'actuel, et la création s'annule", async () => {
+    await db.createResident({ id: RQ, firstName: "TEST", lastName: "QueueManual", email: "", isActive: true } as any);
+    const currentEnd = new Date(now.getTime() + 20 * 86400000);
+    await db.createPackage({ id: 9905201, residentId: RQ, packageType: "custom_999", totalHours: 600, usedHours: 0,
+      startDate: daysAgo(10), endDate: currentEnd, isActive: true } as any);
+    await db.fullRecalculateResident(RQ);
+
+    const types = await db.getActivePackageTypes();
+    const first = await caller.packages.create({ residentId: RQ, packageTypeId: types[0].id });
+    expect(first.queued).toBe(true);
+    const q1 = await db.getPackageById(first.packageId!);
+    expect(q1!.status).toBe("pending");
+    expect(q1!.autoStart).toBe(true);
+    const storedCurrentEnd = (await db.getPackageById(9905201))!.endDate;
+    expect(new Date(q1!.startDate).toISOString()).toBe(new Date(storedCurrentEnd).toISOString());
+    expect((await db.getActivePackageByResidentId(RQ))!.id).toBe(9905201); // l'actuel reste le forfait du résident
+
+    // Deuxième forfait en file : démarre après le premier.
+    const second = await caller.packages.create({ residentId: RQ, packageTypeId: types[0].id });
+    const q2 = await db.getPackageById(second.packageId!);
+    expect(new Date(q2!.startDate).toISOString()).toBe(new Date(q1!.endDate).toISOString());
+
+    // Annuler la 2e création → elle disparaît ; la 1re reste.
+    expect((await caller.undo.undoLast({ residentId: RQ })).label).toBe("création d'un forfait");
+    expect(await db.getPackageById(second.packageId!)).toBeNull();
+    expect(await db.getPackageById(first.packageId!)).not.toBeNull();
+
+    // Le forfait actuel se termine → le forfait en file démarre tout seul.
+    await db.updatePackage(9905201, { endDate: daysAgo(1) } as any);
+    await db.fullRecalculateResident(RQ);
+    const started = await db.getPackageById(first.packageId!);
+    expect(started!.status).toBe("active");
+    expect(started!.isActive).toBe(true);
+  });
+});

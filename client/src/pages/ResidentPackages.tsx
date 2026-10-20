@@ -112,14 +112,21 @@ export default function ResidentPackages() {
     return `il y a ${days} jour${days > 1 ? "s" : ""}`;
   };
   const packages = pkgData?.packages;
+  const hasValidPackage = !!packages?.some(
+    (p: any) => p.status !== 'pending' && p.totalHours - p.usedHours > 0 && new Date(p.endDate) >= new Date()
+  );
   const attendances = pkgData?.attendances;
   
   // Les heures hors forfait sont maintenant stockées directement dans resident.outOfPackageMinutes
   const totalOutOfPackageMinutesFromBackend = resident?.outOfPackageMinutes || 0;
 
   const createMutation = trpc.packages.create.useMutation({
-    onSuccess: () => {
-      toast.success("Forfait créé avec succès");
+    onSuccess: (result) => {
+      toast.success(
+        result.queued && result.expectedStart
+          ? `Forfait mis en file d'attente : il démarrera automatiquement à la fin du forfait actuel (vers le ${new Date(result.expectedStart).toLocaleDateString("fr-FR")}).`
+          : "Forfait créé avec succès"
+      );
       setIsCreateDialogOpen(false);
       utils.packages.getByResidentId.invalidate({ residentId });
       utils.packages.getOutOfPackageHours.invalidate();
@@ -419,6 +426,13 @@ export default function ResidentPackages() {
       return;
     }
 
+    // Forfait en cours : le nouveau part en file d'attente, sans report d'heures
+    // hors forfait (elles seront reprises à son démarrage automatique).
+    if (hasValidPackage) {
+      createMutation.mutate(buildCreateInput());
+      return;
+    }
+
     // Vérifier si un forfait actif a déjà des heures déduites lors de sa création
     const hasActivePackageWithDeduction = packages && packages.length > 0
       ? packages.some(pkg => pkg.isActive && pkg.deductedMinutes && pkg.deductedMinutes > 0)
@@ -597,9 +611,8 @@ export default function ResidentPackages() {
             </div>
               <div className="flex flex-col gap-2">
               <div className="flex flex-wrap gap-2">
-                <Button 
+                <Button
                   onClick={() => setIsCreateDialogOpen(true)}
-                  disabled={packages && packages.some(pkg => pkg.isActive && (pkg.totalHours - pkg.usedHours) > 0)}
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Nouveau Forfait
@@ -613,9 +626,9 @@ export default function ResidentPackages() {
                   Réinitialisation Rappel
                 </Button>
               </div>
-              {packages && packages.some(pkg => pkg.isActive && (pkg.totalHours - pkg.usedHours) > 0) && (
+              {hasValidPackage && (
                 <p className="text-sm text-muted-foreground">
-                  Un forfait est déjà actif pour ce résident. Attendez son expiration ou désactivez-le pour en créer un nouveau.
+                  Un forfait est en cours : un nouveau forfait sera mis en file d'attente et démarrera automatiquement à la fin de l'actuel.
                 </p>
               )}
             </div>
@@ -628,7 +641,6 @@ export default function ResidentPackages() {
               <TableRow>
                 <TableHead>Type</TableHead>
                 <TableHead>Date de début</TableHead>
-                <TableHead>Date de fin</TableHead>
                 <TableHead>Date d'expiration</TableHead>
                 <TableHead>Heures utilisées</TableHead>
                 <TableHead>Heures restantes</TableHead>
@@ -648,7 +660,6 @@ export default function ResidentPackages() {
                     </div>
                   </TableCell>
                   <TableCell>{formatDate(pkg.startDate)}</TableCell>
-                  <TableCell>{formatDate(pkg.endDate)}</TableCell>
                   <TableCell>{getExpirationDate(pkg)}</TableCell>
                   <TableCell>
                     <span>{getUsedHours(pkg)}</span>
@@ -1198,7 +1209,9 @@ export default function ResidentPackages() {
           <DialogHeader>
             <DialogTitle>Nouveau Forfait</DialogTitle>
             <DialogDescription>
-              Créer un nouveau forfait pour {resident?.firstName} {resident?.lastName}
+              {hasValidPackage
+                ? `Un forfait est en cours pour ${resident?.firstName} ${resident?.lastName} : ce nouveau forfait sera mis en file d'attente et démarrera automatiquement à la fin du forfait actuel.`
+                : `Créer un nouveau forfait pour ${resident?.firstName} ${resident?.lastName}`}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -1243,6 +1256,7 @@ export default function ResidentPackages() {
                 </SelectContent>
               </Select>
             </div>
+            {!hasValidPackage && (
             <div className="grid gap-2">
               <Label htmlFor="startDate">Date de début</Label>
               <input
@@ -1253,6 +1267,7 @@ export default function ResidentPackages() {
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>

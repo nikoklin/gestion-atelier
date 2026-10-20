@@ -723,17 +723,35 @@ export const appRouter = router({
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'Veuillez spécifier un type de forfait.' });
         }
 
-        // Vérifier s'il existe déjà un forfait actif ET non expiré
+        // Un forfait est encore valable : le nouveau forfait est mis en file d'attente
+        // et démarrera automatiquement à la fin du forfait en cours (ou du dernier
+        // forfait déjà en file), comme un paiement d'avance (db.activateNextQueuedPackage).
         const activePackage = await db.getActivePackageByResidentId(input.residentId);
-        
-        // Empêcher la création si un forfait actif existe déjà ET qu'il a encore des heures restantes
         if (activePackage && (activePackage.totalHours - activePackage.usedHours) > 0) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Un forfait est déjà actif pour ce résident. Attendez son expiration ou désactivez-le pour en créer un nouveau.',
-          });
+          const alreadyQueued = (await db.getPackagesByResidentId(input.residentId))
+            .filter((p) => p.status === 'pending' && p.autoStart);
+          const expectedStart = new Date(Math.max(
+            new Date(activePackage.endDate).getTime(),
+            ...alreadyQueued.map((p) => new Date(p.endDate).getTime())
+          ));
+          const durationMs = resolvedEndDate.getTime() - startDate.getTime();
+          const queuedPackageId = await db.createPackage({
+            residentId: input.residentId,
+            packageType: resolvedPackageType,
+            totalHours,
+            usedHours: 0,
+            deductedMinutes: 0,
+            startDate: expectedStart,
+            endDate: new Date(expectedStart.getTime() + durationMs),
+            isActive: false,
+            status: 'pending',
+            autoStart: true,
+            reminderSent: false,
+            expirationEmailSent: false,
+          } as any);
+          return { success: true, queued: true, packageId: queuedPackageId, expectedStart };
         }
-        
+
         let initialUsedHours = 0;
         
         // Ajouter les heures hors forfait si demandé
@@ -779,7 +797,7 @@ export const appRouter = router({
           await db.fullRecalculateResident(input.residentId);
         }
 
-        return { success: true };
+        return { success: true, queued: false, packageId: newPackageId, expectedStart: null as Date | null };
       });
       }),
 

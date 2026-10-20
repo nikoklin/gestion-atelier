@@ -12,5 +12,7 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["server/**/*.test.ts", "server/**/*.spec.ts"],
+    // Les tests passent par la vraie base distante (nombreux allers-retours).
+    testTimeout: 30000,
   },
 });
