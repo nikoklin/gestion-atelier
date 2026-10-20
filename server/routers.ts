@@ -1103,14 +1103,12 @@ export const appRouter = router({
         if (!pkg) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Forfait non trouvé" });
         }
-        if (pkg.endDate && input.startDate > new Date(pkg.endDate)) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "La date de début ne peut pas être postérieure à la date de fin",
-          });
-        }
+        // La date de fin suit la date de début : la durée du forfait (jours ajoutés
+        // ou retirés à la main compris) est conservée.
+        const durationMs = new Date(pkg.endDate).getTime() - new Date(pkg.startDate).getTime();
+        const endDate = new Date(input.startDate.getTime() + durationMs);
 
-        await db.updatePackage(input.packageId, { startDate: input.startDate });
+        await db.updatePackage(input.packageId, { startDate: input.startDate, endDate });
 
         // Réattribue les pointages selon la nouvelle plage de validité du forfait.
         await db.fullRecalculateResident(pkg.residentId);

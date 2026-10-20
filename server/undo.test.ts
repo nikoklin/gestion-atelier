@@ -88,6 +88,18 @@ describe.skipIf(!process.env.DATABASE_URL)("Annuler (page de gestion des forfait
     expect(await state()).toEqual(initial);
   });
 
+  it("changer la date de début décale la date de fin d'autant (durée conservée)", async () => {
+    const pkg = (await db.getPackageById(PKG))!;
+    const duration = new Date(pkg.endDate).getTime() - new Date(pkg.startDate).getTime();
+    const newStart = new Date(new Date(pkg.startDate).getTime() - 3 * 86400000);
+    await caller.packages.updateStartDate({ packageId: PKG, startDate: newStart });
+    const moved = (await db.getPackageById(PKG))!;
+    expect(new Date(moved.startDate).getTime()).toBe(Math.floor(newStart.getTime() / 1000) * 1000);
+    expect(new Date(moved.endDate).getTime() - new Date(moved.startDate).getTime()).toBe(duration);
+    await caller.undo.undoLast({ residentId: RID });
+    expect(await state()).toEqual(initial);
+  });
+
   it("pointage ajouté, modifié, supprimé : chaque action s'annule", async () => {
     const t = daysAgo(1);
     await caller.attendances.create({ residentId: RID, checkInTime: t.toISOString(), checkOutTime: new Date(t.getTime() + 3600000).toISOString() });

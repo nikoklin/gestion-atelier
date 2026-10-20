@@ -1133,7 +1133,8 @@ export default function ResidentPackages() {
           <DialogHeader>
             <DialogTitle>Modifier la Date de Début</DialogTitle>
             <DialogDescription>
-              Change la date de début du forfait. Les pointages sont réattribués
+              Change la date de début du forfait : la date de fin est décalée d'autant
+              (la durée du forfait est conservée). Les pointages sont réattribués
               automatiquement selon la nouvelle plage de validité.
             </DialogDescription>
           </DialogHeader>
