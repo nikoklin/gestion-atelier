@@ -591,23 +591,7 @@ export const appRouter = router({
       }),
 
     getWithActivePackage: protectedProcedure.query(async () => {
-      const residents = await db.getActiveResidents();
-      const residentsWithPackages = await Promise.all(
-        residents.map(async (resident) => {
-          const displayPackage = await db.getDisplayPackageForResident(resident.id);
-          const lastReminder = await db.getLastReminderByResidentId(resident.id);
-          const openAttendance = await db.getOpenAttendance(resident.id);
-          return {
-            ...resident,
-            activePackage: displayPackage,
-            lastReminderDate: lastReminder?.sentAt || null,
-            hasMissedCheckout: resident.hasMissedCheckout || false,
-            missedCheckoutAttendanceId: resident.missedCheckoutAttendanceId || null,
-            hasOpenAttendance: !!openAttendance,
-          };
-        })
-      );
-      return residentsWithPackages;
+      return await db.getActiveResidentsOverview();
     }),
 
   }),
@@ -800,6 +784,15 @@ export const appRouter = router({
         return withUndo(await residentOfPackage(input.packageId), "activation d'un forfait en attente", async () => {
         const pkg = await db.getPackageById(input.packageId);
         if (!pkg) throw new TRPCError({ code: 'NOT_FOUND', message: 'Forfait introuvable.' });
+        // Un seul forfait valable à la fois : un forfait en attente ne peut être
+        // activé à la main que si le forfait en cours est terminé.
+        const current = await db.getActivePackageByResidentId(pkg.residentId);
+        if (current && current.id !== pkg.id && current.totalHours - current.usedHours > 0) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: "Un forfait est encore en cours : ce forfait en attente démarrera automatiquement à la fin de celui-ci.",
+          });
+        }
         // Calculer la date de début et de fin à partir d'aujourd'hui
         const startDate = new Date();
         let endDate: Date | null = null;

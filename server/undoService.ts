@@ -33,9 +33,11 @@ const toPlain = (row: object): Row =>
 async function captureState(residentId: number): Promise<State> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const pkgRows = await db.select().from(packages).where(eq(packages.residentId, residentId));
-  const attRows = await db.select().from(attendances).where(eq(attendances.residentId, residentId));
-  const resRows = await db.select().from(residents).where(eq(residents.id, residentId)).limit(1);
+  const [pkgRows, attRows, resRows] = await Promise.all([
+    db.select().from(packages).where(eq(packages.residentId, residentId)),
+    db.select().from(attendances).where(eq(attendances.residentId, residentId)),
+    db.select().from(residents).where(eq(residents.id, residentId)).limit(1),
+  ]);
   return {
     packages: pkgRows.map(toPlain),
     attendances: attRows.map(toPlain),
@@ -112,8 +114,8 @@ async function saveUndoAction(residentId: number, label: string, before: State, 
     afterState: JSON.stringify(after),
   });
 
-  // Ménage : plus de 7 jours, et au-delà des 20 dernières actions du résident.
-  await db.delete(undoActions).where(lt(undoActions.createdAt, new Date(Date.now() - MAX_AGE_DAYS * 86400000)));
+  // Au-delà des 20 dernières actions du résident : supprimées. (Les actions de
+  // plus de 7 jours sont purgées par la tâche de nuit, purgeOldUndoActions.)
   const kept = await db
     .select({ id: undoActions.id })
     .from(undoActions)
@@ -121,6 +123,12 @@ async function saveUndoAction(residentId: number, label: string, before: State, 
     .orderBy(desc(undoActions.id));
   const extra = kept.slice(MAX_ACTIONS_PER_RESIDENT).map((r) => r.id);
   if (extra.length > 0) await db.delete(undoActions).where(inArray(undoActions.id, extra));
+}
+
+export async function purgeOldUndoActions() {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(undoActions).where(lt(undoActions.createdAt, new Date(Date.now() - MAX_AGE_DAYS * 86400000)));
 }
 
 export async function getLastUndoAction(residentId: number) {

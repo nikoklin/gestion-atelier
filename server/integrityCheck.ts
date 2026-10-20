@@ -281,6 +281,12 @@ export async function runNightlyMaintenance(): Promise<{ residents: number; anom
   }
 
   const { residents: count } = await recalculateAllResidents();
+  try {
+    const { purgeOldUndoActions } = await import("./undoService");
+    await purgeOldUndoActions();
+  } catch (error) {
+    console.error("[Integrity] Purge de l'historique « Annuler » en échec:", error);
+  }
 
   let anomalies: Anomaly[] = [];
   try {

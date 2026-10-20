@@ -1,4 +1,4 @@
-import { eq, and, desc, gte, lte, isNull, isNotNull, inArray, ne } from "drizzle-orm";
+import { eq, and, desc, gte, lte, isNull, isNotNull, inArray, ne, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2";
 import { 
@@ -380,6 +380,52 @@ export async function findShelfReleaseCandidates(
 // Déjà prévenus et qui gardent encore leur étagère : à vider, puis à libérer par l'atelier.
 export async function findShelvesToEmpty(now: Date = new Date()): Promise<ShelfSituation[]> {
   return (await findFinishedPackageShelves(now)).filter((c) => c.noticeSent);
+}
+
+// Liste des résidents actifs avec, pour chacun, le forfait à afficher, le
+// dernier rappel et la présence d'un pointage en cours — en 4 requêtes au total
+// (au lieu de 3 par résident). Même règle que getDisplayPackageForResident.
+export async function getActiveResidentsOverview() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [residentRows, packageRows, openRows, reminderRows] = await Promise.all([
+    getActiveResidents(),
+    db.select().from(packages).orderBy(desc(packages.createdAt)),
+    db.select({ residentId: attendances.residentId }).from(attendances).where(isNull(attendances.checkOutTime)),
+    db
+      .select({ residentId: emailLogs.residentId, sentAt: sql<string | Date | null>`max(${emailLogs.sentAt})` })
+      .from(emailLogs)
+      .where(eq(emailLogs.emailType, "reminder"))
+      .groupBy(emailLogs.residentId),
+  ]);
+
+  const now = new Date();
+  const packagesByResident = new Map<number, typeof packageRows>();
+  for (const p of packageRows) {
+    if (!packagesByResident.has(p.residentId)) packagesByResident.set(p.residentId, []);
+    packagesByResident.get(p.residentId)!.push(p);
+  }
+  const withOpenAttendance = new Set(openRows.map((r) => r.residentId));
+  // max() renvoie le texte brut de la base (heure UTC, sans fuseau) : converti en Date.
+  const toUtcDate = (v: string | Date | null) =>
+    v instanceof Date ? v : v ? new Date(`${String(v).replace(" ", "T")}Z`) : null;
+  const lastReminder = new Map(reminderRows.map((r) => [r.residentId, toUtcDate(r.sentAt)]));
+
+  return residentRows.map((resident) => {
+    const list = packagesByResident.get(resident.id) ?? []; // du plus récent au plus ancien
+    const valid = list.find(
+      (p) => p.status !== "pending" && p.totalHours - p.usedHours > 0 && now <= new Date(p.endDate)
+    );
+    return {
+      ...resident,
+      activePackage: valid ?? list[0] ?? null,
+      lastReminderDate: lastReminder.get(resident.id) ?? null,
+      hasMissedCheckout: resident.hasMissedCheckout || false,
+      missedCheckoutAttendanceId: resident.missedCheckoutAttendanceId || null,
+      hasOpenAttendance: withOpenAttendance.has(resident.id),
+    };
+  });
 }
 
 export async function getPackageById(id: number) {
@@ -991,11 +1037,12 @@ type RecalcResult = {
 };
 
 export async function fullRecalculateResident(residentId: number): Promise<RecalcResult> {
-  const result = await recalculateResidentCore(residentId);
+  const { needsQueuedActivation, ...result } = await recalculateResidentCore(residentId);
   // Si le forfait en cours vient de finir, le forfait payé d'avance (en file)
   // démarre ici : couvre le recalcul de 00:05, chaque départ, les ajustements...
-  if (await activateNextQueuedPackage(residentId)) {
-    return await recalculateResidentCore(residentId);
+  if (needsQueuedActivation && (await activateNextQueuedPackage(residentId))) {
+    const { needsQueuedActivation: _ignored, ...after } = await recalculateResidentCore(residentId);
+    return after;
   }
   return result;
 }
@@ -1120,203 +1167,146 @@ export async function activateNextQueuedPackage(residentId: number): Promise<boo
   return true;
 }
 
-async function recalculateResidentCore(residentId: number): Promise<RecalcResult> {
+async function recalculateResidentCore(residentId: number): Promise<RecalcResult & { needsQueuedActivation: boolean }> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // 1. Charger les forfaits du résident triés par startDate. Les forfaits en
-  // attente (en file ou en validation) ne participent pas au moteur : ils
-  // n'absorbent aucun pointage et leur isActive/deductedMinutes est laissé tel quel.
-  const allPackages = (await db
-    .select()
-    .from(packages)
-    .where(eq(packages.residentId, residentId))
-    .orderBy(packages.startDate)
-  ).filter((p) => p.status !== 'pending');
+  // Tout est chargé en 3 requêtes, calculé en mémoire, et seules les valeurs qui
+  // changent réellement sont réécrites : le serveur est loin de la base (≈ 0,2 s
+  // par aller-retour), réécrire chaque pointage à chaque recalcul rendait
+  // chaque pointage et chaque action sur un forfait très lent.
+  const [packageRows, attendanceRows, residentRows] = await Promise.all([
+    db.select().from(packages).where(eq(packages.residentId, residentId)).orderBy(packages.startDate, packages.id),
+    db.select().from(attendances).where(eq(attendances.residentId, residentId)).orderBy(attendances.checkInTime, attendances.id),
+    db.select().from(residents).where(eq(residents.id, residentId)).limit(1),
+  ]);
+  const resident = residentRows[0];
+  const now = new Date();
+
+  // Les forfaits en attente (en file ou en validation) ne participent pas au
+  // moteur : ils n'absorbent aucun pointage et leur isActive/deductedMinutes est laissé tel quel.
+  const allPackages = packageRows.filter((p) => p.status !== 'pending');
+  const normalAttendances = attendanceRows.filter((a) => a.attendanceType === 'normal');
+
+  // Un forfait en file démarre quand il n'y a plus de forfait valable.
+  const hasQueued = packageRows.some((p) => p.status === 'pending' && p.autoStart);
+
+  // Forfait de rattachement de chaque pointage normal (null = hors forfait).
+  const targetPackageOf = new Map<number, number | null>();
+  let totalOutOfPackageMinutes = 0;
+  const packageUpdates: { id: number; usedHours: number; isActive: boolean }[] = [];
+  let totalDeducted = 0;
 
   if (allPackages.length === 0) {
-    // Aucun forfait, jamais : par définition, TOUS les pointages du résident
-    // sont hors-forfait (aucun forfait n'existe pour les couvrir). Sans cette
-    // branche, un résident sans aucun forfait qui enregistre une session (ex:
-    // via « J'ai oublié de pointer ! ») verrait ses heures effacées à tort.
-    const orphanAttendances = await db
-      .select()
-      .from(attendances)
-      .where(and(
-        eq(attendances.residentId, residentId),
-        eq(attendances.attendanceType, 'normal')
-      ));
-    const totalOutOfPackageMinutes = orphanAttendances.reduce(
-      (sum, att) => sum + (att.durationMinutes ?? 0), 0
-    );
-    const resident = await getResidentById(residentId);
-    const storedSettled = resident?.settledOutOfPackageMinutes ?? 0;
-    const { pending: pendingOutOfPackageMinutes, settled } = settleOutOfPackage(totalOutOfPackageMinutes, storedSettled);
-    await updateResident(residentId, {
-      outOfPackageMinutes: pendingOutOfPackageMinutes,
-      ...(settled !== storedSettled ? { settledOutOfPackageMinutes: settled } : {}),
-    });
-    return {
-      packagesProcessed: 0,
-      attendancesProcessed: orphanAttendances.length,
-      totalOutOfPackageMinutes: pendingOutOfPackageMinutes,
-    };
-  }
-
-  // 2. Le total de chaque forfait reste fixe (celui de son type, inchangé par
-  // packages.addHours/subtractHours). Un ajout d'heures diminue les heures
-  // utilisées (donc augmente les heures restantes) ; un retrait les augmente
-  // (donc diminue les heures restantes) — voir pkgUsed plus bas.
-  const pkgCapacities: {
-    id: number;
-    baseMinutes: number;
-    startDate: Date;
-    endDate: Date;
-    deductedMinutes: number;
-    manualUsedAdjustment: number;
-  }[] = [];
-
-  for (const pkg of allPackages) {
-    const adjustments = await db
-      .select()
-      .from(attendances)
-      .where(and(
-        eq(attendances.packageId, pkg.id),
-        ne(attendances.attendanceType, 'normal')
-      ));
-
-    let manualUsedAdjustment = 0;
-    for (const adj of adjustments) {
-      if (!adj.durationMinutes) continue;
-      if (adj.attendanceType === 'adjustment_add') manualUsedAdjustment -= adj.durationMinutes;
-      if (adj.attendanceType === 'adjustment_subtract') manualUsedAdjustment += adj.durationMinutes;
+    // Aucun forfait : par définition, TOUS les pointages du résident sont
+    // hors-forfait (sinon un résident sans forfait qui enregistre une session
+    // via « J'ai oublié de pointer ! » verrait ses heures effacées à tort).
+    for (const att of normalAttendances) {
+      totalOutOfPackageMinutes += att.durationMinutes ?? 0;
     }
-
-    pkgCapacities.push({
-      id: pkg.id,
-      baseMinutes: pkg.totalHours,
-      startDate: new Date(pkg.startDate),
-      endDate: new Date(pkg.endDate),
-      deductedMinutes: pkg.deductedMinutes ?? 0,
-      manualUsedAdjustment,
-    });
-  }
-
-  // 3. Détacher tous les pointages normaux du résident
-  await db
-    .update(attendances)
-    .set({ packageId: null })
-    .where(and(
-      eq(attendances.residentId, residentId),
-      eq(attendances.attendanceType, 'normal')
-    ));
-
-  // 4. Charger tous les pointages normaux triés chronologiquement
-  const allNormalAttendances = await db
-    .select()
-    .from(attendances)
-    .where(and(
-      eq(attendances.residentId, residentId),
-      eq(attendances.attendanceType, 'normal')
-    ))
-    .orderBy(attendances.checkInTime);
-
-  // Initialiser les compteurs par forfait : minutes reportées du forfait
-  // précédent + ajustements manuels (+Heures/-Heures). Un ajout peut faire
-  // partir ce compteur sous 0 (bonus au-delà du total officiel du forfait) ;
-  // ce n'est volontairement pas plafonné à 0 pour que le geste ait un effet
-  // même sur un forfait tout juste créé et pas encore utilisé.
-  const pkgUsed: Record<number, number> = {};
-  for (const p of pkgCapacities) {
-    pkgUsed[p.id] = p.deductedMinutes + p.manualUsedAdjustment;
-  }
-
-  let totalOutOfPackageMinutes = 0;
-  let attendancesProcessed = 0;
-
-  // 5. Réattribuer chaque pointage au bon forfait
-  for (const att of allNormalAttendances) {
-    if (!att.durationMinutes) {
-      attendancesProcessed++;
-      continue;
-    }
-
-    const checkInDate = new Date(att.checkInTime);
-
-    // Trouver le forfait dont la plage contient la date du pointage ET qui a de la capacité
-    let assigned = false;
-    for (const p of pkgCapacities) {
-      const withinDate = checkInDate >= p.startDate && checkInDate <= p.endDate;
-      const remaining = p.baseMinutes - pkgUsed[p.id];
-
-      if (withinDate && remaining > 0) {
-        // Rattacher ce pointage à ce forfait
-        await db
-          .update(attendances)
-          .set({ packageId: p.id })
-          .where(eq(attendances.id, att.id));
-
-        const absorbed = Math.min(att.durationMinutes, remaining);
-        pkgUsed[p.id] += absorbed;
-
-        // Si le pointage déborde, le reste est hors forfait
-        if (att.durationMinutes > remaining) {
-          totalOutOfPackageMinutes += att.durationMinutes - remaining;
-        }
-
-        assigned = true;
-        break;
+  } else {
+    // 2. Le total de chaque forfait reste fixe (celui de son type). Un ajout
+    // d'heures (+Heures) diminue les heures utilisées, un retrait les augmente.
+    const pkgCapacities = allPackages.map((pkg) => {
+      let manualUsedAdjustment = 0;
+      for (const adj of attendanceRows) {
+        if (adj.packageId !== pkg.id || adj.attendanceType === 'normal' || !adj.durationMinutes) continue;
+        if (adj.attendanceType === 'adjustment_add') manualUsedAdjustment -= adj.durationMinutes;
+        if (adj.attendanceType === 'adjustment_subtract') manualUsedAdjustment += adj.durationMinutes;
       }
-    }
-
-    if (!assigned) {
-      // Pointage hors de toute plage de forfait valide → hors forfait
-      totalOutOfPackageMinutes += att.durationMinutes;
-    }
-
-    attendancesProcessed++;
-  }
-
-  // 6. Mettre à jour usedHours et isActive de chaque forfait
-  for (const p of pkgCapacities) {
-    const used = Math.min(pkgUsed[p.id], p.baseMinutes);
-    const remaining = p.baseMinutes - used;
-    const now = new Date();
-    const isExpiredByDate = now > p.endDate;
-
-    await updatePackage(p.id, {
-      usedHours: used,
-      isActive: remaining > 0 && !isExpiredByDate,
+      return {
+        id: pkg.id,
+        baseMinutes: pkg.totalHours,
+        startDate: new Date(pkg.startDate),
+        endDate: new Date(pkg.endDate),
+        deductedMinutes: pkg.deductedMinutes ?? 0,
+        manualUsedAdjustment,
+      };
     });
+
+    // Compteurs par forfait : minutes reportées du forfait précédent +
+    // ajustements manuels. Un ajout peut faire passer ce compteur sous 0 (bonus
+    // au-delà du total officiel) ; volontairement pas plafonné, pour que le geste
+    // ait un effet même sur un forfait tout juste créé.
+    const pkgUsed: Record<number, number> = {};
+    for (const p of pkgCapacities) pkgUsed[p.id] = p.deductedMinutes + p.manualUsedAdjustment;
+
+    // 5. Rattacher chaque pointage, dans l'ordre chronologique, au premier
+    // forfait valable à sa date et qui a encore de la capacité.
+    for (const att of normalAttendances) {
+      targetPackageOf.set(att.id, null);
+      if (!att.durationMinutes) continue;
+      const checkInDate = new Date(att.checkInTime);
+      let assigned = false;
+      for (const p of pkgCapacities) {
+        const withinDate = checkInDate >= p.startDate && checkInDate <= p.endDate;
+        const remaining = p.baseMinutes - pkgUsed[p.id];
+        if (withinDate && remaining > 0) {
+          targetPackageOf.set(att.id, p.id);
+          pkgUsed[p.id] += Math.min(att.durationMinutes, remaining);
+          if (att.durationMinutes > remaining) totalOutOfPackageMinutes += att.durationMinutes - remaining;
+          assigned = true;
+          break;
+        }
+      }
+      if (!assigned) totalOutOfPackageMinutes += att.durationMinutes;
+    }
+
+    // 6. usedHours et isActive de chaque forfait.
+    for (const p of pkgCapacities) {
+      const used = Math.min(pkgUsed[p.id], p.baseMinutes);
+      packageUpdates.push({ id: p.id, usedHours: used, isActive: p.baseMinutes - used > 0 && now <= p.endDate });
+    }
+    totalDeducted = pkgCapacities.reduce((sum, p) => sum + p.deductedMinutes, 0);
   }
 
-  // 7. Mettre à jour outOfPackageMinutes du résident.
-  // outOfPackageMinutes = heures hors-forfait EN ATTENTE (ni reportées, ni abandonnées).
-  // = total des débordements bruts
-  //   − total déjà reporté dans un forfait suivant (deductedMinutes)
-  //   − total déjà soldé/abandonné (settledOutOfPackageMinutes).
-  // Sans ces soustractions, les heures déjà traitées seraient recomptées à
-  // chaque recalcul (« heures fantômes »).
-  const resident = await getResidentById(residentId);
+  // Écritures : seulement ce qui change.
+  const writes: Promise<unknown>[] = [];
+  const byTarget = new Map<number | null, number[]>();
+  for (const att of normalAttendances) {
+    const target = targetPackageOf.get(att.id) ?? (allPackages.length === 0 ? att.packageId : null);
+    if (allPackages.length > 0 && att.packageId !== target) {
+      if (!byTarget.has(target)) byTarget.set(target, []);
+      byTarget.get(target)!.push(att.id);
+    }
+  }
+  for (const [target, ids] of Array.from(byTarget.entries())) {
+    writes.push(db.update(attendances).set({ packageId: target }).where(inArray(attendances.id, ids)));
+  }
+  for (const u of packageUpdates) {
+    const current = allPackages.find((p) => p.id === u.id)!;
+    if (current.usedHours !== u.usedHours || current.isActive !== u.isActive) {
+      writes.push(updatePackage(u.id, { usedHours: u.usedHours, isActive: u.isActive }));
+    }
+  }
+
+  // 7. Heures hors forfait EN ATTENTE = débordements − reporté (deductedMinutes)
+  //    − abandonné (settledOutOfPackageMinutes). Sans ces soustractions, les heures
+  //    déjà traitées seraient recomptées à chaque recalcul (« heures fantômes »).
   const storedSettled = resident?.settledOutOfPackageMinutes ?? 0;
-  const totalDeducted = pkgCapacities.reduce((sum, p) => sum + p.deductedMinutes, 0);
   const { pending: pendingOutOfPackageMinutes, settled } = settleOutOfPackage(
     totalOutOfPackageMinutes - totalDeducted,
     storedSettled
   );
-  await updateResident(residentId, {
-    outOfPackageMinutes: pendingOutOfPackageMinutes,
-    ...(settled !== storedSettled ? { settledOutOfPackageMinutes: settled } : {}),
-  });
+  if (resident && (resident.outOfPackageMinutes !== pendingOutOfPackageMinutes || settled !== storedSettled)) {
+    writes.push(updateResident(residentId, {
+      outOfPackageMinutes: pendingOutOfPackageMinutes,
+      ...(settled !== storedSettled ? { settledOutOfPackageMinutes: settled } : {}),
+    }));
+  }
+  await Promise.all(writes);
+
+  const hasValidPackage = packageUpdates.some((u) => u.isActive);
 
   console.log(
-    `[fullRecalculateResident] resident=${residentId} packages=${pkgCapacities.length} attendances=${attendancesProcessed} débordements=${totalOutOfPackageMinutes}min reporté=${totalDeducted}min enAttente=${pendingOutOfPackageMinutes}min`
+    `[fullRecalculateResident] resident=${residentId} packages=${allPackages.length} attendances=${normalAttendances.length} débordements=${totalOutOfPackageMinutes}min reporté=${totalDeducted}min enAttente=${pendingOutOfPackageMinutes}min écritures=${writes.length}`
   );
 
   return {
-    packagesProcessed: pkgCapacities.length,
-    attendancesProcessed,
+    packagesProcessed: allPackages.length,
+    attendancesProcessed: normalAttendances.length,
     totalOutOfPackageMinutes: pendingOutOfPackageMinutes,
+    needsQueuedActivation: hasQueued && !hasValidPackage,
   };
 }
 

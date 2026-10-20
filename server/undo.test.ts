@@ -217,6 +217,10 @@ describe.skipIf(!process.env.DATABASE_URL)("Création manuelle pendant un forfai
     expect(await db.getPackageById(second.packageId!)).toBeNull();
     expect(await db.getPackageById(first.packageId!)).not.toBeNull();
 
+    // Activation manuelle refusée tant que le forfait actuel est valable.
+    await expect(caller.packages.activatePending({ packageId: first.packageId! })).rejects.toThrow(/encore en cours/);
+    expect((await db.getPackageById(first.packageId!))!.status).toBe("pending");
+
     // Le forfait actuel se termine → le forfait en file démarre tout seul.
     await db.updatePackage(9905201, { endDate: daysAgo(1) } as any);
     await db.fullRecalculateResident(RQ);

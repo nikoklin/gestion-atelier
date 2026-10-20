@@ -112,7 +112,8 @@ export async function performCheckout(options: CheckoutOptions): Promise<Checkou
     const { sendSessionSummaryEmail } = await import('./emailService');
     const baseUrl = getPublicSiteUrl();
     const dashboardUrl = `${baseUrl}/resident/dashboard?id=${residentId}`;
-    await sendSessionSummaryEmail(
+    // Envoyé en arrière-plan : la borne n'attend pas l'envoi de l'e-mail.
+    void sendSessionSummaryEmail(
       residentEmail,
       residentFirstName,
       durationMinutes,
@@ -132,7 +133,9 @@ export async function performCheckout(options: CheckoutOptions): Promise<Checkou
   const isNowExpired = !tookOver && (remainingMinutes <= 0 || packageExpired);
   if (isNowExpired && !pkg.expirationEmailSent && residentEmail && residentFirstName) {
     const { sendExpirationEmail } = await import('./emailService');
-    await sendExpirationEmail(
+    // Envoyé en arrière-plan ; le forfait est marqué « e-mail envoyé » dès maintenant
+    // (comme avant, même en cas d'échec d'envoi, pour ne pas le renvoyer en boucle).
+    void sendExpirationEmail(
       residentEmail,
       residentFirstName,
       residentId,

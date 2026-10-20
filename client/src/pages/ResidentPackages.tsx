@@ -665,7 +665,8 @@ export default function ResidentPackages() {
                           size="sm"
                           className="bg-amber-600 hover:bg-amber-700 text-white"
                           onClick={() => activatePendingMutation.mutate({ packageId: pkg.id })}
-                          disabled={activatePendingMutation.isPending}
+                          disabled={activatePendingMutation.isPending || hasValidPackage}
+                          title={hasValidPackage ? "Un forfait est encore en cours : celui-ci démarrera automatiquement à sa fin" : undefined}
                         >
                           Activer
                         </Button>
