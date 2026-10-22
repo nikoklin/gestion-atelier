@@ -232,3 +232,25 @@ export const undoActions = mysqlTable("undoActions", {
 }));
 
 export type UndoAction = typeof undoActions.$inferSelect;
+
+/**
+ * Liens de paiement Wix personnels (un par forfait en vente, créés au rappel,
+ * valables 15 jours, à usage unique). Permet de savoir avec certitude quel
+ * résident a payé quel forfait quand Wix signale un paiement.
+ */
+export const wixPaymentLinks = mysqlTable("wixPaymentLinks", {
+  id: int("id").autoincrement().primaryKey(),
+  residentId: int("residentId").notNull().references(() => residents.id, { onDelete: 'cascade' }),
+  packageTypeId: int("packageTypeId").notNull(),
+  wixPaymentLinkId: varchar("wixPaymentLinkId", { length: 100 }).notNull(),
+  url: varchar("url", { length: 500 }).notNull(),
+  amount: int("amount").notNull(), // Prix en euros au moment de la création
+  expiresAt: datetime("expiresAt").notNull(),
+  paidAt: datetime("paidAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  residentIdIdx: index("wixPaymentLinks_residentId_idx").on(table.residentId),
+  wixPaymentLinkIdIdx: uniqueIndex("wixPaymentLinks_wixPaymentLinkId_idx").on(table.wixPaymentLinkId),
+}));
+
+export type WixPaymentLink = typeof wixPaymentLinks.$inferSelect;

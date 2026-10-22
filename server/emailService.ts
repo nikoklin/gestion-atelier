@@ -173,6 +173,44 @@ export function prepareTemplateBodyForWrap(html: string): string {
   );
 }
 
+// Bloc « Renouveler directement en ligne » des e-mails : liens Wix personnels
+// (un par forfait en vente, valables 15 jours, à usage unique) si l'API Wix est
+// configurée, sinon les liens fixes des Paramètres.
+async function buildPaymentLinksHtml(
+  residentId: number | undefined,
+  intro: string = "Renouveler directement en ligne :"
+): Promise<string> {
+  const linkStyle = "display:inline-block; margin: 4px 0; color: #c8860a; font-weight: bold;";
+  const box = (items: string, footer = "") =>
+    `<div style="margin: 12px 0; padding: 12px; background: #f5ead8; border-radius: 6px;"><p style="margin: 0 0 8px; font-weight: bold;">${intro}</p>${items}${footer}</div>`;
+
+  try {
+    const resident = residentId ? await db.getResidentById(residentId) : null;
+    if (resident) {
+      const { getPaymentLinksForResident } = await import("./wixPaymentLinkService");
+      const personal = await getPaymentLinksForResident(resident);
+      if (personal && personal.length > 0) {
+        const items = personal
+          .map((l) => `<a href="${l.url}" style="${linkStyle}">→ ${l.label} – ${l.price} €</a>`)
+          .join("<br>");
+        const until = new Date(Math.min(...personal.map((l) => l.expiresAt.getTime())));
+        return box(items, `<p style="margin: 8px 0 0; font-size: 12px; color: #7a6040;">Liens personnels valables jusqu'au ${formatParisDate(until, { day: "2-digit", month: "long", year: "numeric" })}.</p>`);
+      }
+    }
+
+    const settings = await db.getAtelierSettings();
+    if (settings?.paymentLinks) {
+      const parsed = JSON.parse(settings.paymentLinks) as { links: { label: string; url: string }[] };
+      if (parsed.links && parsed.links.length > 0) {
+        return box(parsed.links.map((l) => `<a href="${l.url}" style="${linkStyle}">→ ${l.label}</a>`).join("<br>"));
+      }
+    }
+  } catch (e) {
+    console.error("[Email] Liens de paiement indisponibles:", e);
+  }
+  return "";
+}
+
 // Fonction pour récupérer un template d'e-mail
 async function getEmailTemplate(templateType: "reminder" | "expiration" | "session_summary"): Promise<{ subject: string; body: string } | null> {
   const template = await db.getEmailTemplate(templateType);
@@ -242,20 +280,7 @@ export async function sendReminderEmail(
   const baseUrl = getPublicSiteUrl();
   const dashboardUrl = `${baseUrl}/resident/dashboard?id=${residentId}`;
 
-  // Récupérer les liens de paiement configurés dans les paramètres
-  let paymentLinksHtml = '';
-  try {
-    const settings = await db.getAtelierSettings();
-    if (settings?.paymentLinks) {
-      const parsed = JSON.parse(settings.paymentLinks) as { links: { label: string; url: string }[] };
-      if (parsed.links && parsed.links.length > 0) {
-        const linkItems = parsed.links
-          .map((l: { label: string; url: string }) => `<a href="${l.url}" style="display:inline-block; margin: 4px 0; color: #2c5f2e; font-weight: bold;">→ ${l.label}</a>`)
-          .join('<br>');
-        paymentLinksHtml = `<div style="margin: 12px 0; padding: 12px; background: #f0f7f0; border-radius: 6px;"><p style="margin: 0 0 8px; font-weight: bold;">Renouveler directement en ligne :</p>${linkItems}</div>`;
-      }
-    }
-  } catch (e) { /* non bloquant */ }
+  const paymentLinksHtml = await buildPaymentLinksHtml(residentId);
 
   const body = renderReminderBody(bodyTemplate, {
     residentName,
@@ -300,20 +325,7 @@ export async function sendExpirationEmail(
   const baseUrl = getPublicSiteUrl();
   const dashboardUrl = `${baseUrl}/resident/dashboard?id=${residentId}`;
 
-  // Récupérer les liens de paiement configurés dans les paramètres
-  let paymentLinksHtml = '';
-  try {
-    const settings = await db.getAtelierSettings();
-    if (settings?.paymentLinks) {
-      const parsed = JSON.parse(settings.paymentLinks) as { links: { label: string; url: string }[] };
-      if (parsed.links && parsed.links.length > 0) {
-        const linkItems = parsed.links
-          .map((l: { label: string; url: string }) => `<a href="${l.url}" style="display:inline-block; margin: 4px 0; color: #c0392b; font-weight: bold;">→ ${l.label}</a>`)
-          .join('<br>');
-        paymentLinksHtml = `<div style="margin: 12px 0; padding: 12px; background: #fdf0f0; border-radius: 6px;"><p style="margin: 0 0 8px; font-weight: bold;">Renouveler directement en ligne :</p>${linkItems}</div>`;
-      }
-    }
-  } catch (e) { /* non bloquant */ }
+  const paymentLinksHtml = await buildPaymentLinksHtml(residentId);
 
   const body = replaceTemplateVariables(bodyTemplate, {
     residentName,
@@ -364,20 +376,10 @@ export async function sendSessionSummaryEmail(
     ? (outOfPackageHours > 0 ? `${outOfPackageHours}h${outOfPackageMins > 0 ? ` ${outOfPackageMins}min` : ''}` : `${outOfPackageMins}min`)
     : '0';
 
-  // Récupérer les liens de paiement configurés en base
-  let paymentLinksHtml = '';
-  try {
-    const settings = await db.getAtelierSettings();
-    if (settings?.paymentLinks) {
-      const parsed = JSON.parse(settings.paymentLinks) as { links: { label: string; url: string }[] };
-      if (parsed.links && parsed.links.length > 0) {
-        const linkItems = parsed.links
-          .map((l: { label: string; url: string }) => `<a href="${l.url}" style="color:#c0392b;">${l.label}</a>`)
-          .join('<br>');
-        paymentLinksHtml = `<p>Tu peux en prendre un nouveau directement en ligne :</p><p>${linkItems}</p>`;
-      }
-    }
-  } catch (e) { /* non bloquant */ }
+  // Liens de paiement seulement si la session a débordé (forfait épuisé).
+  const paymentLinksHtml = outOfPackageMinutes > 0
+    ? await buildPaymentLinksHtml(residentId, "Tu peux en prendre un nouveau directement en ligne :")
+    : '';
 
   // Bloc HTML conditionnel pour les heures hors forfait
   const outOfPackageBlock = outOfPackageMinutes > 0

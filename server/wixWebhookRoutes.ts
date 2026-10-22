@@ -81,8 +81,9 @@ export async function processWixPaymentEvent(event: any): Promise<void> {
     const wixPaymentId: string | undefined = paymentEntity.id;
     const amount: string | undefined = paymentEntity.amount;
     const buyerEmail: string | undefined = payment.contactDetails?.email;
+    const wixPaymentLinkId: string | undefined = paymentEntity.paymentLinkId;
 
-    if (!wixPaymentId || !amount || !buyerEmail) {
+    if (!wixPaymentId || !amount) {
       console.error("[WixWebhook] Payload incomplet, traitement annulé:", JSON.stringify(paymentEntity));
       return;
     }
@@ -94,9 +95,31 @@ export async function processWixPaymentEvent(event: any): Promise<void> {
       return;
     }
 
-    const resident = await db.getResidentByEmail(buyerEmail);
+    // Lien personnel (créé au rappel) : résident et forfait connus avec certitude,
+    // quelle que soit l'adresse e-mail utilisée pour payer.
+    const { findWixPaymentLink, markWixPaymentLinkPaid } = await import("./wixPaymentLinkService");
+    const personalLink = wixPaymentLinkId ? await findWixPaymentLink(wixPaymentLinkId) : null;
+    if (personalLink) await markWixPaymentLinkPaid(personalLink.id);
+
+    let resident = personalLink ? await db.getResidentById(personalLink.residentId) : null;
+    if (personalLink && !resident) {
+      const archived = await db.getResidentByIdAnyStatus(personalLink.residentId);
+      if (archived) {
+        console.error(`[WixWebhook] Paiement ${wixPaymentId} (${amount}€) d'un résident ARCHIVÉ (${archived.id}) via son lien personnel — forfait NON créé, atelier prévenu.`);
+        const { sendArchivedResidentPaymentAlert } = await import("./emailService");
+        await sendArchivedResidentPaymentAlert(archived, amount, wixPaymentId).catch((err) =>
+          console.error("[WixWebhook] Échec de l'alerte à l'atelier:", err)
+        );
+      }
+      return;
+    }
+    if (!resident && !buyerEmail) {
+      console.error(`[WixWebhook] Paiement ${wixPaymentId} sans lien personnel connu ni e-mail d'acheteur — forfait NON créé, à traiter manuellement.`);
+      return;
+    }
+    if (!resident) resident = await db.getResidentByEmail(buyerEmail!);
     if (!resident) {
-      const archived = await db.getArchivedResidentByEmail(buyerEmail);
+      const archived = await db.getArchivedResidentByEmail(buyerEmail!);
       if (archived) {
         // Ancien résident archivé (étagère vidée) qui repaie : rien n'est créé
         // automatiquement, l'atelier est prévenu pour le traiter à la main.
@@ -113,7 +136,9 @@ export async function processWixPaymentEvent(event: any): Promise<void> {
 
     const paidAmount = Math.round(parseFloat(amount));
     const packageTypes = await db.getAllPackageTypes();
-    const matchedType = packageTypes.find((t) => t.price === paidAmount);
+    const matchedType = personalLink
+      ? packageTypes.find((t) => t.id === personalLink.packageTypeId)
+      : packageTypes.find((t) => t.price === paidAmount);
     if (!matchedType) {
       console.error(`[WixWebhook] Aucun type de forfait au prix de ${paidAmount}€ (paiement ${wixPaymentId}, résident ${resident.id}) — forfait NON créé, à traiter manuellement.`);
       return;

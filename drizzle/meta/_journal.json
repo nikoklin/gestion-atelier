@@ -253,6 +253,13 @@
       "when": 1792509399958,
       "tag": "0035_cool_vance_astro",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "5",
+      "when": 1792514002153,
+      "tag": "0036_soft_maverick",
+      "breakpoints": true
     }
   ]
 }

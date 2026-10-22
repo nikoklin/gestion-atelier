@@ -217,6 +217,14 @@ export async function getArchivedResidentByEmail(email: string) {
   return result.length > 0 ? result[0] : null;
 }
 
+// Résident par identifiant, archivé ou non.
+export async function getResidentByIdAnyStatus(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.select().from(residents).where(eq(residents.id, id)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
 export async function getArchivedResidents() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
