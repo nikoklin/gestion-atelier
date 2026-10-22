@@ -11,9 +11,11 @@ import { residents, packages, attendances, wixPaymentLinks } from "../drizzle/sc
 import { getPaymentLinksForResident, PAYMENT_LINK_VALIDITY_DAYS } from "./wixPaymentLinkService";
 import { sendReminderEmail } from "./emailService";
 import { processWixPaymentEvent } from "./wixWebhookRoutes";
+import { appRouter } from "./routers";
 
 const RID = 990060;
 const RID2 = 990061;
+const RID3 = 990062;
 const EMAIL = "paylink-test@example.invalid";
 
 type Call = { url: string; body: any; headers: Record<string, string> };
@@ -37,7 +39,7 @@ globalThis.fetch = (async (url: string, init: any) => {
 async function cleanup() {
   const database = await getDb();
   if (!database) return;
-  for (const id of [RID, RID2]) {
+  for (const id of [RID, RID2, RID3]) {
     await database.delete(attendances).where(eq(attendances.residentId, id));
     await database.delete(packages).where(eq(packages.residentId, id));
     await database.delete(residents).where(eq(residents.id, id)); // liens supprimés en cascade
@@ -52,14 +54,20 @@ const event = (paymentId: string, paymentLinkId: string, amount: string, email =
 
 describe.skipIf(!process.env.DATABASE_URL)("Liens de paiement Wix personnels (15 jours)", () => {
   let saleTypes: Awaited<ReturnType<typeof db.getActivePackageTypes>> = [];
+  let savedSettings: { autoPaymentLinksEnabled: boolean; paymentLinkValidityDays: number; paymentLinkPackageTypeIds: string | null };
 
   beforeAll(async () => {
     await cleanup();
+    // Réglages de l'atelier : valeurs par défaut pendant les tests, restaurées à la fin
+    const s = (await db.getAtelierSettings())!;
+    savedSettings = { autoPaymentLinksEnabled: s.autoPaymentLinksEnabled, paymentLinkValidityDays: s.paymentLinkValidityDays, paymentLinkPackageTypeIds: s.paymentLinkPackageTypeIds };
+    await db.updateAtelierSettings({ autoPaymentLinksEnabled: true, paymentLinkValidityDays: 15, paymentLinkPackageTypeIds: null });
     await db.createResident({ id: RID, firstName: "TEST", lastName: "PayLink", email: EMAIL, isActive: true } as any);
     saleTypes = (await db.getActivePackageTypes()).filter((t) => t.price > 0);
   });
   afterAll(async () => {
     await cleanup();
+    if (savedSettings) await db.updateAtelierSettings(savedSettings);
     delete process.env.WIX_API_KEY;
     delete process.env.WIX_SITE_ID;
   });
@@ -155,5 +163,66 @@ describe.skipIf(!process.env.DATABASE_URL)("Liens de paiement Wix personnels (15
     expect(pkg.status).toBe("active");
     expect(pkg.isActive).toBe(true);
     expect(pkg.packageType).toBe(`custom_${row.packageTypeId}`);
+  });
+
+  describe("réglages (Paramètres → Liens de paiement automatiques)", () => {
+    const caller = appRouter.createCaller({ req: {} as any, res: {} as any, user: { id: 1, role: "admin" } as any });
+    const resident = { id: RID3, firstName: "TEST", lastName: "PayLink3" };
+
+    beforeAll(async () => {
+      await db.createResident({ id: RID3, firstName: "TEST", lastName: "PayLink3", email: "paylink3@example.invalid", isActive: true } as any);
+    });
+    beforeEach(async () => {
+      const database = await getDb();
+      await database!.delete(wixPaymentLinks).where(eq(wixPaymentLinks.residentId, RID3));
+    });
+    afterAll(async () => {
+      await db.updateAtelierSettings({ autoPaymentLinksEnabled: true, paymentLinkValidityDays: 15, paymentLinkPackageTypeIds: null });
+    });
+
+    it("désactivés : aucun lien créé (les e-mails gardent les liens de secours)", async () => {
+      await caller.atelierSettings.update({ autoPaymentLinksEnabled: false });
+      expect(await getPaymentLinksForResident(resident)).toBeNull();
+      expect(wixCalls).toHaveLength(0);
+      await caller.atelierSettings.update({ autoPaymentLinksEnabled: true });
+    });
+
+    it("durée de validité réglable : 30 jours", async () => {
+      await caller.atelierSettings.update({ paymentLinkValidityDays: 30 });
+      const before = Date.now();
+      await getPaymentLinksForResident(resident);
+      const days = (new Date(wixCalls[0].body.paymentLink.expirationDate).getTime() - before) / 86400000;
+      expect(days).toBeGreaterThan(29.99);
+      expect(days).toBeLessThan(30.01);
+      await caller.atelierSettings.update({ paymentLinkValidityDays: 15 });
+    });
+
+    it("durée hors limites refusée", async () => {
+      await expect(caller.atelierSettings.update({ paymentLinkValidityDays: 0 })).rejects.toThrow();
+      await expect(caller.atelierSettings.update({ paymentLinkValidityDays: 91 })).rejects.toThrow();
+    });
+
+    it("choix des forfaits : seuls les forfaits cochés sont proposés ; null = tous", async () => {
+      await caller.atelierSettings.update({ paymentLinkPackageTypeIds: [saleTypes[0].id] });
+      expect((await db.getAtelierSettings())!.paymentLinkPackageTypeIds).toBe(JSON.stringify([saleTypes[0].id]));
+      const links = (await getPaymentLinksForResident(resident))!;
+      expect(links).toHaveLength(1);
+      expect(links[0].label).toBe(saleTypes[0].label);
+
+      await caller.atelierSettings.update({ paymentLinkPackageTypeIds: null });
+      expect((await db.getAtelierSettings())!.paymentLinkPackageTypeIds).toBeNull();
+      wixCalls = [];
+      expect(await getPaymentLinksForResident(resident)).toHaveLength(saleTypes.length);
+    });
+
+    it("état de la connexion Wix : non configuré / connecté / refusé", async () => {
+      delete process.env.WIX_API_KEY;
+      expect(await caller.atelierSettings.getPaymentLinksStatus()).toMatchObject({ configured: false, ok: false });
+      process.env.WIX_API_KEY = "test-key";
+      expect(await caller.atelierSettings.getPaymentLinksStatus()).toMatchObject({ configured: true, ok: true });
+      expect(wixCalls.at(-1)!.url).toContain("/payment-links/query");
+      wixFails = true;
+      expect(await caller.atelierSettings.getPaymentLinksStatus()).toMatchObject({ configured: true, ok: false });
+    });
   });
 });

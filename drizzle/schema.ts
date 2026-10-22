@@ -174,6 +174,9 @@ export const atelierSettings = mysqlTable("atelierSettings", {
   wixAutoActivatePackage: boolean("wixAutoActivatePackage").default(true).notNull(), // Forfait créé par paiement Wix : actif immédiatement (true) ou en attente de validation (false)
   reminderSendHour: int("reminderSendHour").default(9).notNull(), // Heure (0-23, Europe/Paris) d'envoi des rappels automatiques
   missedCheckoutCutoffHour: int("missedCheckoutCutoffHour").default(22).notNull(), // Heure (0-23, Europe/Paris) de clôture automatique des pointages oubliés
+  autoPaymentLinksEnabled: boolean("autoPaymentLinksEnabled").default(true).notNull(), // Liens de paiement Wix personnels dans les e-mails
+  paymentLinkValidityDays: int("paymentLinkValidityDays").default(15).notNull(), // Durée de validité de ces liens (jours)
+  paymentLinkPackageTypeIds: text("paymentLinkPackageTypeIds"), // JSON : ids des forfaits proposés ; null = tous les forfaits en vente
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 export type AtelierSettings = typeof atelierSettings.$inferSelect;

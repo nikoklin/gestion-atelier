@@ -1577,6 +1577,12 @@ export const appRouter = router({
   }),
 
   atelierSettings: router({
+    // Connexion Wix pour les liens de paiement automatiques (lecture seule).
+    getPaymentLinksStatus: protectedProcedure.query(async () => {
+      const { checkWixPaymentLinksConnection } = await import("./wixPaymentLinkService");
+      return await checkWixPaymentLinksConnection();
+    }),
+
     // Lance le contrôle d'incohérences à la demande (sans envoyer d'e-mail) pour vérifier sans attendre la nuit.
     runIntegrityCheck: protectedProcedure.mutation(async () => {
       const { runIntegrityCheck } = await import("./integrityCheck");
@@ -1586,7 +1592,7 @@ export const appRouter = router({
     get: protectedProcedure
       .query(async () => {
         const settings = await db.getAtelierSettings();
-        return settings ?? { id: 0, totalShelves: 0, reminderDaysBeforeExpiry: 7, guideEmailEnabled: true, paymentLinks: null as string | null, wixAutoActivatePackage: true, reminderSendHour: 9, missedCheckoutCutoffHour: 22, updatedAt: new Date() };
+        return settings ?? { id: 0, totalShelves: 0, reminderDaysBeforeExpiry: 7, guideEmailEnabled: true, paymentLinks: null as string | null, wixAutoActivatePackage: true, reminderSendHour: 9, missedCheckoutCutoffHour: 22, autoPaymentLinksEnabled: true, paymentLinkValidityDays: 15, paymentLinkPackageTypeIds: null as string | null, updatedAt: new Date() };
       }),
 
     // Retourne les numéros d'étagères disponibles (non occupées par un résident actif)
@@ -1628,9 +1634,18 @@ export const appRouter = router({
         wixAutoActivatePackage: z.boolean().optional(),
         reminderSendHour: z.number().int().min(0).max(23).optional(),
         missedCheckoutCutoffHour: z.number().int().min(0).max(23).optional(),
+        autoPaymentLinksEnabled: z.boolean().optional(),
+        paymentLinkValidityDays: z.number().int().min(1).max(90).optional(),
+        paymentLinkPackageTypeIds: z.array(z.number().int()).nullable().optional(), // null = tous les forfaits en vente
       }))
       .mutation(async ({ input }) => {
-        await db.updateAtelierSettings(input);
+        const { paymentLinkPackageTypeIds, ...rest } = input;
+        await db.updateAtelierSettings({
+          ...rest,
+          ...(paymentLinkPackageTypeIds !== undefined
+            ? { paymentLinkPackageTypeIds: paymentLinkPackageTypeIds === null ? null : JSON.stringify(paymentLinkPackageTypeIds) }
+            : {}),
+        });
         return { success: true };
       }),
   }),

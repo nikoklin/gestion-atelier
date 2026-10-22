@@ -1,11 +1,12 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Mail, Clock, Download, Layers, Package, Plus, Pencil, Trash2, Check, X, Link as LinkIcon, ShieldCheck } from "lucide-react";
+import { Mail, Clock, Download, Layers, Package, Plus, Pencil, Trash2, Check, X, Link as LinkIcon, ShieldCheck, Send } from "lucide-react";
 import { useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
@@ -20,6 +21,8 @@ export default function Settings() {
   const [wixAutoActivatePackage, setWixAutoActivatePackage] = useState(true);
   const [reminderSendHourInput, setReminderSendHourInput] = useState("9");
   const [missedCheckoutCutoffHourInput, setMissedCheckoutCutoffHourInput] = useState("22");
+  const [autoPaymentLinksEnabled, setAutoPaymentLinksEnabled] = useState(true);
+  const [paymentLinkValidityInput, setPaymentLinkValidityInput] = useState("15");
 
   // Liens de paiement
   type PaymentLink = { label: string; url: string };
@@ -40,6 +43,8 @@ export default function Settings() {
       setWixAutoActivatePackage(atelierSettings.wixAutoActivatePackage ?? true);
       setReminderSendHourInput(String(atelierSettings.reminderSendHour ?? 9));
       setMissedCheckoutCutoffHourInput(String(atelierSettings.missedCheckoutCutoffHour ?? 22));
+      setAutoPaymentLinksEnabled(atelierSettings.autoPaymentLinksEnabled ?? true);
+      setPaymentLinkValidityInput(String(atelierSettings.paymentLinkValidityDays ?? 15));
       // Charger les liens de paiement
       if (atelierSettings.paymentLinks) {
         try {
@@ -109,6 +114,49 @@ export default function Settings() {
     updateAtelierSettingsMutation.mutate({ wixAutoActivatePackage: enabled });
   };
   
+  // Liens de paiement automatiques (Wix)
+  const { data: wixStatus, isLoading: wixStatusLoading } = trpc.atelierSettings.getPaymentLinksStatus.useQuery(undefined, {
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const handleToggleAutoPaymentLinks = (enabled: boolean) => {
+    setAutoPaymentLinksEnabled(enabled);
+    updateAtelierSettingsMutation.mutate({ autoPaymentLinksEnabled: enabled });
+  };
+
+  const handleSavePaymentLinkValidity = () => {
+    const n = parseInt(paymentLinkValidityInput, 10);
+    if (isNaN(n) || n < 1 || n > 90) {
+      toast.error("Valeur invalide", { description: "Entrez un nombre de jours entre 1 et 90." });
+      return;
+    }
+    updateAtelierSettingsMutation.mutate({ paymentLinkValidityDays: n });
+  };
+
+  // Sélection enregistrée : null = tous les forfaits en vente (les nouveaux sont inclus d'office)
+  const selectedPaymentLinkTypeIds: number[] | null = (() => {
+    const raw = atelierSettings?.paymentLinkPackageTypeIds;
+    if (!raw) return null;
+    try {
+      const ids = JSON.parse(raw);
+      return Array.isArray(ids) ? ids : null;
+    } catch {
+      return null;
+    }
+  })();
+
+  const handleTogglePaymentLinkType = (typeId: number, checked: boolean, eligibleIds: number[]) => {
+    const current = selectedPaymentLinkTypeIds ?? eligibleIds;
+    const next = checked ? Array.from(new Set([...current, typeId])) : current.filter((id) => id !== typeId);
+    const nextEligible = next.filter((id) => eligibleIds.includes(id));
+    if (nextEligible.length === 0) {
+      toast.error("Gardez au moins un forfait", { description: "Pour ne plus envoyer de liens personnels, désactivez plutôt les liens automatiques." });
+      return;
+    }
+    const allSelected = eligibleIds.every((id) => nextEligible.includes(id));
+    updateAtelierSettingsMutation.mutate({ paymentLinkPackageTypeIds: allSelected ? null : nextEligible });
+  };
+
   // Contrôle d'incohérences à la demande (il tourne aussi chaque nuit à 00h05)
   const [, setLocation] = useLocation();
   const integrityMutation = trpc.atelierSettings.runIntegrityCheck.useMutation({
@@ -411,17 +459,122 @@ export default function Settings() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Liens de paiement ── */}
+      {/* ── Liens de paiement automatiques (Wix) ── */}
+      <Card className="mb-6">
+        <CardHeader>
+          <div className="flex items-start justify-between flex-wrap gap-2">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Send className="h-5 w-5" />
+                Liens de paiement automatiques
+              </CardTitle>
+              <CardDescription className="mt-1">
+                Au rappel avant la fin du forfait, l'application crée chez Wix des liens de paiement personnels
+                (un par forfait proposé, utilisables une seule fois). L'e-mail « forfait terminé » réutilise les mêmes liens.
+                Au paiement, le forfait est créé pour le bon résident, même s'il paie avec une autre adresse e-mail.
+              </CardDescription>
+            </div>
+            {wixStatusLoading ? (
+              <Badge variant="outline">Vérification…</Badge>
+            ) : wixStatus?.ok ? (
+              <Badge className="bg-green-600 hover:bg-green-600">Wix connecté</Badge>
+            ) : (
+              <Badge variant="destructive">{wixStatus?.configured ? "Wix inaccessible" : "Wix non configuré"}</Badge>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {wixStatus && !wixStatus.ok && (
+            <Alert variant="destructive">
+              <AlertDescription>
+                {wixStatus.message} En attendant, les e-mails utilisent les liens de secours ci-dessous.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium">Créer des liens personnels</p>
+              <p className="text-sm text-muted-foreground">
+                {autoPaymentLinksEnabled
+                  ? "Activé : les e-mails contiennent des liens personnels."
+                  : "Désactivé : les e-mails contiennent les liens de secours ci-dessous."}
+              </p>
+            </div>
+            <Switch checked={autoPaymentLinksEnabled} onCheckedChange={handleToggleAutoPaymentLinks} />
+          </div>
+
+          <div className={autoPaymentLinksEnabled ? "space-y-6" : "space-y-6 opacity-50 pointer-events-none"}>
+            <div className="space-y-2">
+              <Label htmlFor="payment-link-validity">Durée de validité des liens (jours)</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="payment-link-validity"
+                  type="number"
+                  min={1}
+                  max={90}
+                  value={paymentLinkValidityInput}
+                  onChange={(e) => setPaymentLinkValidityInput(e.target.value)}
+                  className="w-24"
+                />
+                <Button onClick={handleSavePaymentLinkValidity} disabled={updateAtelierSettingsMutation.isPending}>
+                  Enregistrer
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                S'applique aux prochains liens créés. Les liens déjà envoyés gardent leur date d'expiration.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Forfaits proposés dans les e-mails</p>
+              {(() => {
+                const eligible = (packageTypesList ?? []).filter((t: any) => t.isActive && t.price > 0);
+                if (eligible.length === 0) {
+                  return <p className="text-sm text-muted-foreground italic">Aucun forfait en vente avec un prix.</p>;
+                }
+                const eligibleIds = eligible.map((t: any) => t.id as number);
+                return (
+                  <div className="space-y-2">
+                    {eligible.map((t: any) => {
+                      const checked = !selectedPaymentLinkTypeIds || selectedPaymentLinkTypeIds.includes(t.id);
+                      return (
+                        <label key={t.id} className="flex items-center gap-3 text-sm cursor-pointer">
+                          <Checkbox
+                            checked={checked}
+                            disabled={updateAtelierSettingsMutation.isPending}
+                            onCheckedChange={(v) => handleTogglePaymentLinkType(t.id, v === true, eligibleIds)}
+                          />
+                          <span>{t.label}</span>
+                          <span className="text-muted-foreground">{t.price} €</span>
+                        </label>
+                      );
+                    })}
+                    <p className="text-xs text-muted-foreground">
+                      {selectedPaymentLinkTypeIds
+                        ? "Seuls les forfaits cochés sont proposés."
+                        : "Tous les forfaits en vente sont proposés (les nouveaux forfaits seront ajoutés automatiquement)."}
+                    </p>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Liens de paiement de secours ── */}
       <Card className="mb-6">
         <CardHeader>
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
               <CardTitle className="flex items-center gap-2">
                 <LinkIcon className="h-5 w-5" />
-                Liens de Paiement
+                Liens de paiement de secours
               </CardTitle>
               <CardDescription className="mt-1">
-                Ces liens apparaissent dans les e-mails de résumé de session quand le forfait est épuisé
+                Liens fixes, identiques pour tout le monde. Utilisés seulement si les liens automatiques sont désactivés
+                ou si Wix ne répond pas.
               </CardDescription>
             </div>
           </div>

@@ -1,5 +1,5 @@
 import { and, eq, gt, isNull } from "drizzle-orm";
-import { getDb, getActivePackageTypes } from "./db";
+import { getDb, getActivePackageTypes, getAtelierSettings } from "./db";
 import { wixPaymentLinks } from "../drizzle/schema";
 
 // Liens de paiement Wix personnels : un par forfait en vente, au nom du résident,
@@ -8,7 +8,18 @@ import { wixPaymentLinks } from "../drizzle/schema";
 // valables. Au paiement, le webhook retrouve résident et forfait par l'identifiant du lien.
 
 const WIX_PAYMENT_LINKS_URL = "https://www.wixapis.com/payment-links/v1/payment-links";
-export const PAYMENT_LINK_VALIDITY_DAYS = 15;
+export const PAYMENT_LINK_VALIDITY_DAYS = 15; // valeur par défaut (réglable dans Paramètres)
+
+// Forfaits proposés : ceux choisis dans Paramètres (null = tous les forfaits en vente).
+export function parsePackageTypeIds(raw: string | null | undefined): number[] | null {
+  if (!raw) return null;
+  try {
+    const ids = JSON.parse(raw);
+    return Array.isArray(ids) ? ids.filter((id) => Number.isInteger(id)) : null;
+  } catch {
+    return null;
+  }
+}
 
 export type ResidentPaymentLink = { label: string; price: number; url: string; expiresAt: Date };
 
@@ -75,7 +86,14 @@ export async function getPaymentLinksForResident(resident: {
   if (!db) return null;
 
   try {
-    const types = (await getActivePackageTypes()).filter((t) => t.price > 0);
+    const settings = await getAtelierSettings();
+    if (settings && !settings.autoPaymentLinksEnabled) return null;
+    const validityDays = settings?.paymentLinkValidityDays ?? PAYMENT_LINK_VALIDITY_DAYS;
+    const selectedIds = parsePackageTypeIds(settings?.paymentLinkPackageTypeIds);
+
+    const types = (await getActivePackageTypes()).filter(
+      (t) => t.price > 0 && (!selectedIds || selectedIds.includes(t.id))
+    );
     if (types.length === 0) return null;
 
     const now = new Date();
@@ -84,7 +102,7 @@ export async function getPaymentLinksForResident(resident: {
       .from(wixPaymentLinks)
       .where(and(eq(wixPaymentLinks.residentId, resident.id), isNull(wixPaymentLinks.paidAt), gt(wixPaymentLinks.expiresAt, now)));
 
-    const expiresAt = new Date(now.getTime() + PAYMENT_LINK_VALIDITY_DAYS * 86400000);
+    const expiresAt = new Date(now.getTime() + validityDays * 86400000);
     const links: ResidentPaymentLink[] = [];
     for (const type of types) {
       const reusable = existing
@@ -128,4 +146,26 @@ export async function markWixPaymentLinkPaid(id: number) {
   const db = await getDb();
   if (!db) return;
   await db.update(wixPaymentLinks).set({ paidAt: new Date() }).where(eq(wixPaymentLinks.id, id));
+}
+
+// État de la connexion à Wix pour la page Paramètres (lecture seule, ne crée rien).
+export async function checkWixPaymentLinksConnection(): Promise<{ configured: boolean; ok: boolean; message: string }> {
+  if (!isWixPaymentLinksConfigured()) {
+    return { configured: false, ok: false, message: "Clé d'API Wix non configurée (WIX_API_KEY / WIX_SITE_ID dans Railway)." };
+  }
+  try {
+    const response = await fetch(`${WIX_PAYMENT_LINKS_URL}/query`, {
+      method: "POST",
+      headers: {
+        Authorization: process.env.WIX_API_KEY!,
+        "wix-site-id": process.env.WIX_SITE_ID!,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ query: { cursorPaging: { limit: 1 } } }),
+    });
+    if (response.ok) return { configured: true, ok: true, message: "Connecté à Wix." };
+    return { configured: true, ok: false, message: `Wix refuse l'accès (erreur ${response.status}) : vérifie la clé d'API et sa permission « liens de paiement ».` };
+  } catch (error) {
+    return { configured: true, ok: false, message: "Wix ne répond pas pour le moment." };
+  }
 }
