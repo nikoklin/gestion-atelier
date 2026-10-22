@@ -3,7 +3,7 @@
 Plan détaillé : voir `~/.claude/plans/rosy-sniffing-blanket.md`.
 Décisions : contrôle quotidien par règles (pas d'IA) ; adresse atelier = contact@atourdebras-atelier.com
 (env `ATELIER_NOTIFICATION_EMAIL`, repli `EMAIL_USER`) ; étagère libérée par clic « Étagère vidée » ;
-forfait payé d'avance démarre dès la fin du forfait en cours ; liens de paiement : Wix ou Square à trancher.
+forfait payé d'avance démarre dès la fin du forfait en cours ; liens de paiement : Wix (clé d'API WIX_API_KEY + WIX_SITE_ID dans Railway).
 
 - [x] Étape 0 : correctif « 1h45 » du rappel (poussé avec la phase 1)
 - [x] Migration 0034 (autoStart, shelfEmailSent, enum emailLogs) appliquée en base
@@ -11,7 +11,7 @@ forfait payé d'avance démarre dès la fin du forfait en cours ; liens de paiem
 - [x] Phase 2 : design unique des e-mails (poussé)
 - [x] Phase 3 : e-mail « étagère à vider » J+7 + bouton « Étagère vidée » (poussé ; l'e-mail au résident part au clic « Étagère vidée », l'atelier est alerté à J+7)
 - [x] Phase 4 : contrôle quotidien d'incohérences + alerte e-mail (poussé)
-- [ ] Phase 5 : liens de paiement provisoires (après décision Wix/Square)
+- [x] Phase 5 : liens de paiement Wix personnels valables 15 jours, créés au rappel (poussé ; clé à régénérer)
 
 ## À signaler à Nicolas
 - Un forfait créé depuis l'admin a sa date de fin à 00:00 UTC du dernier jour : il cesse d'être valable
