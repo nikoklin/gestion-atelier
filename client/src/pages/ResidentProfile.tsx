@@ -1365,13 +1365,8 @@ function AttendanceTab({
                   const isAdjustment = isAdjustAdd || isAdjustSubtract;
                   const isOutOfPackage = !isAdjustment && !!att.isOutOfPackage;
                   const attColor = att.packageId ? packageColorMap.get(att.packageId) : undefined;
-                  const rowBg = isAdjustAdd
-                    ? 'bg-purple-50'
-                    : isAdjustSubtract
-                    ? 'bg-orange-50'
-                    : attColor
-                    ? attColor.bg
-                    : '';
+                  // Ajouts/retraits de l'atelier : couleur du forfait auquel ils s'appliquent
+                  const rowBg = attColor ? attColor.bg : '';
 
                   const today = new Date();
                   const isToday =
@@ -1382,20 +1377,12 @@ function AttendanceTab({
                       {/* Date */}
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
-                          {isAdjustAdd && (
-                            <span className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0 bg-purple-400" />
-                          )}
-                          {isAdjustSubtract && (
-                            <span className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0 bg-orange-400" />
-                          )}
-                          {!isAdjustment && (
-                            <span
-                              className={`inline-block w-2.5 h-2.5 rounded-full flex-shrink-0 ${
-                                attColor?.dot ?? 'bg-gray-300'
-                              }`}
-                            />
-                          )}
-                          <span className={isAdjustment ? 'italic text-purple-700' : ''}>
+                          <span
+                            className={`inline-block w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                              attColor?.dot ?? 'bg-gray-300'
+                            }`}
+                          />
+                          <span className={isAdjustment ? 'italic' : ''}>
                             {formatDate(att.checkInTime)}
                             {isToday && (
                               <span className="ml-2 text-xs font-semibold text-gray-600">

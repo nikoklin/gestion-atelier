@@ -825,19 +825,18 @@ export default function ResidentPackages() {
                     const isOutOfPackage = !isAdjustment && (attendance.isOutOfPackage === true);
 
                     // Couleur du forfait associé — TOUJOURS garder la couleur du forfait, même hors forfait
+                    // et pour les ajouts/retraits de l'atelier (rattachés au forfait qu'ils modifient)
                     const attColor = attendance.packageId ? packageColorMap.get(attendance.packageId) : undefined;
-                    const rowBg = isAdjustment ? 'bg-purple-50' : (attColor ? attColor.bg : '');
+                    const rowBg = attColor ? attColor.bg : '';
                     
                     return (
                       <TableRow key={attendance.id} className={rowBg}>
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-2">
-                            {isAdjustAdd && <span className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0 bg-purple-400" />}
-                            {isAdjustSubtract && <span className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0 bg-orange-400" />}
-                            {!isAdjustment && <span className={`inline-block w-2.5 h-2.5 rounded-full flex-shrink-0 ${attColor?.dot ?? 'bg-gray-300'}`} />}
+                            <span className={`inline-block w-2.5 h-2.5 rounded-full flex-shrink-0 ${attColor?.dot ?? 'bg-gray-300'}`} />
                             <span>
                               {isAdjustment ? (
-                                <span className="italic text-purple-700">
+                                <span className="italic">
                                   {formatDate(attendance.checkInTime)}
                                   {isToday && <span className="ml-2 text-xs font-semibold text-gray-600">Aujourd'hui</span>}
                                 </span>
