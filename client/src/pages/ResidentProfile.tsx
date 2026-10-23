@@ -321,18 +321,15 @@ const utils = trpc.useUtils();
   };
 
   const updateAttendanceMutation = trpc.attendances.update.useMutation({
-    onSuccess: () => {
-      toast.success("Pointage modifié avec succès");
+    onSuccess: (data) => {
+      if (data.warning) toast.warning(data.warning, { duration: 8000 });
+      else toast.success("Pointage modifié avec succès");
       invalidateAttendanceRelated();
       setShowEditAttendanceDialog(false);
       setSelectedAttendance(null);
     },
     onError: (error) => {
-      // Même en cas d'erreur de dépassement, les données ont été mises à jour
-      invalidateAttendanceRelated();
-      toast.warning(`${error.message}`, { duration: 8000 });
-      setShowEditAttendanceDialog(false);
-      setSelectedAttendance(null);
+      toast.error(error.message, { duration: 8000 });
     },
   });
 
@@ -349,17 +346,15 @@ const utils = trpc.useUtils();
   });
   
   const createAttendanceMutation = trpc.attendances.create.useMutation({
-    onSuccess: () => {
-      toast.success("Pointage créé avec succès");
+    onSuccess: (data) => {
+      if (data.warning) toast.warning(data.warning, { duration: 8000 });
+      else toast.success("Pointage créé avec succès");
       invalidateAttendanceRelated();
       setShowCreateAttendanceDialog(false);
       // Les refs seront réinitialisées à la prochaine ouverture du dialogue
     },
     onError: (error) => {
-      // Même en cas d'erreur de dépassement, les données ont été mises à jour
-      invalidateAttendanceRelated();
-      toast.warning(`${error.message}`, { duration: 8000 });
-      setShowCreateAttendanceDialog(false);
+      toast.error(error.message, { duration: 8000 });
     },
   });
 

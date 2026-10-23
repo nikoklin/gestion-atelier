@@ -82,6 +82,28 @@ describe.skipIf(!process.env.DATABASE_URL)("Modification et suppression des poin
       expect((await db.getAttendanceById(9909003))!.durationMinutes).toBe(45);
     });
 
+    it("modification qui fait dépasser le forfait : enregistrée, avertissement renvoyé (pas d'erreur)", async () => {
+      const before = (await db.getAttendanceById(9909003))!;
+      const res = await caller.attendances.update({
+        id: 9909003,
+        checkInTime: before.checkInTime.toISOString(),
+        checkOutTime: new Date(before.checkInTime.getTime() + 11 * 3600000).toISOString(),
+      });
+      expect(res.warning).toMatch(/Pointage enregistré, mais il dépasse le total du forfait \(10h\)/);
+      expect((await db.getAttendanceById(9909003))!.durationMinutes).toBe(660);
+    });
+
+    it("création qui fait dépasser le forfait : créée, avertissement renvoyé (pas d'erreur)", async () => {
+      const start = new Date(Date.now() - DAY);
+      const res = await caller.attendances.create({
+        residentId: RID,
+        checkInTime: start.toISOString(),
+        checkOutTime: new Date(start.getTime() + 12 * 3600000).toISOString(),
+      });
+      expect(res.warning).toMatch(/dépasse le total du forfait/);
+      expect(await db.getAttendancesByResidentId(RID)).toHaveLength(4);
+    });
+
     it("pointage du forfait en cours : supprimé", async () => {
       await caller.attendances.delete({ id: 9909003 });
       expect(await exists(9909003)).toBe(false);

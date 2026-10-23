@@ -50,6 +50,13 @@ function getTotalHours(packageType: string): number {
   }
 }
 
+// Pointage enregistré mais qui fait dépasser le forfait : avertissement renvoyé
+// avec la réponse (l'enregistrement a bien eu lieu, ce n'est pas une erreur).
+function overflowWarning(totalMinutes: number, excessMinutes: number): string {
+  const fmt = (m: number) => `${Math.floor(m / 60) > 0 ? Math.floor(m / 60) + "h" : ""}${m % 60 > 0 ? (m % 60) + "min" : ""}` || "0h";
+  return `Pointage enregistré, mais il dépasse le total du forfait (${fmt(totalMinutes)}). Dépassement : ${fmt(excessMinutes)}, comptabilisé en heures hors forfait.`;
+}
+
 // Un forfait est en cours : les pointages antérieurs (forfaits terminés, heures
 // hors forfait reportées) ont servi à le calculer, on n'y touche plus.
 async function assertAttendanceNotLocked(
@@ -1342,14 +1349,7 @@ export const appRouter = router({
           // Avertissement si le total dépasse le forfait
           if (recalc.outOfPackageMinutes > 0) {
             const pkg = await db.getPackageById(attendance.packageId);
-            const totalH = Math.floor((pkg?.totalHours ?? 0) / 60);
-            const totalM = (pkg?.totalHours ?? 0) % 60;
-            const excessH = Math.floor(recalc.outOfPackageMinutes / 60);
-            const excessM = recalc.outOfPackageMinutes % 60;
-            throw new TRPCError({
-              code: "BAD_REQUEST",
-              message: `Attention : ce pointage dépasse le total du forfait (${totalH}h${totalM > 0 ? totalM + 'min' : ''}). Dépassement : ${excessH > 0 ? excessH + 'h' : ''}${excessM > 0 ? excessM + 'min' : ''}. Les heures en excès sont comptabilisées comme heures hors forfait.`,
-            });
+            return { success: true, warning: overflowWarning(pkg?.totalHours ?? 0, recalc.outOfPackageMinutes) };
           }
         } else {
           // Pointage orphelin : recalculer les heures hors forfait
@@ -1500,14 +1500,7 @@ export const appRouter = router({
           const recalc = await db.recalculatePackageHours(activePackage.id);
           // Avertissement si le total dépasse le forfait
           if (recalc.outOfPackageMinutes > 0) {
-            const totalH = Math.floor(activePackage.totalHours / 60);
-            const totalM = activePackage.totalHours % 60;
-            const excessH = Math.floor(recalc.outOfPackageMinutes / 60);
-            const excessM = recalc.outOfPackageMinutes % 60;
-            throw new TRPCError({
-              code: "BAD_REQUEST",
-              message: `Attention : ce pointage dépasse le total du forfait (${totalH}h${totalM > 0 ? totalM + 'min' : ''}). Dépassement : ${excessH > 0 ? excessH + 'h' : ''}${excessM > 0 ? excessM + 'min' : ''}. Les heures en excès sont comptabilisées comme heures hors forfait.`,
-            });
+            return { success: true, attendanceId, warning: overflowWarning(activePackage.totalHours, recalc.outOfPackageMinutes) };
           }
         } else if (!activePackage) {
           // Pas de forfait actif, recalcul hors forfait uniquement

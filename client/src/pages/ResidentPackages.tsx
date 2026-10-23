@@ -229,17 +229,16 @@ export default function ResidentPackages() {
   });
 
   const createAttendanceMutation = trpc.attendances.create.useMutation({
-    onSuccess: () => {
-      toast.success("Pointage créé avec succès");
+    onSuccess: (data) => {
+      if (data.warning) toast.warning(data.warning, { duration: 8000 });
+      else toast.success("Pointage créé avec succès");
       setIsCreateAttendanceDialogOpen(false);
       utils.packages.getByResidentId.invalidate({ residentId });
       utils.residents.getById.invalidate({ id: residentId });
       utils.residents.getWithActivePackage.invalidate();
     },
     onError: (error) => {
-      toast.warning(error.message, { duration: 8000 });
-      setIsCreateAttendanceDialogOpen(false);
-      utils.packages.getByResidentId.invalidate({ residentId });
+      toast.error(error.message, { duration: 8000 });
     },
   });
 
@@ -281,8 +280,9 @@ export default function ResidentPackages() {
   };
 
   const updateAttendanceMutation = trpc.attendances.update.useMutation({
-    onSuccess: () => {
-      toast.success("Pointage modifié avec succès");
+    onSuccess: (data) => {
+      if (data.warning) toast.warning(data.warning, { duration: 8000 });
+      else toast.success("Pointage modifié avec succès");
       setIsEditAttendanceDialogOpen(false);
       setSelectedAttendance(null);
       utils.packages.getByResidentId.invalidate({ residentId });
@@ -290,10 +290,7 @@ export default function ResidentPackages() {
       utils.residents.getWithActivePackage.invalidate();
     },
     onError: (error) => {
-      utils.packages.getByResidentId.invalidate({ residentId });
-      toast.warning(error.message, { duration: 8000 });
-      setIsEditAttendanceDialogOpen(false);
-      setSelectedAttendance(null);
+      toast.error(error.message, { duration: 8000 });
     },
   });
 
