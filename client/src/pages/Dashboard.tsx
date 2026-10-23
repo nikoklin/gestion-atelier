@@ -46,6 +46,18 @@ export default function Dashboard() {
     return now <= endDate && r.activePackage.usedHours < r.activePackage.totalHours;
   }) || [];
 
+  // Résidents actuellement à l'atelier (pointage en cours), par ordre d'arrivée
+  const presentResidents = activeResidents
+    .filter((r) => r.openCheckInTime)
+    .sort((a, b) => new Date(a.openCheckInTime!).getTime() - new Date(b.openCheckInTime!).getTime());
+
+  const formatArrival = (date: Date | string) => {
+    const d = new Date(date);
+    const time = d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" });
+    const sameDay = d.toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" }) === new Date().toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" });
+    return sameDay ? time : `${d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", timeZone: "Europe/Paris" })} ${time}`;
+  };
+
   const formatDateTime = (date: Date | string) =>
     new Date(date).toLocaleString("fr-FR", {
       day: "2-digit",
@@ -91,6 +103,28 @@ export default function Dashboard() {
             <p className="text-xs text-muted-foreground mt-1">
               {activeResidents.length} actif{activeResidents.length > 1 ? 's' : ''}
             </p>
+            <div className="mt-3 border-t pt-2">
+              <p className="text-xs font-medium mb-1">
+                {presentResidents.length === 0
+                  ? "Personne à l'atelier"
+                  : `${presentResidents.length} à l'atelier`}
+              </p>
+              <div className="space-y-1">
+                {presentResidents.map((r) => (
+                  <button
+                    key={r.id}
+                    className="flex w-full items-center justify-between gap-2 text-left text-sm hover:underline"
+                    onClick={() => setLocation(`/residents/${r.id}`)}
+                  >
+                    <span className="flex items-center gap-1.5 truncate">
+                      <span className="inline-block w-2 h-2 rounded-full flex-shrink-0 bg-green-500" />
+                      <span className="truncate">{r.firstName} {r.lastName}</span>
+                    </span>
+                    <span className="shrink-0 tabular-nums text-muted-foreground">{formatArrival(r.openCheckInTime!)}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </CardContent>
         </Card>
 

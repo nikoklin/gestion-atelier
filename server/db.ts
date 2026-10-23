@@ -400,7 +400,7 @@ export async function getActiveResidentsOverview() {
   const [residentRows, packageRows, openRows, reminderRows] = await Promise.all([
     getActiveResidents(),
     db.select().from(packages).orderBy(desc(packages.createdAt)),
-    db.select({ residentId: attendances.residentId }).from(attendances).where(isNull(attendances.checkOutTime)),
+    db.select({ residentId: attendances.residentId, checkInTime: attendances.checkInTime }).from(attendances).where(isNull(attendances.checkOutTime)),
     db
       .select({ residentId: emailLogs.residentId, sentAt: sql<string | Date | null>`max(${emailLogs.sentAt})` })
       .from(emailLogs)
@@ -414,7 +414,12 @@ export async function getActiveResidentsOverview() {
     if (!packagesByResident.has(p.residentId)) packagesByResident.set(p.residentId, []);
     packagesByResident.get(p.residentId)!.push(p);
   }
-  const withOpenAttendance = new Set(openRows.map((r) => r.residentId));
+  // Heure d'arrivée du pointage en cours (le plus récent s'il y en a plusieurs)
+  const openCheckIn = new Map<number, Date>();
+  for (const r of openRows) {
+    const prev = openCheckIn.get(r.residentId);
+    if (!prev || r.checkInTime > prev) openCheckIn.set(r.residentId, r.checkInTime);
+  }
   // max() renvoie le texte brut de la base (heure UTC, sans fuseau) : converti en Date.
   const toUtcDate = (v: string | Date | null) =>
     v instanceof Date ? v : v ? new Date(`${String(v).replace(" ", "T")}Z`) : null;
@@ -431,7 +436,8 @@ export async function getActiveResidentsOverview() {
       lastReminderDate: lastReminder.get(resident.id) ?? null,
       hasMissedCheckout: resident.hasMissedCheckout || false,
       missedCheckoutAttendanceId: resident.missedCheckoutAttendanceId || null,
-      hasOpenAttendance: withOpenAttendance.has(resident.id),
+      hasOpenAttendance: openCheckIn.has(resident.id),
+      openCheckInTime: openCheckIn.get(resident.id) ?? null,
     };
   });
 }
