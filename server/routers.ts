@@ -5,7 +5,6 @@ import { signSession } from "./_core/session";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { emailRouter } from "./emailRouter";
-import { cronRouter } from "./cronRouter";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import * as db from "./db";
@@ -54,7 +53,6 @@ function getTotalHours(packageType: string): number {
 export const appRouter = router({
   system: systemRouter,
   email: emailRouter,
-  cron: cronRouter,
   stats: router({
     getAttendanceStats: protectedProcedure.query(async () => {
       const attendances = await db.getAllAttendances();
