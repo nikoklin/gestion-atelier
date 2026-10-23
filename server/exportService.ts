@@ -1,17 +1,18 @@
 import ExcelJS from "exceljs";
 import { getDb } from "./db";
-import { attendances, packages, residents } from "../drizzle/schema";
-import { desc, eq } from "drizzle-orm";
+import { atelierSettings, attendances, emailTemplates, notes, packages, packageTypes, residents } from "../drizzle/schema";
+import { desc } from "drizzle-orm";
 import { formatParisDate, formatParisDateTime } from "./_core/timezone";
 
 /**
- * Génère un fichier Excel contenant l'historique des pointages et des forfaits
+ * Génère le fichier Excel de sauvegarde (aussi téléchargeable depuis Paramètres) :
+ * de quoi reconstruire l'atelier si la base était perdue — résidents, pointages,
+ * forfaits, notes, types de forfaits, réglages et modèles d'e-mails.
+ * Non exportée : la signature (image) des résidents.
  * @returns Buffer du fichier Excel
  */
 export async function generateExcelExport(): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
-  
-  // Métadonnées du fichier
   workbook.creator = "Gestion d'Atelier";
   workbook.created = new Date();
   workbook.modified = new Date();
@@ -21,141 +22,213 @@ export async function generateExcelExport(): Promise<Buffer> {
     throw new Error("Database not available");
   }
 
-  // Feuille 1: Historique des Pointages
-  const attendancesSheet = workbook.addWorksheet("Pointages");
-  
-  // En-têtes pour les pointages
-  attendancesSheet.columns = [
+  const [allResidents, allAttendances, allPackages, allNotes, allPackageTypes, settingsRows, templates] = await Promise.all([
+    db.select().from(residents),
+    db.select().from(attendances).orderBy(desc(attendances.checkInTime)),
+    db.select().from(packages),
+    db.select().from(notes).orderBy(desc(notes.createdAt)),
+    db.select().from(packageTypes).orderBy(packageTypes.sortOrder, packageTypes.id),
+    db.select().from(atelierSettings).limit(1),
+    db.select().from(emailTemplates),
+  ]);
+
+  const addSheet = (name: string, columns: Partial<ExcelJS.Column>[], rows: Record<string, unknown>[]) => {
+    const sheet = workbook.addWorksheet(name);
+    sheet.columns = columns;
+    sheet.getRow(1).font = { bold: true };
+    sheet.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE0E0E0" } };
+    sheet.views = [{ state: "frozen", ySplit: 1 }];
+    rows.forEach((row) => sheet.addRow(row));
+  };
+
+  const residentName = new Map(allResidents.map((r) => [r.id, `${r.firstName} ${r.lastName}`]));
+  const byResidentName = (a: { residentId: number }, b: { residentId: number }) =>
+    (residentName.get(a.residentId) ?? "").localeCompare(residentName.get(b.residentId) ?? "", "fr");
+
+  // Nom du forfait : type configurable (custom_{id}) ou ancien code
+  const legacyTypes: Record<string, string> = {
+    "15h_8w": "15h / 8 semaines",
+    "30h_8w": "30h / 8 semaines",
+    "30h_4w": "30h / 4 semaines",
+    "180h_6m": "180h / 6 mois",
+  };
+  const typeLabel = new Map(allPackageTypes.map((t) => [`custom_${t.id}`, t.label]));
+  const packageLabel = (type: string) => typeLabel.get(type) ?? legacyTypes[type] ?? type;
+  const hours = (minutes: number) => (minutes / 60).toFixed(2);
+  const yesNo = (value: boolean | null | undefined) => (value ? "Oui" : "Non");
+
+  // Feuille 1 : Résidents (archivés compris)
+  addSheet("Résidents", [
     { header: "ID", key: "id", width: 10 },
+    { header: "Prénom", key: "firstName", width: 18 },
+    { header: "Nom", key: "lastName", width: 18 },
+    { header: "E-mail", key: "email", width: 30 },
+    { header: "Téléphone", key: "phone", width: 16 },
+    { header: "N° d'étagère", key: "shelfNumber", width: 12 },
+    { header: "Statut", key: "status", width: 12 },
+    { header: "Hors forfait en attente (min)", key: "outOfPackageMinutes", width: 26 },
+    { header: "Inscrit le", key: "createdAt", width: 20 },
+  ], [...allResidents]
+    .sort((a, b) => `${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`, "fr"))
+    .map((r) => ({
+      id: r.id,
+      firstName: r.firstName,
+      lastName: r.lastName,
+      email: r.email,
+      phone: r.phone ?? "",
+      shelfNumber: r.shelfNumber ?? "",
+      status: r.isDeleted ? "Archivé" : r.isActive ? "Actif" : "Inactif",
+      outOfPackageMinutes: r.outOfPackageMinutes,
+      createdAt: formatParisDateTime(r.createdAt),
+    })));
+
+  // Feuille 2 : Pointages (y compris les ajouts/retraits d'heures de l'atelier)
+  const attendanceType: Record<string, string> = {
+    normal: "Pointage",
+    adjustment_add: "Ajout atelier",
+    adjustment_subtract: "Retrait atelier",
+  };
+  addSheet("Pointages", [
+    { header: "ID", key: "id", width: 10 },
+    { header: "ID résident", key: "residentId", width: 12 },
     { header: "Résident", key: "resident", width: 25 },
+    { header: "Type", key: "type", width: 16 },
     { header: "Date d'arrivée", key: "checkInTime", width: 20 },
     { header: "Date de départ", key: "checkOutTime", width: 20 },
-    { header: "Durée (minutes)", key: "durationMinutes", width: 18 },
-    { header: "Statut", key: "status", width: 12 },
-  ];
+    { header: "Durée (minutes)", key: "durationMinutes", width: 16 },
+    { header: "ID forfait", key: "packageId", width: 12 },
+    { header: "Note", key: "note", width: 30 },
+  ], allAttendances.map((a) => ({
+    id: a.id,
+    residentId: a.residentId,
+    resident: residentName.get(a.residentId) ?? "Inconnu",
+    type: attendanceType[a.attendanceType] ?? a.attendanceType,
+    checkInTime: formatParisDateTime(a.checkInTime),
+    checkOutTime: a.checkOutTime ? formatParisDateTime(a.checkOutTime) : "En cours",
+    durationMinutes: a.durationMinutes ?? 0,
+    packageId: a.packageId ?? "",
+    note: a.note ?? "",
+  })));
 
-  // Style des en-têtes
-  attendancesSheet.getRow(1).font = { bold: true };
-  attendancesSheet.getRow(1).fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: { argb: "FFE0E0E0" },
-  };
-
-  // Récupérer tous les pointages avec les informations des résidents
-  const allAttendances = await db
-    .select({
-      id: attendances.id,
-      residentId: attendances.residentId,
-      checkInTime: attendances.checkInTime,
-      checkOutTime: attendances.checkOutTime,
-      durationMinutes: attendances.durationMinutes,
-      residentFirstName: residents.firstName,
-      residentLastName: residents.lastName,
-    })
-    .from(attendances)
-    .leftJoin(residents, eq(residents.id, attendances.residentId))
-    .orderBy(desc(attendances.checkInTime));
-
-  // Ajouter les données des pointages
-  allAttendances.forEach((attendance) => {
-    attendancesSheet.addRow({
-      id: attendance.id,
-      resident: `${attendance.residentFirstName} ${attendance.residentLastName}`,
-      checkInTime: attendance.checkInTime
-        ? formatParisDateTime(attendance.checkInTime)
-        : "",
-      checkOutTime: attendance.checkOutTime
-        ? formatParisDateTime(attendance.checkOutTime)
-        : "En cours",
-      durationMinutes: attendance.durationMinutes || 0,
-      status: attendance.checkOutTime ? "Terminé" : "En cours",
-    });
-  });
-
-  // Feuille 2: Historique des Forfaits
-  const packagesSheet = workbook.addWorksheet("Forfaits");
-  
-  // En-têtes pour les forfaits
-  packagesSheet.columns = [
+  // Feuille 3 : Forfaits
+  addSheet("Forfaits", [
     { header: "ID", key: "id", width: 10 },
+    { header: "ID résident", key: "residentId", width: 12 },
     { header: "Résident", key: "resident", width: 25 },
-    { header: "Type", key: "type", width: 20 },
+    { header: "Forfait", key: "type", width: 20 },
     { header: "Heures totales", key: "totalHours", width: 15 },
-    { header: "Heures utilisées", key: "usedHours", width: 18 },
-    { header: "Heures restantes", key: "remainingHours", width: 18 },
+    { header: "Heures utilisées", key: "usedHours", width: 16 },
+    { header: "Heures restantes", key: "remainingHours", width: 16 },
+    { header: "Heures hors forfait reportées", key: "deductedHours", width: 26 },
     { header: "Date de début", key: "startDate", width: 15 },
     { header: "Date de fin", key: "endDate", width: 15 },
-    { header: "Actif", key: "isActive", width: 10 },
-  ];
+    { header: "Statut", key: "status", width: 26 },
+    { header: "Paiement Wix", key: "wixPaymentId", width: 38 },
+  ], [...allPackages].sort(byResidentName).map((p) => ({
+    id: p.id,
+    residentId: p.residentId,
+    resident: residentName.get(p.residentId) ?? "Inconnu",
+    type: packageLabel(p.packageType),
+    totalHours: hours(p.totalHours),
+    usedHours: hours(p.usedHours),
+    remainingHours: hours(p.totalHours - p.usedHours),
+    deductedHours: hours(p.deductedMinutes ?? 0),
+    startDate: formatParisDate(p.startDate),
+    endDate: formatParisDate(p.endDate),
+    status: p.status === "pending"
+      ? (p.autoStart ? "En attente (démarrage auto)" : "En attente de validation")
+      : p.isActive ? "En cours" : "Terminé",
+    wixPaymentId: p.wixPaymentId ?? "",
+  })));
 
-  // Style des en-têtes
-  packagesSheet.getRow(1).font = { bold: true };
-  packagesSheet.getRow(1).fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: { argb: "FFE0E0E0" },
+  // Feuille 4 : Notes sur les résidents
+  addSheet("Notes", [
+    { header: "ID", key: "id", width: 10 },
+    { header: "ID résident", key: "residentId", width: 12 },
+    { header: "Résident", key: "resident", width: 25 },
+    { header: "Note", key: "content", width: 60 },
+    { header: "Auteur", key: "createdBy", width: 18 },
+    { header: "Date", key: "createdAt", width: 20 },
+  ], allNotes.map((n) => ({
+    id: n.id,
+    residentId: n.residentId,
+    resident: residentName.get(n.residentId) ?? "Inconnu",
+    content: n.content,
+    createdBy: n.createdBy,
+    createdAt: formatParisDateTime(n.createdAt),
+  })));
+
+  // Feuille 5 : Types de forfaits
+  addSheet("Types de forfaits", [
+    { header: "ID", key: "id", width: 10 },
+    { header: "Code", key: "code", width: 14 },
+    { header: "Forfait", key: "label", width: 22 },
+    { header: "Heures", key: "hours", width: 10 },
+    { header: "Durée (semaines)", key: "durationWeeks", width: 16 },
+    { header: "Prix (€)", key: "price", width: 10 },
+    { header: "En vente", key: "isActive", width: 10 },
+    { header: "Ordre", key: "sortOrder", width: 8 },
+  ], allPackageTypes.map((t) => ({
+    id: t.id,
+    code: `custom_${t.id}`,
+    label: t.label,
+    hours: hours(t.totalMinutes),
+    durationWeeks: t.durationWeeks,
+    price: t.price,
+    isActive: yesNo(t.isActive),
+    sortOrder: t.sortOrder,
+  })));
+
+  // Feuille 6 : Réglages de l'atelier
+  const s = settingsRows[0];
+  const proposedTypes = (() => {
+    if (!s?.paymentLinkPackageTypeIds) return "Tous les forfaits en vente";
+    try {
+      return (JSON.parse(s.paymentLinkPackageTypeIds) as number[]).map((id) => packageLabel(`custom_${id}`)).join(", ");
+    } catch {
+      return s.paymentLinkPackageTypeIds;
+    }
+  })();
+  const fallbackLinks = (() => {
+    if (!s?.paymentLinks) return "";
+    try {
+      return (JSON.parse(s.paymentLinks).links as { label: string; url: string }[]).map((l) => `${l.label} : ${l.url}`).join("\n");
+    } catch {
+      return s.paymentLinks;
+    }
+  })();
+  addSheet("Réglages", [
+    { header: "Réglage", key: "name", width: 45 },
+    { header: "Valeur", key: "value", width: 70 },
+  ], s ? [
+    { name: "Nombre d'étagères", value: s.totalShelves },
+    { name: "Rappel avant la fin du forfait (jours)", value: s.reminderDaysBeforeExpiry },
+    { name: "Heure d'envoi des rappels", value: `${s.reminderSendHour}h` },
+    { name: "Heure de clôture des pointages oubliés", value: `${s.missedCheckoutCutoffHour}h` },
+    { name: "Guide des bonnes pratiques à l'inscription", value: yesNo(s.guideEmailEnabled) },
+    { name: "Forfait payé sur Wix actif immédiatement", value: yesNo(s.wixAutoActivatePackage) },
+    { name: "Liens de paiement automatiques", value: yesNo(s.autoPaymentLinksEnabled) },
+    { name: "Validité des liens de paiement (jours)", value: s.paymentLinkValidityDays },
+    { name: "Forfaits proposés dans les e-mails", value: proposedTypes },
+    { name: "Liens de paiement de secours", value: fallbackLinks },
+  ] : []);
+
+  // Feuille 7 : Modèles d'e-mails personnalisés
+  const templateName: Record<string, string> = {
+    reminder: "Rappel avant la fin",
+    expiration: "Forfait terminé",
+    session_summary: "Résumé de séance",
   };
+  addSheet("Modèles d'e-mails", [
+    { header: "E-mail", key: "type", width: 22 },
+    { header: "Objet", key: "subject", width: 45 },
+    { header: "Contenu", key: "body", width: 100 },
+  ], templates.map((t) => ({
+    type: templateName[t.templateType] ?? t.templateType,
+    subject: t.subject,
+    body: t.body,
+  })));
 
-  // Récupérer tous les forfaits avec les informations des résidents
-  const allPackages = await db
-    .select({
-      id: packages.id,
-      residentId: packages.residentId,
-      packageType: packages.packageType,
-      totalHours: packages.totalHours,
-      usedHours: packages.usedHours,
-      startDate: packages.startDate,
-      endDate: packages.endDate,
-      isActive: packages.isActive,
-      residentFirstName: residents.firstName,
-      residentLastName: residents.lastName,
-    })
-    .from(packages)
-    .leftJoin(residents, eq(residents.id, packages.residentId));
-
-  // Trier les forfaits par ordre alphabétique des résidents (nom puis prénom)
-  allPackages.sort((a, b) => {
-    const lastNameCompare = (a.residentLastName || "").localeCompare(b.residentLastName || "", "fr");
-    if (lastNameCompare !== 0) return lastNameCompare;
-    return (a.residentFirstName || "").localeCompare(b.residentFirstName || "", "fr");
-  });
-
-  // Fonction pour formater le type de forfait
-  const formatPackageType = (type: string): string => {
-    const types: Record<string, string> = {
-      "15h_8w": "15h / 8 semaines",
-      "30h_8w": "30h / 8 semaines",
-      "30h_4w": "30h / 4 semaines",
-      "180h_6m": "180h / 6 mois",
-    };
-    return types[type] || type;
-  };
-
-  // Ajouter les données des forfaits
-  allPackages.forEach((pkg) => {
-    const totalHours = pkg.totalHours / 60; // Convertir minutes en heures
-    const usedHours = pkg.usedHours / 60;
-    const remainingHours = totalHours - usedHours;
-
-    packagesSheet.addRow({
-      id: pkg.id,
-      resident: `${pkg.residentFirstName} ${pkg.residentLastName}`,
-      type: formatPackageType(pkg.packageType),
-      totalHours: totalHours.toFixed(2),
-      usedHours: usedHours.toFixed(2),
-      remainingHours: remainingHours.toFixed(2),
-      startDate: pkg.startDate
-        ? formatParisDate(pkg.startDate)
-        : "",
-      endDate: pkg.endDate
-        ? formatParisDate(pkg.endDate)
-        : "",
-      isActive: pkg.isActive ? "Oui" : "Non",
-    });
-  });
-
-  // Générer le buffer
   const buffer = await workbook.xlsx.writeBuffer();
   return Buffer.from(buffer);
 }

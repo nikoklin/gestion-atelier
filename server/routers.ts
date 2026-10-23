@@ -1658,7 +1658,7 @@ export const appRouter = router({
         return {
           success: true,
           data: base64,
-          filename: `export_${new Date().toISOString().split('T')[0]}.xlsx`,
+          filename: `export_${getParisDateString(new Date())}.xlsx`,
         };
       }),
   }),

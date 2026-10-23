@@ -1,5 +1,6 @@
 import { generateExcelExport } from "./exportService";
 import { uploadToAtelierDrive } from "./driveUpload";
+import { formatParisTime, getParisDateString } from "./_core/timezone";
 
 /**
  * Fonction de sauvegarde automatique quotidienne
@@ -14,9 +15,9 @@ export async function performDailyBackup() {
     // Générer l'export Excel
     const buffer = await generateExcelExport();
 
-    // Créer le nom du fichier avec la date
+    // Nom du fichier avec la date et l'heure de Paris (le serveur tourne en UTC)
     const date = new Date();
-    const filename = `backup_${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}_${String(date.getHours()).padStart(2, '0')}h${String(date.getMinutes()).padStart(2, '0')}.xlsx`;
+    const filename = `backup_${getParisDateString(date)}_${formatParisTime(date).replace(":", "h")}.xlsx`;
 
     const result = await uploadToAtelierDrive(
       filename,
