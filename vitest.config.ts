@@ -14,5 +14,9 @@ export default defineConfig({
     include: ["server/**/*.test.ts", "server/**/*.spec.ts"],
     // Les tests passent par la vraie base distante (nombreux allers-retours).
     testTimeout: 30000,
+    // Un fichier à la fois : ils partagent la vraie base (réglages de l'atelier
+    // compris) ; en parallèle, deux fichiers qui modifient puis restaurent le
+    // même réglage peuvent le laisser dans un mauvais état.
+    fileParallelism: false,
   },
 });
