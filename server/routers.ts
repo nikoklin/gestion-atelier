@@ -50,6 +50,21 @@ function getTotalHours(packageType: string): number {
   }
 }
 
+// Un forfait est en cours : les pointages antérieurs (forfaits terminés, heures
+// hors forfait reportées) ont servi à le calculer, on n'y touche plus.
+async function assertAttendanceNotLocked(
+  attendance: { residentId: number; packageId: number | null },
+  action: "supprimé" | "modifié"
+) {
+  const current = await db.getActivePackageByResidentId(attendance.residentId);
+  if (current && attendance.packageId !== current.id) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: `Ce pointage appartient à un forfait terminé : il ne peut pas être ${action} tant qu'un autre forfait est en cours.`,
+    });
+  }
+}
+
 export const appRouter = router({
   system: systemRouter,
   email: emailRouter,
@@ -1277,6 +1292,7 @@ export const appRouter = router({
         if (!attendance) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Pointage non trouvé" });
         }
+        await assertAttendanceNotLocked(attendance, "modifié");
 
         const checkInTime = new Date(input.checkInTime);
         const checkOutTime = input.checkOutTime ? new Date(input.checkOutTime) : null;
@@ -1361,6 +1377,8 @@ export const appRouter = router({
         const residentId = attendance.residentId;
         const packageId = attendance.packageId;
 
+        await assertAttendanceNotLocked(attendance, "supprimé");
+
         // totalHours du forfait reste fixe (voir packages.addHours/subtractHours) :
         // supprimer un pointage d'ajustement n'a rien à corriger dessus, le
         // recalcul ci-dessous relit les ajustements restants pour usedHours.
@@ -1390,6 +1408,18 @@ export const appRouter = router({
         const resident = await db.getResidentById(input.residentId);
         if (!resident) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Résident non trouvé" });
+        }
+
+        // Même règle que la suppression d'un pointage : rien d'antérieur au forfait en cours.
+        const current = await db.getActivePackageByResidentId(input.residentId);
+        if (current) {
+          const all = await db.getAttendancesByResidentId(input.residentId);
+          if (all.some((a) => a.packageId !== current.id)) {
+            throw new TRPCError({
+              code: "PRECONDITION_FAILED",
+              message: "Un forfait est en cours : les pointages des forfaits terminés ne peuvent pas être supprimés.",
+            });
+          }
         }
 
         await db.deleteAllAttendancesByResidentId(input.residentId);

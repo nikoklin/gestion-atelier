@@ -109,10 +109,14 @@ export default function ResidentPackages() {
     return `il y a ${days} jour${days > 1 ? "s" : ""}`;
   };
   const packages = pkgData?.packages;
-  const hasValidPackage = !!packages?.some(
+  const validPackage = packages?.find(
     (p: any) => p.status !== 'pending' && p.totalHours - p.usedHours > 0 && new Date(p.endDate) >= new Date()
   );
+  const hasValidPackage = !!validPackage;
   const attendances = pkgData?.attendances;
+  // Pointages antérieurs au forfait en cours (forfaits terminés, hors forfait reporté) : ni modifiables ni supprimables.
+  const isLockedAttendance = (a: any) => !!validPackage && a.packageId !== validPackage.id;
+  const lockedTitle = "Pointage d'un forfait terminé : modification et suppression impossibles tant qu'un autre forfait est en cours";
   
   // Les heures hors forfait sont maintenant stockées directement dans resident.outOfPackageMinutes
   const totalOutOfPackageMinutesFromBackend = resident?.outOfPackageMinutes || 0;
@@ -785,6 +789,8 @@ export default function ResidentPackages() {
                 <Button
                   size="sm"
                   variant="destructive"
+                  disabled={attendances.some(isLockedAttendance)}
+                  title={attendances.some(isLockedAttendance) ? "Un forfait est en cours : les pointages des forfaits terminés ne peuvent pas être supprimés" : undefined}
                   onClick={() => setIsDeleteAllAttendancesDialogOpen(true)}
                 >
                   <Trash2 className="mr-1 h-4 w-4" />
@@ -904,6 +910,8 @@ export default function ResidentPackages() {
                               <Button
                                 variant="outline"
                                 size="sm"
+                                disabled={isLockedAttendance(attendance)}
+                                title={isLockedAttendance(attendance) ? lockedTitle : undefined}
                                 onClick={() => handleEditAttendance(attendance)}
                               >
                                 <Pencil className="h-4 w-4" />
@@ -912,6 +920,8 @@ export default function ResidentPackages() {
                             <Button
                               variant="destructive"
                               size="sm"
+                              disabled={isLockedAttendance(attendance)}
+                              title={isLockedAttendance(attendance) ? lockedTitle : undefined}
                               onClick={() => handleDeleteAttendance(attendance)}
                             >
                               <Trash2 className="h-4 w-4" />
