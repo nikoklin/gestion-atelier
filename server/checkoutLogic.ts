@@ -129,9 +129,12 @@ export async function performCheckout(options: CheckoutOptions): Promise<Checkou
     });
   }
 
-  // Vérifier si le forfait vient d'être épuisé et envoyer un e-mail d'expiration
+  // Vérifier si le forfait vient d'être épuisé et envoyer un e-mail d'expiration,
+  // sauf si le forfait suivant est déjà payé et attend la validation de l'atelier.
   const isNowExpired = !tookOver && (remainingMinutes <= 0 || packageExpired);
-  if (isNowExpired && !pkg.expirationEmailSent && residentEmail && residentFirstName) {
+  const hasNextPackage = isNowExpired && !pkg.expirationEmailSent
+    && (await db.getPackagesByResidentId(residentId)).some((p) => p.status === 'pending');
+  if (isNowExpired && !pkg.expirationEmailSent && !hasNextPackage && residentEmail && residentFirstName) {
     const { sendExpirationEmail } = await import('./emailService');
     // Envoyé en arrière-plan ; le forfait est marqué « e-mail envoyé » dès maintenant
     // (comme avant, même en cas d'échec d'envoi, pour ne pas le renvoyer en boucle).

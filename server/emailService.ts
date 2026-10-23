@@ -420,6 +420,41 @@ export async function sendSessionSummaryEmail(
 }
 
 // Fonction principale pour vérifier et envoyer les rappels
+// Choix des forfaits qui reçoivent le rappel (fin dans `reminderDays` jours) ou
+// l'e-mail « forfait terminé » : uniquement le dernier forfait de chaque résident.
+// Un résident qui a déjà un forfait suivant en attente (payé d'avance, à démarrage
+// automatique ou à valider par l'atelier) ne reçoit ni l'un ni l'autre.
+export function selectPackagesForReminderEmails<P extends {
+  id: number; residentId: number; status: string | null; endDate: Date | null;
+  totalHours: number; usedHours: number; reminderSent: boolean | null; expirationEmailSent: boolean | null;
+}>(allPackages: P[], now: Date, reminderDays: number): { expiringPackages: P[]; expiredPackages: P[] } {
+  const reminderLimit = new Date(now.getTime() + reminderDays * 24 * 60 * 60 * 1000);
+  const residentsWithNextPackage = new Set(
+    allPackages.filter((p) => p.status === 'pending').map((p) => p.residentId)
+  );
+
+  const latestPackagesByResident = new Map<number, P>();
+  for (const pkg of allPackages) {
+    if (pkg.status === 'pending') continue;
+    if (residentsWithNextPackage.has(pkg.residentId)) continue;
+    const existing = latestPackagesByResident.get(pkg.residentId);
+    if (!existing || pkg.id > existing.id) latestPackagesByResident.set(pkg.residentId, pkg);
+  }
+  const latestPackages = Array.from(latestPackagesByResident.values());
+
+  const expiringPackages = latestPackages.filter((pkg) => {
+    if (!pkg.endDate) return false;
+    const endDate = new Date(pkg.endDate);
+    return endDate >= now && endDate <= reminderLimit && !pkg.reminderSent;
+  });
+  const expiredPackages = latestPackages.filter((pkg) => {
+    if (!pkg.endDate) return false;
+    const hasExpired = new Date(pkg.endDate) < now || pkg.usedHours >= pkg.totalHours;
+    return hasExpired && !pkg.expirationEmailSent;
+  });
+  return { expiringPackages, expiredPackages };
+}
+
 export async function checkAndSendReminders(): Promise<{ remindersSent: number; expirationsSent: number }> {
   console.log("[Email] Checking for packages requiring reminders...");
 
@@ -428,33 +463,7 @@ export async function checkAndSendReminders(): Promise<{ remindersSent: number; 
     const settings = await db.getAtelierSettings();
     const reminderDays = settings?.reminderDaysBeforeExpiry ?? 7;
     const now = new Date();
-    const sevenDaysFromNow = new Date(now.getTime() + reminderDays * 24 * 60 * 60 * 1000);
-
-    // Grouper les forfaits par résident et garder le plus récent (ID le plus élevé)
-    // Un résident qui a déjà payé la suite (forfait en file) n'a besoin ni du
-    // rappel ni de l'e-mail d'expiration : son prochain forfait démarre seul.
-    const residentsWithQueuedPackage = new Set(
-      allPackages.filter((p) => p.status === 'pending' && p.autoStart).map((p) => p.residentId)
-    );
-
-    const latestPackagesByResident = new Map<number, typeof allPackages[0]>();
-    for (const pkg of allPackages) {
-      if (pkg.status === 'pending') continue;
-      if (residentsWithQueuedPackage.has(pkg.residentId)) continue;
-      const existing = latestPackagesByResident.get(pkg.residentId);
-      if (!existing || pkg.id > existing.id) {
-        latestPackagesByResident.set(pkg.residentId, pkg);
-      }
-    }
-
-    const latestPackages = Array.from(latestPackagesByResident.values());
-
-    // Forfaits expirant dans 7 jours (uniquement le dernier forfait de chaque résident)
-    const expiringPackages = latestPackages.filter((pkg) => {
-      if (!pkg.endDate) return false; // Ignorer les forfaits en attente
-      const endDate = new Date(pkg.endDate);
-      return endDate >= now && endDate <= sevenDaysFromNow && !pkg.reminderSent;
-    });
+    const { expiringPackages, expiredPackages } = selectPackagesForReminderEmails(allPackages, now, reminderDays);
 
     console.log(`[Email] Found ${expiringPackages.length} packages expiring in 7 days`);
 
@@ -468,14 +477,6 @@ export async function checkAndSendReminders(): Promise<{ remindersSent: number; 
         }
       }
     }
-
-    // Forfaits expirés (uniquement le dernier forfait de chaque résident)
-    const expiredPackages = latestPackages.filter((pkg) => {
-      if (!pkg.endDate) return false; // Ignorer les forfaits en attente
-      const endDate = new Date(pkg.endDate);
-      const hasExpired = endDate < now || pkg.usedHours >= pkg.totalHours;
-      return hasExpired && !pkg.expirationEmailSent;
-    });
 
     console.log(`[Email] Found ${expiredPackages.length} expired packages`);
 
