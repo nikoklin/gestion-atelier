@@ -374,15 +374,26 @@ export async function findFinishedPackageShelves(
   return result;
 }
 
-// À prévenir : forfait fini depuis au moins 7 jours et e-mail pas encore envoyé.
+// Pouvant être signalée : forfait fini depuis au moins 7 jours, avis pas encore envoyé.
+export function isShelfReleaseDue(c: ShelfSituation, now: Date): boolean {
+  return !c.noticeSent && c.finishedAt.getTime() <= now.getTime() - SHELF_RELEASE_DELAY_DAYS * 86400000;
+}
+
 export async function findShelfReleaseCandidates(
   now: Date = new Date(),
   onlyResidentIds?: number[]
 ): Promise<ShelfSituation[]> {
-  const limit = now.getTime() - SHELF_RELEASE_DELAY_DAYS * 86400000;
-  return (await findFinishedPackageShelves(now, onlyResidentIds)).filter(
-    (c) => !c.noticeSent && c.finishedAt.getTime() <= limit
+  return (await findFinishedPackageShelves(now, onlyResidentIds)).filter((c) => isShelfReleaseDue(c, now));
+}
+
+// Étagères libres : nombre total (Paramètres) moins les numéros attribués à des
+// résidents actifs — même calcul que la carte « Étagères » du tableau de bord.
+export async function countFreeShelves(): Promise<number> {
+  const [settings, active] = await Promise.all([getAtelierSettings(), getActiveResidents()]);
+  const used = new Set(
+    active.map((r) => parseInt((r.shelfNumber ?? "").trim(), 10)).filter((n) => !isNaN(n))
   );
+  return Math.max(0, (settings?.totalShelves ?? 0) - used.size);
 }
 
 // Déjà prévenus et qui gardent encore leur étagère : à vider, puis à libérer par l'atelier.

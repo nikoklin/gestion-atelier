@@ -39,7 +39,7 @@ export function renderShelfNoticeForAtelier(c: db.ShelfSituation): { subject: st
     html: wrapEmailHtml(
       `
         <p style="margin-top: 0;">Le forfait de <strong>${name}</strong> est terminé depuis le ${formatParisDate(c.finishedAt, { day: "2-digit", month: "long", year: "numeric" })} et n'a pas été prolongé.</p>
-        <p>Son étagère <strong>n°${c.shelfNumber}</strong> est à vider.</p>
+        <p>Il n'y a plus d'étagère libre : son étagère <strong>n°${c.shelfNumber}</strong> est à vider (c'est le forfait terminé depuis le plus longtemps).</p>
         <p>Une fois l'étagère vidée, ouvre sa fiche et clique sur « Étagère vidée » : elle redevient non occupée, ${c.email ? "le résident en est informé par e-mail" : "le résident n'a pas d'adresse e-mail enregistrée (il faudra le prévenir directement)"} et il passe dans les résidents archivés.</p>
       `,
       {
@@ -66,18 +66,37 @@ export async function sendShelfReleaseNotice(c: db.ShelfSituation): Promise<bool
   return sent;
 }
 
-// Tâche quotidienne (avec les rappels de 9h) : signale à l'atelier les étagères
-// dont le forfait est fini depuis 7 jours sans être prolongé.
+// Étagère à faire vider : seulement quand il n'en reste plus aucune de libre,
+// une seule à la fois (pas de nouvel avis tant qu'une étagère signalée n'a pas
+// été vidée), en commençant par le forfait terminé depuis le plus longtemps.
+export function pickShelfToRelease(
+  situations: db.ShelfSituation[],
+  freeShelves: number,
+  now: Date
+): db.ShelfSituation | null {
+  if (freeShelves > 0) return null;
+  if (situations.some((c) => c.noticeSent)) return null;
+  const due = situations
+    .filter((c) => db.isShelfReleaseDue(c, now))
+    .sort((a, b) => a.finishedAt.getTime() - b.finishedAt.getTime());
+  return due[0] ?? null;
+}
+
+// Tâche quotidienne (avec les rappels de 9h).
 export async function checkAndSendShelfReleaseNotices(): Promise<{ notified: number }> {
-  const candidates = await db.findShelfReleaseCandidates();
-  let notified = 0;
-  for (const c of candidates) {
-    try {
-      if (await sendShelfReleaseNotice(c)) notified++;
-    } catch (err) {
-      console.error(`[Shelf] Échec de l'avis étagère pour le résident ${c.residentId}:`, err);
-    }
+  const now = new Date();
+  const [situations, freeShelves] = await Promise.all([db.findFinishedPackageShelves(now), db.countFreeShelves()]);
+  const shelf = pickShelfToRelease(situations, freeShelves, now);
+  if (!shelf) {
+    console.log(`[Shelf] Aucun avis : ${freeShelves} étagère(s) libre(s), ${situations.filter((c) => c.noticeSent).length} déjà à vider.`);
+    return { notified: 0 };
   }
-  console.log(`[Shelf] ${candidates.length} étagère(s) à signaler, ${notified} avis envoyé(s).`);
-  return { notified };
+  try {
+    const sent = await sendShelfReleaseNotice(shelf);
+    console.log(`[Shelf] Plus d'étagère libre : avis pour l'étagère n°${shelf.shelfNumber} (forfait fini le ${shelf.finishedAt.toISOString()}) ${sent ? "envoyé" : "non envoyé"}.`);
+    return { notified: sent ? 1 : 0 };
+  } catch (err) {
+    console.error(`[Shelf] Échec de l'avis étagère pour le résident ${shelf.residentId}:`, err);
+    return { notified: 0 };
+  }
 }

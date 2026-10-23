@@ -10,7 +10,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "./db";
 import * as db from "./db";
 import { residents, packages, attendances } from "../drizzle/schema";
-import { renderShelfReleasedEmail, renderShelfNoticeForAtelier } from "./shelfService";
+import { renderShelfReleasedEmail, renderShelfNoticeForAtelier, pickShelfToRelease } from "./shelfService";
 
 const d = (s: string) => new Date(s);
 const IDS = [990020, 990021, 990022, 990023, 990024, 990025, 990026];
@@ -145,6 +145,36 @@ describe("Contenu des e-mails « étagère à vider »", () => {
     expect(html).toContain("/residents/1");
     expect(html).toContain("Étagère vidée");
     expect(html).toContain("le résident en est informé par e-mail");
+    expect(html).toContain("Il n'y a plus d'étagère libre");
     expect(html).not.toContain("Bonne journée");
+  });
+});
+
+describe("Quelle étagère faire vider (plus aucune étagère libre)", () => {
+  const now = d("2026-03-30T09:00:00Z");
+  const shelf = (residentId: number, finishedAt: string, noticeSent = false) => ({
+    residentId, firstName: "TEST", lastName: `R${residentId}`, email: "", shelfNumber: String(residentId),
+    packageId: residentId, finishedAt: d(finishedAt), noticeSent,
+  });
+  const situations = [
+    shelf(1, "2026-03-15T00:00:00Z"),
+    shelf(2, "2026-03-01T00:00:00Z"), // fini depuis le plus longtemps
+    shelf(3, "2026-03-27T00:00:00Z"), // fini depuis 3 jours seulement
+  ];
+
+  it("il reste une étagère libre → aucun avis", () => {
+    expect(pickShelfToRelease(situations, 1, now)).toBeNull();
+  });
+
+  it("plus d'étagère libre → une seule, celle du forfait fini depuis le plus longtemps", () => {
+    expect(pickShelfToRelease(situations, 0, now)?.residentId).toBe(2);
+  });
+
+  it("une étagère déjà signalée pas encore vidée → pas de nouvel avis", () => {
+    expect(pickShelfToRelease([...situations, shelf(4, "2026-02-01T00:00:00Z", true)], 0, now)).toBeNull();
+  });
+
+  it("forfaits finis depuis moins de 7 jours seulement → aucun avis", () => {
+    expect(pickShelfToRelease([shelf(3, "2026-03-27T00:00:00Z")], 0, now)).toBeNull();
   });
 });
