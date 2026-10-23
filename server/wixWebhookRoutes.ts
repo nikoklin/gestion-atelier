@@ -225,7 +225,6 @@ export async function processWixPaymentEvent(event: any): Promise<void> {
         matchedType.label,
         startDate,
         endDate,
-        matchedType.totalMinutes,
         resident.id,
         newPackageId
       ).catch((err) => console.error("[WixWebhook] Échec envoi e-mail de confirmation:", err));

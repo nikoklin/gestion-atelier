@@ -607,7 +607,6 @@ export async function sendPackageActivatedEmail(
   packageLabel: string,
   startDate: Date,
   endDate: Date | null,
-  totalHours: number,
   residentId: number,
   packageId: number
 ): Promise<boolean> {
@@ -622,7 +621,6 @@ export async function sendPackageActivatedEmail(
     const endStr = endDate
       ? formatParisDate(endDate, { day: '2-digit', month: 'long', year: 'numeric' })
       : 'Non définie';
-    const totalHoursDisplay = Math.floor(totalHours / 60);
 
     const subject = `Ton forfait a été activé – À Tour de Bras`;
     const html = wrapEmailHtml(`
@@ -632,10 +630,6 @@ export async function sendPackageActivatedEmail(
           <tr>
             <td style="padding: 8px; border: 1px solid #eee; background: #f9f9f9; font-weight: bold;">Forfait</td>
             <td style="padding: 8px; border: 1px solid #eee;">${packageLabel}</td>
-          </tr>
-          <tr>
-            <td style="padding: 8px; border: 1px solid #eee; background: #f9f9f9; font-weight: bold;">Heures disponibles</td>
-            <td style="padding: 8px; border: 1px solid #eee;">${totalHoursDisplay}h</td>
           </tr>
           <tr>
             <td style="padding: 8px; border: 1px solid #eee; background: #f9f9f9; font-weight: bold;">Date de début</td>
@@ -675,7 +669,6 @@ db.setQueuedActivationListener(async (info) => {
     label,
     info.startDate,
     info.endDate,
-    info.totalHours,
     resident.id,
     info.packageId
   );

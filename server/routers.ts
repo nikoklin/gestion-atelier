@@ -826,7 +826,6 @@ export const appRouter = router({
               label,
               startDate,
               endDate,
-              pkg.totalHours,
               resident.id,
               pkg.id
             );
