@@ -26,6 +26,32 @@ forfait payé d'avance démarre dès la fin du forfait en cours ; liens de paiem
 - [ ] Idée liée : proposer les créneaux de groupes du planning (point 4) dans l'annonce
       (« atelier complet samedi : stage »)
 
+### Prolongation des forfaits pendant les fermetures (vacances)
+Aujourd'hui : il faut faire « + Jours » forfait par forfait, sinon les résidents perdent les semaines de fermeture.
+- [ ] Paramètres : liste des périodes de fermeture (du … au …, libellé ex. « Vacances de Noël »),
+      ajout / modification / suppression
+- [ ] À l'enregistrement d'une fermeture : chaque forfait dont la période chevauche la fermeture est
+      prolongé du nombre de jours de chevauchement (fermeture partielle = prolongation partielle) ;
+      forfaits en attente « payés d'avance » : leur démarrage suit la nouvelle fin du forfait en cours
+- [ ] Nouveaux forfaits créés plus tard (admin ou paiement Wix) dont la période couvre une fermeture
+      déjà enregistrée : prolongés automatiquement à la création
+- [ ] Une même fermeture ne prolonge jamais deux fois le même forfait (garder la trace : quel forfait,
+      quelle fermeture, combien de jours) ; supprimer ou raccourcir une fermeture retire la prolongation
+- [ ] Recalcul derrière : rappel « fin de forfait » (remettre `reminderSent` à faux si la nouvelle date
+      repousse le rappel), e-mail « étagère à vider », statut actif / terminé, contrôle de nuit
+- [ ] Compte rendu avant de valider : « 12 forfaits prolongés de 14 jours, 3 de 5 jours » + bouton
+      « Annuler » (historique `undoActions` existant)
+- [ ] Option : prévenir les résidents concernés par e-mail (s'appuie sur le point 1, annonce)
+- [ ] Tests : chevauchement total / partiel / aucun, forfait en file d'attente, double application,
+      suppression de la fermeture
+À trancher en début de session :
+- Source des fermetures : saisie dans l'appli, ou lecture des vacances déjà notées dans l'agenda Google
+  « front desk » (même accès Google que le point 4) ?
+- Les dimanches et jours fériés comptent-ils dans les jours prolongés, ou seulement les jours où l'atelier
+  aurait été ouvert aux résidents ?
+- Un forfait qui se termine pendant la fermeture : prolongé seulement des jours restants à partir du
+  début de la fermeture (logique) — à confirmer
+
 ### 4. Affluence des résidents
 Décisions de Nicolas : pointage inchangé (on ne demande pas l'espace), on compte les résidents présents ;
 affichage dans l'espace résident uniquement ; période = maintenant + 7 jours.
