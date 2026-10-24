@@ -244,3 +244,84 @@
   /* Hauteur plein écran sans barre d'adresse */
   html, body, #root { height: 100dvh; overflow: hidden; }
 }
+
+/* ── Tableaux sur téléphone : une fiche par ligne au lieu de déborder ──
+   Les libellés viennent de l'attribut data-label posé par le composant Table.
+   Hors couche (@layer) pour passer devant les utilitaires des cellules
+   (whitespace-nowrap, text-right…), sauf .hidden qu'on laisse masquer. */
+@media (max-width: 639px) {
+  table[data-slot="table"] thead {
+    display: none;
+  }
+  table[data-slot="table"],
+  table[data-slot="table"] tbody,
+  table[data-slot="table"] tfoot,
+  table[data-slot="table"] tr {
+    display: block;
+    width: 100%;
+  }
+  table[data-slot="table"] tr {
+    padding: 0.5rem 0;
+  }
+  /* Libellé flottant à gauche, valeur alignée à droite (une cellule peut
+     contenir plusieurs éléments : ils restent groupés à droite). */
+  table[data-slot="table"] td:not(.hidden):not(.max-sm\:hidden) {
+    display: flow-root;
+    padding: 0.25rem 0.5rem;
+    text-align: right;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  table[data-slot="table"] td::before {
+    content: attr(data-label);
+    float: left;
+    max-width: 45%;
+    margin-right: 1rem;
+    text-align: left;
+    font-weight: 500;
+    color: var(--muted-foreground);
+  }
+  table[data-slot="table"] td > .flex,
+  table[data-slot="table"] td > .inline-flex {
+    justify-content: flex-end;
+  }
+  table[data-slot="table"] td:empty:not(.hidden):not(.max-sm\:hidden) {
+    display: none;
+  }
+  /* Première cellule = titre de la fiche (nom, date, type…) */
+  table[data-slot="table"] td:first-child:not(.hidden):not(.max-sm\:hidden) {
+    text-align: left;
+    font-weight: 600;
+  }
+  table[data-slot="table"] td:first-child > .flex,
+  table[data-slot="table"] td:first-child > .inline-flex {
+    justify-content: flex-start;
+  }
+  table[data-slot="table"] td:first-child::before,
+  table[data-slot="table"] td[data-label=""]::before {
+    display: none;
+  }
+  table[data-slot="table"] td[data-label=""] {
+    text-align: center;
+  }
+
+  /* Tableaux triables : les titres restent visibles, en pastilles cliquables */
+  table[data-slot="table"][data-sortable] thead {
+    display: block;
+  }
+  table[data-slot="table"][data-sortable] thead tr {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.75rem;
+    padding: 0 0.5rem 0.5rem;
+  }
+  table[data-slot="table"][data-sortable] th:not(.cursor-pointer) {
+    display: none;
+  }
+  table[data-slot="table"][data-sortable] th {
+    height: auto;
+    padding: 0.25rem 0;
+    font-size: 0.75rem;
+    color: var(--muted-foreground);
+  }
+}

@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
+import { Table } from "@/components/ui/table";
 
 export default function Settings() {
   const [isExporting, setIsExporting] = useState(false);
@@ -358,7 +359,7 @@ export default function Settings() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <Table>
                 <thead>
                   <tr className="border-b">
                     <th className="text-left py-2 pr-4 font-medium text-muted-foreground">Libellé</th>
@@ -405,7 +406,7 @@ export default function Settings() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </Table>
             </div>
           )}
         </CardContent>

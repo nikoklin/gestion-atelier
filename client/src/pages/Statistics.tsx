@@ -9,6 +9,7 @@ import {
 } from 'recharts';
 import { Clock, Users, TrendingUp, Package, Euro, AlertTriangle, CalendarX } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Table } from "@/components/ui/table";
 
 const COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#6366f1', '#f97316'];
 
@@ -308,7 +309,7 @@ export default function Statistics() {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <Table>
               <thead>
                 <tr className="border-b">
                   <th className="text-left p-2">Type de forfait</th>
@@ -333,7 +334,7 @@ export default function Statistics() {
                   <td className="text-right p-2">{(pkgStats?.totalRevenue ?? 0).toLocaleString('fr-FR')} €</td>
                 </tr>
               </tbody>
-            </table>
+            </Table>
           </div>
         </CardContent>
       </Card>
@@ -352,7 +353,7 @@ export default function Statistics() {
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <Table>
                 <thead>
                   <tr className="border-b">
                     <th className="text-left p-2">Type de forfait</th>
@@ -373,7 +374,7 @@ export default function Statistics() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </Table>
             </div>
           </CardContent>
         </Card>
@@ -390,7 +391,7 @@ export default function Statistics() {
             <div className="text-center py-8 text-muted-foreground text-sm">Aucune donnée sur cette période</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <Table>
                 <thead>
                   <tr className="border-b">
                     <th className="text-left p-2">Résident</th>
@@ -431,7 +432,7 @@ export default function Statistics() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </Table>
             </div>
           )}
         </CardContent>
@@ -446,7 +447,7 @@ export default function Statistics() {
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <Table>
                 <thead>
                   <tr className="border-b">
                     <th className="text-left p-2">Résident</th>
@@ -469,7 +470,7 @@ export default function Statistics() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </Table>
             </div>
           </CardContent>
         </Card>

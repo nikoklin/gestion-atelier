@@ -2,13 +2,50 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * Recopie le titre de chaque colonne sur ses cellules (data-label) : sur
+ * téléphone, le tableau s'affiche en fiches empilées « Titre : valeur »
+ * (voir index.css) au lieu de déborder sur le côté.
+ */
+function labelCellsFromHeaders(table: HTMLTableElement) {
+  const headers = Array.from(table.querySelectorAll("thead tr:last-child th"));
+  const labels = headers.map(th => (th as HTMLElement).innerText.trim());
+  table.toggleAttribute(
+    "data-sortable",
+    headers.some(th => th.classList.contains("cursor-pointer"))
+  );
+  for (const row of Array.from(table.querySelectorAll("tbody tr, tfoot tr"))) {
+    let col = 0;
+    for (const cell of Array.from((row as HTMLTableRowElement).cells)) {
+      const span = cell.colSpan || 1;
+      const label = span > 1 ? "" : labels[col] ?? "";
+      if (cell.getAttribute("data-label") !== label) {
+        cell.setAttribute("data-label", label);
+      }
+      col += span;
+    }
+  }
+}
+
 function Table({ className, ...props }: React.ComponentProps<"table">) {
+  const ref = React.useRef<HTMLTableElement>(null);
+
+  React.useLayoutEffect(() => {
+    const table = ref.current;
+    if (!table) return;
+    labelCellsFromHeaders(table);
+    const observer = new MutationObserver(() => labelCellsFromHeaders(table));
+    observer.observe(table, { childList: true, subtree: true, characterData: true });
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div
       data-slot="table-container"
       className="relative w-full overflow-x-auto"
     >
       <table
+        ref={ref}
         data-slot="table"
         className={cn("w-full caption-bottom text-sm", className)}
         {...props}

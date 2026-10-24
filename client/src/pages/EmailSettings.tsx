@@ -220,7 +220,7 @@ export default function EmailSettings() {
               </div>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row">
               <Button
                 onClick={handleSendReminders}
                 disabled={isSending}
@@ -266,7 +266,7 @@ export default function EmailSettings() {
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="reminder">Rappel</TabsTrigger>
                 <TabsTrigger value="expiration">Expiration</TabsTrigger>
-                <TabsTrigger value="session">Résumé Session</TabsTrigger>
+                <TabsTrigger value="session"><span className="hidden sm:inline">Résumé&nbsp;</span>Session</TabsTrigger>
               </TabsList>
 
               <TabsContent value="reminder" className="space-y-4 mt-4">

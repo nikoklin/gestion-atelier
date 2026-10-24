@@ -265,20 +265,20 @@ export default function Residents() {
               <CardTitle>Gestion des Résidents</CardTitle>
               <CardDescription className="hidden sm:block">Liste de tous les résidents de l'atelier</CardDescription>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="relative">
+            <div className="flex w-full items-center gap-2 sm:w-auto">
+              <div className="relative flex-1 sm:flex-none">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
                   placeholder="Rechercher un résident..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-8 w-[200px] sm:w-[260px]"
+                  className="pl-8 w-full sm:w-[260px]"
                 />
               </div>
               <Button onClick={() => setIsCreateDialogOpen(true)} size="sm">
                 <Plus className="mr-2 h-4 w-4" />
-                Nouveau Résident
+                Nouveau<span className="hidden sm:inline">&nbsp;Résident</span>
               </Button>
             </div>
           </div>
@@ -318,14 +318,14 @@ export default function Residents() {
                 >
                   Heures Restantes <SortIcon field="remainingMinutes" />
                 </TableHead>
-                <TableHead className="hidden lg:table-cell">Heures Hors Forfait</TableHead>
+                <TableHead className="sm:max-lg:hidden">Heures Hors Forfait</TableHead>
                 <TableHead
                   className="cursor-pointer select-none hover:bg-muted/50"
                   onClick={() => handleSort("endDate")}
                 >
                   Fin de Validité <SortIcon field="endDate" />
                 </TableHead>
-                <TableHead className="hidden sm:table-cell">Étagère</TableHead>
+                <TableHead>Étagère</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -339,6 +339,7 @@ export default function Residents() {
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
                       {resident.firstName}
+                      <span className="sm:hidden">{resident.lastName}</span>
                       {resident.hasMissedCheckout && (
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -364,7 +365,7 @@ export default function Residents() {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>{resident.lastName}</TableCell>
+                  <TableCell className="max-sm:hidden">{resident.lastName}</TableCell>
                   <TableCell>
                     {resident.hasOpenAttendance ? (
                       <Tooltip>
@@ -429,7 +430,7 @@ export default function Residents() {
                     })()}
                   </TableCell>
                   <TableCell className="whitespace-nowrap">{getRemainingHours(resident.activePackage).display}</TableCell>
-                  <TableCell className="hidden lg:table-cell">
+                  <TableCell className="sm:max-lg:hidden">
                     {(() => {
                       const outOfPackageMinutes = resident.outOfPackageMinutes || 0;
                       if (outOfPackageMinutes === 0) {
@@ -442,10 +443,10 @@ export default function Residents() {
                       );
                     })()}
                   </TableCell>
-                  <TableCell className="hidden sm:table-cell whitespace-nowrap">
+                  <TableCell className="whitespace-nowrap">
                     {resident.activePackage && resident.activePackage.endDate ? formatDate(resident.activePackage.endDate) : "-"}
                   </TableCell>
-                  <TableCell className="hidden sm:table-cell text-center">
+                  <TableCell className="text-center">
                     {resident.shelfNumber ? (
                       <span className="inline-flex items-center justify-center rounded bg-muted text-xs font-medium px-2 py-0.5">
                         {resident.shelfNumber}

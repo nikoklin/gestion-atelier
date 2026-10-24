@@ -134,10 +134,10 @@ export default function CheckIn() {
           size={isLandscape ? "sm" : "lg"}
           onClick={() => handleResidentSelect(resident)}
           disabled={checkInMutation.isPending}
-          className={`h-auto ${isLandscape ? 'py-1.5 text-sm' : 'py-3 text-base'} font-medium flex-1 transition-all justify-between ${btnClass}`}
+          className={`h-auto ${isLandscape ? 'py-1.5 text-sm' : 'py-3 text-base'} font-medium flex-1 min-w-0 whitespace-normal text-left transition-all justify-between ${btnClass}`}
         >
           <span className="font-semibold">{resident.firstName} {resident.lastName}</span>
-          <span className={`${isLandscape ? 'text-xs' : 'text-sm'} font-normal ml-2`}>
+          <span className={`${isLandscape ? 'text-xs' : 'text-sm'} font-normal ml-2 shrink-0`}>
             {isPresentWithExpiredPackage ? (
               <span className="text-red-600 font-semibold">Hors forfait • {checkInTime} →</span>
             ) : hasOpenAttendance ? (

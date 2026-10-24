@@ -606,8 +606,8 @@ const utils = trpc.useUtils();
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="informations">Informations</TabsTrigger>
-          <TabsTrigger value="pointages">Historique des Pointages</TabsTrigger>
-          <TabsTrigger value="emails">Historique des E-mails</TabsTrigger>
+          <TabsTrigger value="pointages"><span className="hidden sm:inline">Historique des </span>Pointages</TabsTrigger>
+          <TabsTrigger value="emails"><span className="hidden sm:inline">Historique des </span>E-mails</TabsTrigger>
         </TabsList>
 
         {/* Onglet Informations */}
@@ -624,10 +624,10 @@ const utils = trpc.useUtils();
               <CardDescription>Informations du résident</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="min-w-0">
                   <p className="text-sm font-medium text-muted-foreground">Email</p>
-                  <p>{resident.email}</p>
+                  <p className="break-words">{resident.email}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Téléphone</p>
