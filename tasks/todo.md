@@ -41,11 +41,33 @@ affichage dans l'espace résident uniquement ; période = maintenant + 7 jours.
 - [ ] Mise en cache de la lecture des agendas (pas un appel Google à chaque ouverture de page)
 - [ ] À trancher en début de session : le nombre de résidents présents est-il visible par tous les résidents ?
 
-### Préalable recommandé (faille de sécurité, non choisi par Nicolas à ce stade)
-L'espace résident n'est pas protégé : `residentAuth.getInfo` renvoie sans connexion la fiche complète
-(e-mail, téléphone, PIN, pointages) pour n'importe quel numéro de résident ; `createManualSession`,
-`checkIn` et `checkOut` sont aussi ouverts à tout internet. Le point 4 ajoute des infos dans cet espace :
-au minimum, ne plus renvoyer e-mail / téléphone / PIN / signature avant de commencer.
+### Sécurité (à faire EN PREMIER : le point 4 ajoute des infos dans l'espace résident)
+Constaté le 24/10 sur une copie locale : sans aucune connexion,
+`/api/trpc/residentAuth.getInfo?input={"json":{"residentId":1}}` renvoie nom, e-mail, téléphone, PIN et
+pointages ; en essayant 1, 2, 3… on récupère toute la base (sujet RGPD).
+- [ ] Correctif immédiat, sans effet visible pour les résidents : `getInfo` ne renvoie plus e-mail,
+      téléphone, PIN, signature ni les champs internes (juste prénom, forfait, pointages) ;
+      `residents.getActiveByResidentId` (public lui aussi) : même vérification
+- [ ] Protéger l'espace résident : aujourd'hui `loginByEmail` ouvre l'espace avec la seule adresse e-mail
+      et l'identifiant est gardé dans `localStorage` (n'importe qui peut le changer). À décider avec Nicolas :
+      lien personnel secret envoyé par e-mail (session résident signée, comme pour l'admin) ou code PIN
+      (le champ `pin` existe en base mais ne sert nulle part)
+- [ ] `residentAuth.createManualSession` (public) : n'importe qui peut ajouter une séance sur le compte
+      de n'importe quel résident et consommer ses heures → exiger la session résident ci-dessus
+- [ ] `attendances.checkIn` / `checkOut` (publics) : la page de pointage utilise déjà `residents.list`
+      (réservé à l'admin), donc la tablette est connectée en admin → passer ces actions en accès protégé
+      ne change rien pour la tablette ; vérifier `checkOut` et `getOpenAttendances` (qui est présent)
+- [ ] Tablette de pointage connectée avec le compte admin (cookie d'un an) : quelqu'un devant la tablette
+      peut ouvrir /residents ou /settings. À décider : compte « tablette » limité au pointage
+- [ ] Clé d'API Wix à régénérer (noté en phase 5, à confirmer que c'est fait)
+- [ ] Tests : un test par point ci-dessus (accès refusé sans session, champs sensibles absents)
+
+Autres points relevés le 24/10 (moins urgents) :
+- [ ] Pas d'intégration continue : chaque envoi sur `main` part en production sans lancer les tests
+      (GitHub Actions + base MySQL de test ; attention : les tests écrivent dans la base indiquée par
+      DATABASE_URL, ne jamais pointer sur la base de production)
+- [ ] Contrôle de nuit : envoyer aussi un e-mail « rien à signaler », sinon l'absence d'e-mail ne permet
+      pas de savoir si la tâche a tourné
 
 ## À signaler à Nicolas
 - Un forfait créé depuis l'admin a sa date de fin à 00:00 UTC du dernier jour : il cesse d'être valable
