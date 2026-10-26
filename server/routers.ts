@@ -386,11 +386,29 @@ export const appRouter = router({
           .sort((a, b) => a.id - b.id);
         const nextPackage = queuedPackages[0] ?? null;
 
+        // Accès public (identifiant seul, sans session) : uniquement ce que l'espace
+        // résident affiche — ni e-mail, ni téléphone, ni nom complet, ni champs
+        // internes, pour qu'en essayant des identifiants on ne récupère pas la base.
         return {
-          resident,
-          activePackage,
-          nextPackage,
-          attendances,
+          resident: {
+            id: resident.id,
+            firstName: resident.firstName,
+            lastName: resident.lastName ? `${resident.lastName.trim().charAt(0)}.` : "",
+          },
+          activePackage: activePackage && {
+            packageType: activePackage.packageType,
+            totalHours: activePackage.totalHours,
+            usedHours: activePackage.usedHours,
+            startDate: activePackage.startDate,
+            endDate: activePackage.endDate,
+          },
+          nextPackage: nextPackage && { packageType: nextPackage.packageType },
+          attendances: attendances.map((a) => ({
+            id: a.id,
+            checkInTime: a.checkInTime,
+            checkOutTime: a.checkOutTime,
+            durationMinutes: a.durationMinutes,
+          })),
         };
       }),
 
@@ -662,7 +680,7 @@ export const appRouter = router({
         return { packages: enrichedPackages, attendances: enrichedAttendances };
       }),
 
-    getActiveByResidentId: publicProcedure
+    getActiveByResidentId: protectedProcedure
       .input(z.object({ residentId: z.number() }))
       .query(async ({ input }) => {
         return await db.getActivePackageByResidentId(input.residentId);

@@ -71,9 +71,10 @@ affichage dans l'espace résident uniquement ; période = maintenant + 7 jours.
 Constaté le 24/10 sur une copie locale : sans aucune connexion,
 `/api/trpc/residentAuth.getInfo?input={"json":{"residentId":1}}` renvoie nom, e-mail, téléphone, PIN et
 pointages ; en essayant 1, 2, 3… on récupère toute la base (sujet RGPD).
-- [ ] Correctif immédiat, sans effet visible pour les résidents : `getInfo` ne renvoie plus e-mail,
-      téléphone, PIN, signature ni les champs internes (juste prénom, forfait, pointages) ;
-      `residents.getActiveByResidentId` (public lui aussi) : même vérification
+- [x] Correctif immédiat (26/10) : `getInfo` ne renvoie plus que prénom + initiale du nom, forfait
+      (type, heures, dates) et horaires des pointages — plus d'e-mail, téléphone, signature ni champs
+      internes (l'en-tête de l'espace affiche « Niko K. ») ; `packages.getActiveByResidentId` (inutilisé
+      par le site) réservé à l'admin. Tests : `server/residentPrivacy.test.ts`
 - [ ] Protéger l'espace résident : aujourd'hui `loginByEmail` ouvre l'espace avec la seule adresse e-mail
       et l'identifiant est gardé dans `localStorage` (n'importe qui peut le changer). À décider avec Nicolas :
       lien personnel secret envoyé par e-mail (session résident signée, comme pour l'admin) ou code PIN
@@ -85,7 +86,7 @@ pointages ; en essayant 1, 2, 3… on récupère toute la base (sujet RGPD).
       ne change rien pour la tablette ; vérifier `checkOut` et `getOpenAttendances` (qui est présent)
 - [ ] Tablette de pointage connectée avec le compte admin (cookie d'un an) : quelqu'un devant la tablette
       peut ouvrir /residents ou /settings. À décider : compte « tablette » limité au pointage
-- [ ] Clé d'API Wix à régénérer (noté en phase 5, à confirmer que c'est fait)
+- [x] Clé d'API Wix régénérée (faite, puis tous les secrets changés après l'incident Railway du 22/10)
 - [ ] Tests : un test par point ci-dessus (accès refusé sans session, champs sensibles absents)
 
 Autres points relevés le 24/10 (moins urgents) :

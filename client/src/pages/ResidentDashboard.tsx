@@ -176,7 +176,6 @@ export default function ResidentDashboard() {
               <h1 className="text-xl font-bold">
                 {resident.firstName} {resident.lastName}
               </h1>
-              <p className="text-sm text-muted-foreground">{resident.email}</p>
             </div>
           </div>
             <Dialog open={sessionDialogOpen} onOpenChange={(open) => { setSessionDialogOpen(open); if (!open) { setSessionError(""); setSessionCheckInH(""); setSessionCheckInM("00"); setSessionCheckOutH(""); setSessionCheckOutM("00"); } }}>
