@@ -1,7 +1,7 @@
 /**
- * Accès publics (sans connexion) à l'espace résident : en essayant des
- * identifiants, on ne doit récupérer ni e-mail, ni téléphone, ni nom complet,
- * ni champs internes. Résident de test 990130, nettoyé à la fin.
+ * Espace résident : sans session rien n'est renvoyé ; même connecté, la réponse
+ * ne contient ni e-mail, ni téléphone, ni nom complet, ni champs internes.
+ * Résident de test 990130, nettoyé à la fin.
  */
 import "dotenv/config";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
@@ -14,6 +14,8 @@ import { appRouter } from "./routers";
 const RID = 990130;
 const DAY = 86400000;
 const visitor = appRouter.createCaller({ req: {} as any, res: {} as any, user: null } as any);
+// Le résident lui-même, connecté à son espace (session résident).
+const self = appRouter.createCaller({ req: {} as any, res: {} as any, user: null, residentId: RID } as any);
 
 async function cleanup() {
   const database = await getDb();
@@ -23,7 +25,7 @@ async function cleanup() {
   await database.delete(residents).where(eq(residents.id, RID));
 }
 
-describe.skipIf(!process.env.DATABASE_URL)("Espace résident : données exposées sans connexion", () => {
+describe.skipIf(!process.env.DATABASE_URL)("Espace résident : données exposées", () => {
   beforeAll(async () => {
     await cleanup();
     const t = Date.now();
@@ -37,8 +39,12 @@ describe.skipIf(!process.env.DATABASE_URL)("Espace résident : données exposée
   });
   afterAll(cleanup);
 
-  it("getInfo : seulement prénom, initiale du nom, forfait et horaires des pointages", async () => {
-    const info = await visitor.residentAuth.getInfo({ residentId: RID });
+  it("getInfo sans session : refusé, même avec un identifiant", async () => {
+    await expect(visitor.residentAuth.getInfo({ residentId: RID })).rejects.toThrow(/Connecte-toi/);
+  });
+
+  it("getInfo (résident connecté) : seulement prénom, initiale du nom, forfait et horaires des pointages", async () => {
+    const info = await self.residentAuth.getInfo();
     expect(info.resident).toEqual({ id: RID, firstName: "Camille", lastName: "S." });
     expect(Object.keys(info.activePackage!).sort()).toEqual(["endDate", "packageType", "startDate", "totalHours", "usedHours"]);
     expect(Object.keys(info.attendances[0]).sort()).toEqual(["checkInTime", "checkOutTime", "durationMinutes", "id"]);

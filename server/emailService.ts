@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import * as db from "./db";
 import { getPublicSiteUrl } from "./_core/publicSiteUrl";
+import { residentSpaceUrl } from "./_core/residentSession";
 import { formatParisDate } from "./_core/timezone";
 
 // Envoi via l'API HTTPS de Brevo (https://api.brevo.com/v3/smtp/email).
@@ -151,8 +152,19 @@ export function emailButton(href: string, label: string): string {
         </table>`;
 }
 
-export function dashboardUrlFor(residentId: number): string {
-  return `${getPublicSiteUrl()}/resident/dashboard?id=${residentId}`;
+// Bouton « Mon espace » des e-mails : lien personnel signé qui connecte le résident en un clic.
+export function dashboardUrlFor(residentId: number): Promise<string> {
+  return residentSpaceUrl(residentId);
+}
+
+// Lien de connexion à l'espace résident (demandé depuis la page « Mon espace »).
+export async function sendResidentLoginLinkEmail(email: string, firstName: string, url: string): Promise<boolean> {
+  const html = wrapEmailHtml(`
+      <p style="margin-top: 0;">Bonjour ${firstName},</p>
+      <p>Voici ton lien pour ouvrir ton espace personnel à l'atelier. Il est valable 7 jours ; une fois ouvert, ton téléphone ou ton ordinateur restera connecté.</p>
+      <p>Si tu n'as pas demandé ce lien, tu peux simplement ignorer cet e-mail.</p>
+  `, { actionButton: { href: url, label: "Ouvrir mon espace" } });
+  return sendEmail(email, "Ton lien pour ouvrir ton espace – À Tour de Bras", html);
 }
 
 // Adresse qui reçoit les e-mails destinés à l'atelier (alertes, étagères à vider) :
@@ -278,7 +290,7 @@ export async function sendReminderEmail(
   const totalHours = Math.floor(pkg.totalHours / 60);
 
   const baseUrl = getPublicSiteUrl();
-  const dashboardUrl = `${baseUrl}/resident/dashboard?id=${residentId}`;
+  const dashboardUrl = await dashboardUrlFor(residentId);
 
   const paymentLinksHtml = await buildPaymentLinksHtml(residentId);
 
@@ -323,7 +335,7 @@ export async function sendExpirationEmail(
   const usedHours = Math.floor(pkg.usedHours / 60);
 
   const baseUrl = getPublicSiteUrl();
-  const dashboardUrl = `${baseUrl}/resident/dashboard?id=${residentId}`;
+  const dashboardUrl = await dashboardUrlFor(residentId);
 
   const paymentLinksHtml = await buildPaymentLinksHtml(residentId);
 
@@ -531,7 +543,7 @@ export async function sendGuideEmail(email: string, firstName: string, residentI
           <p style="line-height: 1.7;">N'hésite pas à consulter le <a href="https://www.atourdebras-atelier.com/#planning" style="color: #c8860a;">planning de l'atelier</a> pour éviter de venir lors d'une privatisation par exemple.</p>
 
           <p style="line-height: 1.7;">N'hésite pas à nous contacter si tu as des questions. À très vite à l'atelier !</p>
-    `, { dashboardUrl: residentId ? dashboardUrlFor(residentId) : `${getPublicSiteUrl()}/resident/login` });
+    `, { dashboardUrl: residentId ? await dashboardUrlFor(residentId) : `${getPublicSiteUrl()}/resident/login` });
 
     const sent = await sendEmail(email, subject, html, false, [
       { name: "guide-des-bonnes-pratiques.pdf", content: guidePdf.toString("base64") },
@@ -593,7 +605,7 @@ export async function sendPaymentQueuedEmail(
       <p>Nous avons bien reçu ton paiement pour le forfait <strong>${packageLabel}</strong>. Merci !</p>
       <p>Ton forfait actuel n'est pas encore terminé : le nouveau démarrera automatiquement à la fin de l'actuel (aux alentours du <strong>${startStr}</strong>, ou dès que ses heures seront épuisées si c'est avant). Tu n'as rien à faire.</p>
       <p>À bientôt à l'atelier !</p>
-  `, { dashboardUrl: dashboardUrlFor(residentId) });
+  `, { dashboardUrl: await dashboardUrlFor(residentId) });
   const sent = await sendEmail(email, subject, html);
   await db.createEmailLog({ residentId, packageId, emailType: 'payment_queued', recipientEmail: email, subject, success: sent }).catch(() => {});
   return sent;
@@ -617,7 +629,7 @@ export async function sendPackageActivatedEmail(
       return false;
     }
     const siteUrl = getPublicSiteUrl();
-    const dashboardUrl = `${siteUrl}/resident/dashboard?id=${residentId}`;
+    const dashboardUrl = await dashboardUrlFor(residentId);
     const startStr = formatParisDate(startDate, { day: '2-digit', month: 'long', year: 'numeric' });
     const endStr = endDate
       ? formatParisDate(endDate, { day: '2-digit', month: 'long', year: 'numeric' })

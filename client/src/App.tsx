@@ -12,6 +12,7 @@ import CheckIn from "./pages/CheckIn";
 import EmailSettings from "./pages/EmailSettings";
 import ResidentLogin from "./pages/ResidentLogin";
 import ResidentDashboard from "./pages/ResidentDashboard";
+import ResidentAccess from "./pages/ResidentAccess";
 import Settings from "./pages/Settings";
 
 import Statistics from "./pages/Statistics";
@@ -27,6 +28,7 @@ function Router() {
       <Route path="/checkin" component={CheckIn} />
       <Route path="/resident/login" component={ResidentLogin} />
       <Route path="/resident/dashboard" component={ResidentDashboard} />
+      <Route path="/resident/acces" component={ResidentAccess} />
       <Route path="/fix-checkout" component={FixCheckout} />
       <Route path="/">
         <DashboardLayout>

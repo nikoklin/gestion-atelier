@@ -2,6 +2,8 @@ import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import bcrypt from "bcryptjs";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { signSession } from "./_core/session";
+import { RESIDENT_COOKIE_NAME, residentSpaceUrl, signResidentSession, verifyResidentLink } from "./_core/residentSession";
+import type { TrpcContext } from "./_core/context";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { emailRouter } from "./emailRouter";
@@ -49,6 +51,18 @@ function getTotalHours(packageType: string): number {
       return 0;
   }
 }
+
+// Espace résident : le résident connecté (cookie de session résident) — l'identifiant
+// envoyé par le navigateur est alors ignoré ; sinon un admin connecté (tablette de
+// l'atelier, bouton « Mon espace ») peut ouvrir l'espace du résident choisi.
+function residentIdForSpace(ctx: TrpcContext, requestedId?: number): number {
+  if (ctx.residentId) return ctx.residentId;
+  if (ctx.user && requestedId) return requestedId;
+  throw new TRPCError({ code: "UNAUTHORIZED", message: "Connecte-toi à ton espace avec le lien reçu par e-mail." });
+}
+
+const LOGIN_LINK_INTERVAL_MS = 2 * 60 * 1000;
+const loginLinkSentAt = new Map<string, number>();
 
 // Pointage enregistré mais qui fait dépasser le forfait : avertissement renvoyé
 // avec la réponse (l'enregistrement a bien eu lieu, ce n'est pas une erreur).
@@ -357,31 +371,64 @@ export const appRouter = router({
   }),
 
   residentAuth: router({
-    loginByEmail: publicProcedure
-      .input(z.object({ email: z.string().email() }))
+    // Envoie le lien de connexion. Même réponse que l'adresse soit connue ou non
+    // (on ne doit pas pouvoir deviner qui est inscrit), 1 envoi max par adresse
+    // toutes les 2 minutes.
+    requestLoginLink: publicProcedure
+      .input(z.object({ email: z.string().trim().email() }))
       .mutation(async ({ input }) => {
-        const resident = await db.getResidentByEmail(input.email);
-        if (!resident || !resident.isActive) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Résident non trouvé ou inactif" });
+        const key = input.email.toLowerCase();
+        const now = Date.now();
+        const last = loginLinkSentAt.get(key);
+        if (!last || now - last >= LOGIN_LINK_INTERVAL_MS) {
+          loginLinkSentAt.set(key, now);
+          const resident = await db.getResidentByEmail(key);
+          if (resident && resident.isActive && resident.email) {
+            const { sendResidentLoginLinkEmail } = await import("./emailService");
+            await sendResidentLoginLinkEmail(resident.email, resident.firstName, await residentSpaceUrl(resident.id))
+              .catch((err) => console.error("[ResidentAuth] Échec d'envoi du lien de connexion:", err));
+          }
         }
-        return { success: true, residentId: resident.id };
+        return { success: true } as const;
       }),
 
+    // Ouvre l'espace à partir du lien reçu par e-mail : l'appareil est reconnu 1 an.
+    redeemLink: publicProcedure
+      .input(z.object({ token: z.string().min(1) }))
+      .mutation(async ({ ctx, input }) => {
+        const residentId = await verifyResidentLink(input.token);
+        const resident = residentId ? await db.getResidentById(residentId) : null;
+        if (!resident || !resident.isActive) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Ce lien a expiré ou n'est plus valable." });
+        }
+        ctx.res.cookie(RESIDENT_COOKIE_NAME, await signResidentSession(resident.id), {
+          ...getSessionCookieOptions(ctx.req),
+          maxAge: ONE_YEAR_MS,
+        });
+        return { success: true } as const;
+      }),
+
+    logout: publicProcedure.mutation(({ ctx }) => {
+      ctx.res.clearCookie(RESIDENT_COOKIE_NAME, { ...getSessionCookieOptions(ctx.req), maxAge: -1 });
+      return { success: true } as const;
+    }),
+
     getInfo: publicProcedure
-      .input(z.object({ residentId: z.number() }))
-      .query(async ({ input }) => {
-        const resident = await db.getResidentById(input.residentId);
+      .input(z.object({ residentId: z.number().optional() }).optional())
+      .query(async ({ ctx, input }) => {
+        const residentId = residentIdForSpace(ctx, input?.residentId);
+        const resident = await db.getResidentById(residentId);
         if (!resident) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Résident non trouvé" });
         }
 
-        const activePackage = await db.getDisplayPackageForResident(input.residentId);
+        const activePackage = await db.getDisplayPackageForResident(residentId);
         // Afficher TOUS les pointages du résident (y compris ceux sans forfait,
         // ex: session enregistrée alors qu'aucun forfait n'était actif).
-        const attendances = await db.getAttendancesByResidentId(input.residentId);
+        const attendances = await db.getAttendancesByResidentId(residentId);
 
         // Forfait déjà payé qui démarrera à la fin du forfait en cours.
-        const queuedPackages = (await db.getPackagesByResidentId(input.residentId))
+        const queuedPackages = (await db.getPackagesByResidentId(residentId))
           .filter((p) => p.status === 'pending' && p.autoStart)
           .sort((a, b) => a.id - b.id);
         const nextPackage = queuedPackages[0] ?? null;
@@ -414,11 +461,12 @@ export const appRouter = router({
 
     createManualSession: publicProcedure
       .input(z.object({
-        residentId: z.number(),
+        residentId: z.number().optional(),
         checkInTime: z.string(),
         checkOutTime: z.string(),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input: rawInput }) => {
+        const input = { ...rawInput, residentId: residentIdForSpace(ctx, rawInput.residentId) };
         const resident = await db.getResidentById(input.residentId);
         if (!resident || !resident.isActive) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Résident non trouvé ou inactif' });

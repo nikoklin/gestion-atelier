@@ -5,7 +5,6 @@
 import * as db from "./db";
 import { isPackageExpired, minutesToHoursAndMinutes } from "../shared/packageHelpers";
 import { Resident, InsertPackage } from "../drizzle/schema";
-import { getPublicSiteUrl } from "./_core/publicSiteUrl";
 
 export interface CheckoutResult {
   success: boolean;
@@ -109,9 +108,8 @@ export async function performCheckout(options: CheckoutOptions): Promise<Checkou
   // Envoyer l'e-mail de fin de session avec conversion via helper
   if (residentEmail && residentFirstName) {
     const { hours, minutes } = minutesToHoursAndMinutes(remainingMinutes);
-    const { sendSessionSummaryEmail } = await import('./emailService');
-    const baseUrl = getPublicSiteUrl();
-    const dashboardUrl = `${baseUrl}/resident/dashboard?id=${residentId}`;
+    const { sendSessionSummaryEmail, dashboardUrlFor } = await import('./emailService');
+    const dashboardUrl = await dashboardUrlFor(residentId);
     // Envoyé en arrière-plan : la borne n'attend pas l'envoi de l'e-mail.
     void sendSessionSummaryEmail(
       residentEmail,

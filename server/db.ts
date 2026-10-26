@@ -183,8 +183,9 @@ export async function getResidentByEmail(email: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  // Sans tenir compte des majuscules ni des espaces (TiDB compare les textes à l'octet près).
   const result = await db.select().from(residents)
-    .where(and(eq(residents.email, email), eq(residents.isDeleted, false)))
+    .where(and(sql`lower(trim(${residents.email})) = ${email.trim().toLowerCase()}`, eq(residents.isDeleted, false)))
     .limit(1);
   return result.length > 0 ? result[0] : null;
 }

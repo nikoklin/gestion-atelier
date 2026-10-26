@@ -75,12 +75,32 @@ pointages ; en essayant 1, 2, 3… on récupère toute la base (sujet RGPD).
       (type, heures, dates) et horaires des pointages — plus d'e-mail, téléphone, signature ni champs
       internes (l'en-tête de l'espace affiche « Niko K. ») ; `packages.getActiveByResidentId` (inutilisé
       par le site) réservé à l'admin. Tests : `server/residentPrivacy.test.ts`
-- [ ] Protéger l'espace résident : aujourd'hui `loginByEmail` ouvre l'espace avec la seule adresse e-mail
-      et l'identifiant est gardé dans `localStorage` (n'importe qui peut le changer). À décider avec Nicolas :
-      lien personnel secret envoyé par e-mail (session résident signée, comme pour l'admin) ou code PIN
-      (le champ `pin` existe en base mais ne sert nulle part)
-- [ ] `residentAuth.createManualSession` (public) : n'importe qui peut ajouter une séance sur le compte
-      de n'importe quel résident et consommer ses heures → exiger la session résident ci-dessus
+- [x] Protéger l'espace résident (points 2 et 3, fait le 26/10) — **décidé le 26/10 : lien personnel par e-mail**,
+      appareil reconnu 1 an, bouton « Mon espace » de la tablette inchangé. Plan :
+  - [x] Session résident : cookie signé séparé de l'admin (`resident_session`, JWT HS256 avec JWT_SECRET,
+        `{ residentId, kind: "resident" }`, 1 an, httpOnly, sameSite lax) ; lu dans le contexte tRPC
+        (`ctx.residentId`) ; refusé si le résident est archivé ou inactif
+  - [x] Lien de connexion : jeton signé sans stockage (`kind: "resident_link"`, valable 7 jours), adresse
+        `/resident/acces?t=…` ; pas de migration de base
+  - [x] `residentAuth.requestLoginLink({ email })` : envoie le lien (e-mail au design habituel) ; réponse
+        identique que l'adresse soit connue ou non (« si l'adresse est enregistrée, un lien a été envoyé ») ;
+        1 envoi max toutes les 2 min par adresse ; `loginByEmail` (inutilisé) supprimé
+  - [x] `residentAuth.redeemLink({ token })` : vérifie le jeton, pose le cookie, ouvre l'espace ; lien
+        expiré ou faux → page « lien expiré » avec le formulaire pour en recevoir un nouveau
+  - [x] `getInfo` et `createManualSession` : résident = celui de la session (l'identifiant envoyé est
+        ignoré) ; sinon admin connecté (tablette) avec l'identifiant choisi ; sinon refus
+  - [x] Boutons « Mon espace » des e-mails automatiques (résumé de séance, rappel, fin de forfait, forfait
+        activé, paiement reçu…) : lien personnel signé au lieu de `?id=` → connexion directe en un clic
+  - [x] Page `/resident/login` : formulaire e-mail (au lieu de la liste des résidents, réservée à l'admin) ;
+        anciennes adresses `?id=` déjà envoyées → renvoient vers ce formulaire
+  - [x] Bouton « Se déconnecter » dans l'espace résident (ordinateur partagé)
+  - [x] Tests : sans session → refus ; avec session → ses propres données même si un autre identifiant est
+        envoyé ; admin → n'importe quel résident ; lien expiré / falsifié / d'un résident archivé → refus ;
+        adresse inconnue → même réponse et aucun e-mail ; limite d'envoi
+  - [x] Vérification dans le navigateur (en local) : demande de lien, ouverture, déconnexion, ancien lien
+- [x] `residentAuth.createManualSession` (public) : n'importe qui peut ajouter une séance sur le compte
+      de n'importe quel résident et consommer ses heures → exiger la session résident ci-dessus (inclus
+      dans le plan ci-dessus)
 - [ ] `attendances.checkIn` / `checkOut` (publics) : la page de pointage utilise déjà `residents.list`
       (réservé à l'admin), donc la tablette est connectée en admin → passer ces actions en accès protégé
       ne change rien pour la tablette ; vérifier `checkOut` et `getOpenAttendances` (qui est présent)

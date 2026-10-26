@@ -37,22 +37,15 @@ export default function ResidentDashboard() {
   const [sessionCheckOutM, setSessionCheckOutM] = useState("00");
   const [sessionError, setSessionError] = useState("");
 
-  // Récupérer l'ID de façon stable : URL en priorité, sinon localStorage
+  // Le serveur identifie le résident par sa session (lien reçu par e-mail). L'identifiant
+  // mémorisé ne sert qu'à la tablette de l'atelier (connectée en admin, bouton « Mon espace »).
   const [residentId] = useState<number>(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlId = urlParams.get("id");
-    if (urlId) {
-      const id = parseInt(urlId);
-      localStorage.setItem("residentId", id.toString());
-      return id;
-    }
-    return parseInt(localStorage.getItem("residentId") || "0");
+    try { return parseInt(localStorage.getItem("residentId") || "0"); } catch { return 0; }
   });
 
-  // Nettoyer l'URL si un ID était présent
+  // Anciens liens « ?id= » des e-mails déjà envoyés : l'identifiant n'ouvre plus rien seul.
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get("id")) {
+    if (new URLSearchParams(window.location.search).get("id")) {
       window.history.replaceState({}, '', '/resident/dashboard');
     }
   }, []);
@@ -99,22 +92,29 @@ export default function ResidentDashboard() {
     const checkInDate = new Date(`${localDate}T${checkInVal}:00`);
     const checkOutDate = new Date(`${localDate}T${checkOutVal}:00`);
     createSessionMutation.mutate({
-      residentId: residentId,
+      ...(residentId > 0 ? { residentId } : {}),
       checkInTime: checkInDate.toISOString(),
       checkOutTime: checkOutDate.toISOString(),
     });
   };
 
-  const { data, isLoading } = trpc.residentAuth.getInfo.useQuery(
-    { residentId: residentId },
-    { enabled: residentId > 0 }
+  const { data, isLoading, error } = trpc.residentAuth.getInfo.useQuery(
+    residentId > 0 ? { residentId } : undefined,
+    { retry: false }
   );
 
+  // Pas de session (ni tablette connectée) : page de demande du lien.
   useEffect(() => {
-    if (!residentId) {
+    if (error?.data?.code === "UNAUTHORIZED") setLocation("/resident/login");
+  }, [error]);
+
+  const logoutMutation = trpc.residentAuth.logout.useMutation({
+    onSettled: () => {
+      try { localStorage.removeItem("residentId"); } catch { /* navigation privée */ }
+      utils.residentAuth.getInfo.reset();
       setLocation("/resident/login");
-    }
-  }, [residentId]);
+    },
+  });
 
   const formatDate = (date: Date | string) => {
     return new Date(date).toLocaleDateString("fr-FR", {
@@ -176,6 +176,14 @@ export default function ResidentDashboard() {
               <h1 className="text-xl font-bold">
                 {resident.firstName} {resident.lastName}
               </h1>
+              <button
+                type="button"
+                className="text-sm text-muted-foreground underline-offset-2 hover:underline"
+                onClick={() => logoutMutation.mutate()}
+                disabled={logoutMutation.isPending}
+              >
+                Se déconnecter
+              </button>
             </div>
           </div>
             <Dialog open={sessionDialogOpen} onOpenChange={(open) => { setSessionDialogOpen(open); if (!open) { setSessionError(""); setSessionCheckInH(""); setSessionCheckInM("00"); setSessionCheckOutH(""); setSessionCheckOutM("00"); } }}>
