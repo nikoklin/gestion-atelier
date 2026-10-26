@@ -115,6 +115,32 @@ describe.skipIf(!process.env.DATABASE_URL)("Modification et suppression des poin
     });
   });
 
+  describe("heures et dates d'un forfait terminé, avec un forfait en cours", () => {
+    beforeEach(() => setup(true));
+
+    it("+ Heures, − Heures, + Jours, − Jours, Date de début : tous refusés, forfait inchangé", async () => {
+      const before = (await db.getPackageById(9909001))!;
+      const id = 9909001;
+      for (const action of [
+        () => caller.packages.addHours({ packageId: id, hours: 1, minutes: 0 }),
+        () => caller.packages.subtractHours({ packageId: id, hours: 0, minutes: 30 }),
+        () => caller.packages.extendDate({ packageId: id, days: 3 }),
+        () => caller.packages.subtractDays({ packageId: id, days: 1 }),
+        () => caller.packages.updateStartDate({ packageId: id, startDate: new Date(Date.now() - 50 * DAY) }),
+      ]) {
+        await expect(action()).rejects.toThrow(/ne peuvent plus être modifiées/);
+      }
+      const after = (await db.getPackageById(9909001))!;
+      expect([after.usedHours, after.startDate, after.endDate]).toEqual([before.usedHours, before.startDate, before.endDate]);
+      expect(await db.getAttendancesByResidentId(RID)).toHaveLength(3); // aucun ajout/retrait d'heures créé
+    });
+
+    it("le forfait en cours reste modifiable", async () => {
+      await caller.packages.extendDate({ packageId: 9909002, days: 3 });
+      await caller.packages.addHours({ packageId: 9909002, hours: 1, minutes: 0 });
+    });
+  });
+
   it("sans forfait en cours : la suppression reste possible", async () => {
     await setup(false);
     await caller.attendances.delete({ id: 9909001 });

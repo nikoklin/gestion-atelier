@@ -71,3 +71,28 @@ export function parisDateTimeToDate(dateStr: string, hour: number, minute: numbe
   result = utcGuess - getParisOffsetMs(new Date(result));
   return new Date(result);
 }
+
+// Début (00:00) et fin (23:59:59) du jour civil de Paris contenant cet instant.
+export function startOfParisDay(date: Date | string): Date {
+  return parisDateTimeToDate(getParisDateString(date), 0, 0);
+}
+
+export function endOfParisDay(date: Date | string): Date {
+  return new Date(parisDateTimeToDate(getParisDateString(date), 23, 59).getTime() + 59_000);
+}
+
+// Jour civil "YYYY-MM-DD" décalé de n jours (calcul en jours, insensible aux
+// changements d'heure).
+export function addDaysToDateString(dateStr: string, days: number): string {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
+}
+
+// Nombre de jours civils (à Paris) entre deux instants.
+export function parisDaysBetween(from: Date | string, to: Date | string): number {
+  const toUtcDay = (s: string) => {
+    const [year, month, day] = s.split("-").map(Number);
+    return Date.UTC(year, month - 1, day);
+  };
+  return Math.round((toUtcDay(getParisDateString(to)) - toUtcDay(getParisDateString(from))) / 86400000);
+}

@@ -10,7 +10,7 @@ import { TRPCError } from "@trpc/server";
 import * as db from "./db";
 import { validateToken, markTokenUsed } from "./actionTokenService";
 import { withUndo, residentOfPackage, residentOfAttendance } from "./undoService";
-import { formatParisDate, formatParisTime, getParisDateString, parisDateTimeToDate } from "./_core/timezone";
+import { addDaysToDateString, endOfParisDay, formatParisDate, formatParisTime, getParisDateString, parisDateTimeToDate, parisDaysBetween, startOfParisDay } from "./_core/timezone";
 import * as emailService from "./emailService";
 import { eq } from "drizzle-orm";
 import { attendances } from "../drizzle/schema";
@@ -55,6 +55,19 @@ function getTotalHours(packageType: string): number {
 function overflowWarning(totalMinutes: number, excessMinutes: number): string {
   const fmt = (m: number) => `${Math.floor(m / 60) > 0 ? Math.floor(m / 60) + "h" : ""}${m % 60 > 0 ? (m % 60) + "min" : ""}` || "0h";
   return `Pointage enregistré, mais il dépasse le total du forfait (${fmt(totalMinutes)}). Dépassement : ${fmt(excessMinutes)}, comptabilisé en heures hors forfait.`;
+}
+
+// Un nouveau forfait est en cours : les forfaits terminés gardent leurs heures et
+// leurs dates (le forfait en cours a été calculé à partir d'eux).
+async function assertPackageNotLocked(pkg: { id: number; residentId: number; status: string }) {
+  if (pkg.status === "pending") return;
+  const current = await db.getActivePackageByResidentId(pkg.residentId);
+  if (current && current.id !== pkg.id) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "Ce forfait est terminé et un autre forfait est en cours : ses heures et ses dates ne peuvent plus être modifiées.",
+    });
+  }
 }
 
 // Un forfait est en cours : les pointages antérieurs (forfaits terminés, heures
@@ -761,8 +774,10 @@ export const appRouter = router({
           totalHours,
           usedHours: 0,
           deductedMinutes: 0,
-          startDate,
-          endDate: resolvedEndDate,
+          // La date choisie arrive à minuit UTC (1h ou 2h à Paris) : le forfait court
+          // du début de ce jour jusqu'à la fin du jour affiché comme date de fin.
+          startDate: input.startDate ? startOfParisDay(startDate) : startDate,
+          endDate: input.startDate ? endOfParisDay(resolvedEndDate) : resolvedEndDate,
           isActive: true,
           reminderSent: false,
           expirationEmailSent: false,
@@ -962,6 +977,7 @@ export const appRouter = router({
         if (!pkg) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Forfait non trouvé" });
         }
+        await assertPackageNotLocked(pkg);
 
         const additionalMinutes = input.hours * 60 + input.minutes;
         if (additionalMinutes <= 0) {
@@ -1000,6 +1016,7 @@ export const appRouter = router({
         if (!pkg) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Forfait non trouvé" });
         }
+        await assertPackageNotLocked(pkg);
         if (!pkg.endDate) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "Impossible de modifier la date d'un forfait en attente" });
         }
@@ -1032,6 +1049,7 @@ export const appRouter = router({
         if (!pkg) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Forfait non trouvé" });
         }
+        await assertPackageNotLocked(pkg);
 
         const subtractMinutes = input.hours * 60 + input.minutes;
         if (subtractMinutes <= 0) {
@@ -1083,6 +1101,7 @@ export const appRouter = router({
         if (!pkg) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Forfait non trouvé" });
         }
+        await assertPackageNotLocked(pkg);
         if (!pkg.endDate || !pkg.startDate) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "Impossible de modifier la date d'un forfait en attente" });
         }
@@ -1122,12 +1141,17 @@ export const appRouter = router({
         if (!pkg) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Forfait non trouvé" });
         }
-        // La date de fin suit la date de début : la durée du forfait (jours ajoutés
-        // ou retirés à la main compris) est conservée.
-        const durationMs = new Date(pkg.endDate).getTime() - new Date(pkg.startDate).getTime();
-        const endDate = new Date(input.startDate.getTime() + durationMs);
+        await assertPackageNotLocked(pkg);
+        // La date de fin suit la date de début : la durée du forfait en jours (jours
+        // ajoutés ou retirés à la main compris) est conservée. Début à 00:00 et fin
+        // à 23:59 à Paris (la date choisie arrive à minuit UTC).
+        const startDate = startOfParisDay(input.startDate);
+        const durationDays = parisDaysBetween(pkg.startDate, pkg.endDate);
+        const endDate = endOfParisDay(
+          parisDateTimeToDate(addDaysToDateString(getParisDateString(startDate), durationDays), 12, 0)
+        );
 
-        await db.updatePackage(input.packageId, { startDate: input.startDate, endDate });
+        await db.updatePackage(input.packageId, { startDate, endDate });
 
         // Réattribue les pointages selon la nouvelle plage de validité du forfait.
         await db.fullRecalculateResident(pkg.residentId);

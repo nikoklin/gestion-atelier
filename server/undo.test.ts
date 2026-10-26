@@ -10,6 +10,7 @@ import { getDb } from "./db";
 import * as db from "./db";
 import { residents, packages, attendances } from "../drizzle/schema";
 import { appRouter } from "./routers";
+import { getParisDateString, formatParisTime, parisDaysBetween } from "./_core/timezone";
 
 vi.stubGlobal("fetch", async () => new Response("{}", { status: 201 }));
 
@@ -88,14 +89,16 @@ describe.skipIf(!process.env.DATABASE_URL)("Annuler (page de gestion des forfait
     expect(await state()).toEqual(initial);
   });
 
-  it("changer la date de début décale la date de fin d'autant (durée conservée)", async () => {
+  it("changer la date de début décale la date de fin d'autant (durée en jours conservée, de 00:00 à 23:59 à Paris)", async () => {
     const pkg = (await db.getPackageById(PKG))!;
-    const duration = new Date(pkg.endDate).getTime() - new Date(pkg.startDate).getTime();
+    const days = parisDaysBetween(pkg.startDate, pkg.endDate);
     const newStart = new Date(new Date(pkg.startDate).getTime() - 3 * 86400000);
     await caller.packages.updateStartDate({ packageId: PKG, startDate: newStart });
     const moved = (await db.getPackageById(PKG))!;
-    expect(new Date(moved.startDate).getTime()).toBe(Math.floor(newStart.getTime() / 1000) * 1000);
-    expect(new Date(moved.endDate).getTime() - new Date(moved.startDate).getTime()).toBe(duration);
+    expect(getParisDateString(moved.startDate)).toBe(getParisDateString(newStart));
+    expect(formatParisTime(moved.startDate)).toBe("00:00");
+    expect(parisDaysBetween(moved.startDate, moved.endDate)).toBe(days);
+    expect(formatParisTime(moved.endDate)).toBe("23:59");
     await caller.undo.undoLast({ residentId: RID });
     expect(await state()).toEqual(initial);
   });

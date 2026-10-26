@@ -96,5 +96,6 @@ Autres points relevés le 24/10 (moins urgents) :
       pas de savoir si la tâche a tourné
 
 ## À signaler à Nicolas
-- Un forfait créé depuis l'admin a sa date de fin à 00:00 UTC du dernier jour : il cesse d'être valable
-  vers 02h00 (Paris) ce jour-là, alors que l'écran affiche cette date comme date d'expiration.
+- ~~Un forfait créé depuis l'admin a sa date de fin à 00:00 UTC du dernier jour~~ — corrigé le 23/10/2026 :
+  du jour choisi 00:00 jusqu'au jour de fin 23:59 (heure de Paris), aussi pour « changer la date de début ».
+  Les forfaits créés avant gardent leurs dates.

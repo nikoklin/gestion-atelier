@@ -116,6 +116,9 @@ export default function ResidentPackages() {
   const attendances = pkgData?.attendances;
   // Pointages antérieurs au forfait en cours (forfaits terminés, hors forfait reporté) : ni modifiables ni supprimables.
   const isLockedAttendance = (a: any) => !!validPackage && a.packageId !== validPackage.id;
+  // Forfait terminé alors qu'un autre est en cours : heures et dates figées.
+  const isLockedPackage = (pkg: any) => !!validPackage && pkg.status !== 'pending' && pkg.id !== validPackage.id;
+  const lockedPackageTitle = "Forfait terminé : heures et dates non modifiables tant qu'un autre forfait est en cours";
   const lockedTitle = "Pointage d'un forfait terminé : modification et suppression impossibles tant qu'un autre forfait est en cours";
   
   // Les heures hors forfait sont maintenant stockées directement dans resident.outOfPackageMinutes
@@ -675,6 +678,8 @@ export default function ResidentPackages() {
                       <Button
                         variant="outline"
                         size="sm"
+                        disabled={isLockedPackage(pkg)}
+                        title={isLockedPackage(pkg) ? lockedPackageTitle : undefined}
                         onClick={() => {
                           setSelectedPackageId(pkg.id);
                           setIsAddHoursDialogOpen(true);
@@ -685,6 +690,8 @@ export default function ResidentPackages() {
                       <Button
                         variant="outline"
                         size="sm"
+                        disabled={isLockedPackage(pkg)}
+                        title={isLockedPackage(pkg) ? lockedPackageTitle : undefined}
                         onClick={() => {
                           setSelectedPackageId(pkg.id);
                           setIsSubtractHoursDialogOpen(true);
@@ -695,6 +702,8 @@ export default function ResidentPackages() {
                       <Button
                         variant="outline"
                         size="sm"
+                        disabled={isLockedPackage(pkg)}
+                        title={isLockedPackage(pkg) ? lockedPackageTitle : undefined}
                         onClick={() => {
                           setSelectedPackageId(pkg.id);
                           setEditStartDateValue(new Date(pkg.startDate).toISOString().split('T')[0]);
@@ -706,6 +715,8 @@ export default function ResidentPackages() {
                       <Button
                         variant="outline"
                         size="sm"
+                        disabled={isLockedPackage(pkg)}
+                        title={isLockedPackage(pkg) ? lockedPackageTitle : undefined}
                         onClick={() => {
                           setSelectedPackageId(pkg.id);
                           setIsExtendDateDialogOpen(true);
@@ -716,6 +727,8 @@ export default function ResidentPackages() {
                       <Button
                         variant="outline"
                         size="sm"
+                        disabled={isLockedPackage(pkg)}
+                        title={isLockedPackage(pkg) ? lockedPackageTitle : undefined}
                         onClick={() => {
                           setSelectedPackageId(pkg.id);
                           setIsSubtractDaysDialogOpen(true);
