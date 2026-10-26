@@ -33,15 +33,9 @@ export default function ResidentProfile() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showEditAttendanceDialog, setShowEditAttendanceDialog] = useState(false);
-  const [showDeleteAttendanceDialog, setShowDeleteAttendanceDialog] = useState(false);
-  const [showCreateAttendanceDialog, setShowCreateAttendanceDialog] = useState(false);
   const [selectedAttendance, setSelectedAttendance] = useState<any>(null);
   const [editCheckInTime, setEditCheckInTime] = useState("");
   const [editCheckOutTime, setEditCheckOutTime] = useState("");
-  
-  // États pour le formulaire de création de pointage
-  const [createCheckInTime, setCreateCheckInTime] = useState("");
-  const [createCheckOutTime, setCreateCheckOutTime] = useState("");
   
   // États pour le formulaire de modification
   const [editFirstName, setEditFirstName] = useState("");
@@ -333,31 +327,6 @@ const utils = trpc.useUtils();
     },
   });
 
-  const deleteAttendanceMutation = trpc.attendances.delete.useMutation({
-    onSuccess: () => {
-      toast.success("Pointage supprimé avec succès");
-      invalidateAttendanceRelated();
-      setShowDeleteAttendanceDialog(false);
-      setSelectedAttendance(null);
-    },
-    onError: (error) => {
-      toast.error(`Erreur : ${error.message}`);
-    },
-  });
-  
-  const createAttendanceMutation = trpc.attendances.create.useMutation({
-    onSuccess: (data) => {
-      if (data.warning) toast.warning(data.warning, { duration: 8000 });
-      else toast.success("Pointage créé avec succès");
-      invalidateAttendanceRelated();
-      setShowCreateAttendanceDialog(false);
-      // Les refs seront réinitialisées à la prochaine ouverture du dialogue
-    },
-    onError: (error) => {
-      toast.error(error.message, { duration: 8000 });
-    },
-  });
-
   const handleEditAttendance = (attendance: any) => {
     setSelectedAttendance(attendance);
     const checkIn = new Date(attendance.checkInTime);
@@ -384,11 +353,6 @@ const utils = trpc.useUtils();
     setShowEditAttendanceDialog(true);
   };
 
-  const handleDeleteAttendance = (attendance: any) => {
-    setSelectedAttendance(attendance);
-    setShowDeleteAttendanceDialog(true);
-  };
-
   const confirmEditAttendance = () => {
     if (!selectedAttendance) return;
     // Reconstruire le datetime de sortie en combinant la date d'arrivée + l'heure de sortie
@@ -406,52 +370,6 @@ const utils = trpc.useUtils();
     updateAttendanceMutation.mutate({
       id: selectedAttendance.id,
       checkInTime: new Date(editCheckInTime).toISOString(),
-      checkOutTime: checkOutISO,
-    });
-  };
-
-  const confirmDeleteAttendance = () => {
-    if (!selectedAttendance) return;
-    deleteAttendanceMutation.mutate({ id: selectedAttendance.id });
-  };
-  
-  const handleOpenCreateDialog = () => {
-    // Pré-remplir avec la date et heure actuelles
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const currentDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
-    
-    setShowCreateAttendanceDialog(true);
-    
-    setCreateCheckInTime(currentDateTime);
-    // Pré-remplir l'heure de sortie avec l'heure actuelle (format HH:mm)
-    setCreateCheckOutTime(`${hours}:${minutes}`);
-  };
-  
-  const confirmCreateAttendance = () => {
-    if (!createCheckInTime) {
-      toast.error("L'heure d'arrivée est obligatoire");
-      return;
-    }
-    // Reconstruire le datetime de sortie en combinant la date d'arrivée + l'heure de sortie
-    let checkOutISO: string | null = null;
-    if (createCheckOutTime && createCheckOutTime.trim().length > 0) {
-      const checkInDate = createCheckInTime.slice(0, 10);
-      const checkOutDateTime = new Date(`${checkInDate}T${createCheckOutTime}`);
-      const checkInDateTime = new Date(createCheckInTime);
-      if (checkOutDateTime <= checkInDateTime) {
-        toast.error("L'heure de départ doit être postérieure à l'heure d'arrivée");
-        return;
-      }
-      checkOutISO = checkOutDateTime.toISOString();
-    }
-    createAttendanceMutation.mutate({
-      residentId,
-      checkInTime: new Date(createCheckInTime).toISOString(),
       checkOutTime: checkOutISO,
     });
   };
@@ -1033,84 +951,6 @@ const utils = trpc.useUtils();
             </Button>
             <Button onClick={confirmEditAttendance}>
               Enregistrer
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialogue de suppression de pointage */}
-      <Dialog open={showDeleteAttendanceDialog} onOpenChange={setShowDeleteAttendanceDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirmer la suppression</DialogTitle>
-            <DialogDescription>
-              Êtes-vous sûr de vouloir supprimer ce pointage ? Cette action est irréversible.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteAttendanceDialog(false)}>
-              Annuler
-            </Button>
-            <Button variant="destructive" onClick={confirmDeleteAttendance}>
-              Supprimer
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Dialogue de création de pointage */}
-      <Dialog open={showCreateAttendanceDialog} onOpenChange={setShowCreateAttendanceDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Créer un pointage</DialogTitle>
-            <DialogDescription>
-              Créez un nouveau pointage pour ce résident
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">Heure d'arrivée *</label>
-              <input
-                type="datetime-local"
-                value={createCheckInTime}
-                onChange={(e) => {
-                  const newCheckIn = e.target.value;
-                  setCreateCheckInTime(newCheckIn);
-                  if (createCheckOutTime && newCheckIn) {
-                    if (createCheckOutTime.slice(0, 10) !== newCheckIn.slice(0, 10))
-                      setCreateCheckOutTime("");
-                  }
-                }}
-                className="w-full px-3 py-2 border rounded-md"
-                required
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Heure de départ</label>
-              <div className="flex items-center gap-2 mt-1">
-                <input
-                  type="time"
-                  value={createCheckOutTime}
-                  onChange={(e) => setCreateCheckOutTime(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-md"
-                />
-                {createCheckInTime && (
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">
-                    le {new Date(createCheckInTime).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                  </span>
-                )}
-              </div>
-              <p className="text-sm text-muted-foreground mt-1">
-                Effacez le champ pour créer un pointage en cours
-              </p>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreateAttendanceDialog(false)}>
-              Annuler
-            </Button>
-            <Button onClick={confirmCreateAttendance}>
-              Créer
             </Button>
           </DialogFooter>
         </DialogContent>
