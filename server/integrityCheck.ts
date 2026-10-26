@@ -1,5 +1,5 @@
 import { and, eq, gte } from "drizzle-orm";
-import { getDb, recalculateAllResidents } from "./db";
+import { getDb, packageEffectiveEnd, recalculateAllResidents } from "./db";
 import { attendances, emailLogs, packages, residents } from "../drizzle/schema";
 import { OUT_OF_PACKAGE_LIMIT_MINUTES } from "./limits";
 import { getParisDateString, formatParisDate } from "./_core/timezone";
@@ -111,11 +111,15 @@ export async function runIntegrityCheck(
       }
     }
 
-    // Deux forfaits valables en même temps (chevauchement de plus d'un jour).
+    // Deux forfaits valables en même temps (chevauchement de plus d'un jour). Un
+    // forfait épuisé en heures s'arrête à son épuisement, pas à sa date de fin :
+    // le forfait suivant démarre alors normalement avant cette date.
+    const residentAttendances = attendanceRows.filter((a) => a.residentId === residentId);
+    const endOf = new Map(real.map((p) => [p.id, packageEffectiveEnd(p, residentAttendances).getTime()]));
     const sorted = [...real].sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
     for (let i = 0; i < sorted.length; i++) {
       for (let j = i + 1; j < sorted.length; j++) {
-        const overlap = Math.min(new Date(sorted[i].endDate).getTime(), new Date(sorted[j].endDate).getTime())
+        const overlap = Math.min(endOf.get(sorted[i].id)!, endOf.get(sorted[j].id)!)
           - Math.max(new Date(sorted[i].startDate).getTime(), new Date(sorted[j].startDate).getTime());
         if (overlap > DAY_MS) {
           add({ severity: "todo", rule: "package_overlap", residentId,

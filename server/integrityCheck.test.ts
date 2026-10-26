@@ -16,7 +16,7 @@ const now = new Date();
 const daysAgo = (n: number) => new Date(now.getTime() - n * 86400000);
 const daysAhead = (n: number) => new Date(now.getTime() + n * 86400000);
 const d = (s: string) => new Date(s);
-const IDS = Array.from({ length: 13 }, (_, i) => 990030 + i); // 990030 … 990042
+const IDS = Array.from({ length: 14 }, (_, i) => 990030 + i); // 990030 … 990043
 
 async function cleanup() {
   const database = await getDb();
@@ -91,6 +91,18 @@ describe.skipIf(!process.env.DATABASE_URL)("Contrôle d'incohérences (règles)"
     await db.createPackage({ id: 9903602, residentId: IDS[6], packageType: "custom_999", totalHours: 600, usedHours: 0,
       startDate: d("2026-02-01"), endDate: d("2026-04-01"), isActive: false } as any);
     expect(await rulesFor(IDS[6])).toContain("package_overlap");
+  });
+
+  it("forfait épuisé en heures avant sa date de fin, puis forfait suivant : pas de chevauchement", async () => {
+    await newResident(IDS[13]);
+    // 1h épuisée le 10/02 alors que la date de fin est le 01/03 ; le suivant démarre le 10/02.
+    await db.createPackage({ id: 9904301, residentId: IDS[13], packageType: "custom_999", totalHours: 60, usedHours: 60,
+      startDate: d("2026-02-01"), endDate: d("2026-03-01"), isActive: false } as any);
+    await db.createAttendance({ residentId: IDS[13], packageId: 9904301, checkInTime: d("2026-02-10T09:00:00Z"),
+      checkOutTime: d("2026-02-10T10:00:00Z"), durationMinutes: 60, attendanceType: "normal" } as any);
+    await db.createPackage({ id: 9904302, residentId: IDS[13], packageType: "custom_999", totalHours: 600, usedHours: 0,
+      startDate: d("2026-02-10T10:00:00Z"), endDate: d("2026-03-10"), isActive: false } as any);
+    expect(await rulesFor(IDS[13])).not.toContain("package_overlap");
   });
 
   it("forfait payé d'avance qui n'a pas démarré alors que le précédent est terminé", async () => {

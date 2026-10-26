@@ -1094,6 +1094,21 @@ export function setQueuedActivationListener(
 // autoStart) quand le résident n'a plus de forfait valable. Début = fin du
 // forfait précédent (date de fin, ou dernier pointage s'il a été épuisé
 // avant), pour qu'il n'y ait ni trou ni heures hors forfait entre les deux.
+// Fin réelle d'un forfait : sa date de fin, ou plus tôt le moment où ses heures
+// se sont épuisées (dernier pointage ou ajustement qui lui est rattaché).
+export function packageEffectiveEnd(
+  pkg: { id: number; totalHours: number; usedHours: number; endDate: Date | string },
+  residentAttendances: { packageId: number | null; checkInTime: Date | string; checkOutTime: Date | string | null }[]
+): Date {
+  const endDate = new Date(pkg.endDate);
+  if (pkg.totalHours - pkg.usedHours > 0) return endDate;
+  const outs = residentAttendances
+    .filter((a) => a.packageId === pkg.id && a.checkOutTime)
+    .map((a) => new Date(a.checkOutTime!).getTime());
+  if (outs.length === 0) return endDate;
+  return new Date(Math.min(endDate.getTime(), Math.max(...outs)));
+}
+
 export async function activateNextQueuedPackage(residentId: number): Promise<boolean> {
   const db = await getDb();
   if (!db) return false;
@@ -1113,35 +1128,20 @@ export async function activateNextQueuedPackage(residentId: number): Promise<boo
   const next = queued[0];
   const now = new Date();
 
-  // Fin du forfait précédent = la plus tôt entre sa date de fin (si passée) et
-  // le moment où ses heures ont été épuisées.
+  // Le forfait en file démarre à la fin réelle du dernier forfait terminé (date
+  // de fin, ou épuisement des heures s'il a eu lieu avant) — et non à la fin du
+  // forfait dont la date de fin est la plus lointaine, qui a pu s'épuiser bien avant.
   const others = (await getPackagesByResidentId(residentId)).filter(
     (p) => p.status !== 'pending' && p.id !== next.id
   );
-  const previous = others.sort(
-    (a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime()
-  )[0];
   let start = now;
-  if (previous) {
-    const candidates: Date[] = [];
-    const previousEnd = new Date(previous.endDate);
-    if (previousEnd <= now) candidates.push(previousEnd);
-    if (previous.totalHours - previous.usedHours <= 0) {
-      const lastAttendance = await db
-        .select({ checkOutTime: attendances.checkOutTime })
-        .from(attendances)
-        .where(and(
-          eq(attendances.packageId, previous.id),
-          eq(attendances.attendanceType, 'normal')
-        ))
-        .orderBy(desc(attendances.checkInTime))
-        .limit(1);
-      const exhaustedAt = lastAttendance[0]?.checkOutTime;
-      candidates.push(exhaustedAt ? new Date(exhaustedAt) : now);
-    }
-    if (candidates.length > 0) {
-      start = new Date(Math.min(...candidates.map((d) => d.getTime())));
-    }
+  if (others.length > 0) {
+    const residentAttendances = await db
+      .select({ packageId: attendances.packageId, checkInTime: attendances.checkInTime, checkOutTime: attendances.checkOutTime })
+      .from(attendances)
+      .where(eq(attendances.residentId, residentId));
+    const lastEnd = Math.max(...others.map((p) => packageEffectiveEnd(p, residentAttendances).getTime()));
+    start = new Date(Math.min(lastEnd, now.getTime()));
   }
 
   let durationDays = 0;
