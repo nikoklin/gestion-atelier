@@ -1,4 +1,4 @@
-import { google } from "googleapis";
+import { auth as googleAuth, drive as googleDrive } from "@googleapis/drive";
 import { Readable } from "stream";
 
 /**
@@ -22,12 +22,12 @@ export async function uploadToAtelierDrive(
 
   const credentials = JSON.parse(Buffer.from(keyBase64, "base64").toString("utf-8"));
 
-  const auth = new google.auth.GoogleAuth({
+  const auth = new googleAuth.GoogleAuth({
     credentials,
     scopes: ["https://www.googleapis.com/auth/drive.file"],
   });
 
-  const drive = google.drive({ version: "v3", auth });
+  const drive = googleDrive({ version: "v3", auth });
 
   const res = await drive.files.create({
     requestBody: {
