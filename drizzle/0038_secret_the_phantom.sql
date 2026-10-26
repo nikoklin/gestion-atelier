@@ -1,0 +1,1 @@
+ALTER TABLE `residents` DROP COLUMN `pin`;

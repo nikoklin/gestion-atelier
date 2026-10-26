@@ -28,7 +28,6 @@ export const residents = mysqlTable("residents", {
   lastName: varchar("lastName", { length: 100 }).notNull(),
   email: varchar("email", { length: 320 }).notNull(),
   phone: varchar("phone", { length: 20 }),
-  pin: varchar("pin", { length: 4 }), // Code PIN à 4 chiffres pour l'authentification
   isActive: boolean("isActive").default(true).notNull(),
   isDeleted: boolean("isDeleted").default(false).notNull(), // Archivage au lieu de suppression définitive
   hasMissedCheckout: boolean("hasMissedCheckout").default(false).notNull(), // Indique si le résident a oublié de pointer en partant
