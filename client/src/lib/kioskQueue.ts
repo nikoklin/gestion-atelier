@@ -33,7 +33,7 @@ export type KioskEventResult = {
 
 export type SendOutcome =
   | { kind: "ok"; result: KioskEventResult }
-  | { kind: "retry"; reason: "network" | "server" | "auth" | "busy" }
+  | { kind: "retry"; reason: "network" | "server" | "auth" | "busy"; detail?: string }
   | { kind: "rejected"; message: string };
 
 export type KioskStatus = {
@@ -42,6 +42,7 @@ export type KioskStatus = {
   sending: boolean;
   authProblem: boolean; // session de la tablette expirée : les pointages restent en file
   problem: "network" | "server" | null; // raison du dernier échec (affichée par l'indicateur)
+  problemDetail: string | null; // détail technique du dernier échec (diagnostic)
 };
 
 const SEND_TIMEOUT_MS = 8000;
@@ -119,7 +120,7 @@ export function sendKioskEvent(ev: KioskEvent): Promise<SendOutcome> {
   const timeout = new Promise<SendOutcome>((resolve) => {
     timer = setTimeout(() => {
       controller.abort();
-      resolve({ kind: "retry", reason: "network" });
+      resolve({ kind: "retry", reason: "network", detail: `pas de réponse en ${SEND_TIMEOUT_MS / 1000} s` });
     }, SEND_TIMEOUT_MS);
   });
   return Promise.race([attemptSend(ev, controller.signal), timeout]).finally(() => clearTimeout(timer));
@@ -137,10 +138,10 @@ async function attemptSend(ev: KioskEvent, signal: AbortSignal): Promise<SendOut
       }),
       signal,
     });
-  } catch {
+  } catch (err) {
     // Pas de réseau, ou pas de réponse dans le délai : le pointage a peut-être été
     // reçu — le renvoi avec le même eventId ne créera pas de doublon.
-    return { kind: "retry", reason: "network" };
+    return { kind: "retry", reason: "network", detail: `réseau : ${(err as Error)?.message ?? err}` };
   }
 
   let body: any = null;
@@ -148,7 +149,7 @@ async function attemptSend(ev: KioskEvent, signal: AbortSignal): Promise<SendOut
     body = await res.json(); // borné lui aussi par le délai (signal)
   } catch {
     // Réponse coupée, ou page d'erreur de l'hébergeur (serveur en redémarrage…)
-    return { kind: "retry", reason: "server" };
+    return { kind: "retry", reason: "server", detail: `réponse illisible (HTTP ${res.status})` };
   }
   if (res.ok) return { kind: "ok", result: body?.result?.data?.json as KioskEventResult };
 
@@ -158,7 +159,7 @@ async function attemptSend(ev: KioskEvent, signal: AbortSignal): Promise<SendOut
   if (code === "TIMEOUT") return { kind: "retry", reason: "busy" }; // même pointage en cours de traitement
   if (res.status >= 500) {
     console.error(`[Pointage] Erreur du serveur (${res.status}) pour ${ev.residentName} : ${message}`);
-    return { kind: "retry", reason: "server" };
+    return { kind: "retry", reason: "server", detail: `HTTP ${res.status} : ${message}` };
   }
   return { kind: "rejected", message };
 }
@@ -171,6 +172,7 @@ let status: KioskStatus = {
   sending: false,
   authProblem: false,
   problem: null,
+  problemDetail: null,
 };
 const listeners = new Set<(s: KioskStatus) => void>();
 const sentListeners = new Set<(r: KioskEventResult, ev: KioskEvent) => void>();
@@ -193,10 +195,10 @@ export function onQueuedEventSent(listener: (r: KioskEventResult, ev: KioskEvent
 }
 
 export function noteOutcome(outcome: SendOutcome) {
-  if (outcome.kind === "ok" || outcome.kind === "rejected") setStatus({ online: true, authProblem: false, problem: null });
+  if (outcome.kind === "ok" || outcome.kind === "rejected") setStatus({ online: true, authProblem: false, problem: null, problemDetail: null });
   else if (outcome.reason === "auth") setStatus({ online: true, authProblem: true });
-  else if (outcome.reason === "network") setStatus({ online: false, problem: "network" });
-  else if (outcome.reason === "server") setStatus({ online: false, problem: "server" });
+  else if (outcome.reason === "network") setStatus({ online: false, problem: "network", problemDetail: outcome.detail ?? null });
+  else if (outcome.reason === "server") setStatus({ online: false, problem: "server", problemDetail: outcome.detail ?? null });
 }
 
 export async function refreshPending(): Promise<KioskEvent[]> {

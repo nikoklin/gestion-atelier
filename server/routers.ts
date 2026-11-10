@@ -1390,6 +1390,7 @@ export const appRouter = router({
           if (err instanceof KioskEventRejected) throw new TRPCError({ code: err.code, message: err.message });
           // La tablette garde le pointage et le renverra : TIMEOUT = « réessayer plus tard ».
           if (err instanceof KioskEventInProgress) throw new TRPCError({ code: "TIMEOUT", message: err.message });
+          console.error(`[Pointage] Erreur inattendue (pointage ${input.eventId}, résident ${input.residentId}, ${input.action}) :`, err);
           throw err;
         }
       }),

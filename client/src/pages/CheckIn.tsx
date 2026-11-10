@@ -221,10 +221,13 @@ export default function CheckIn() {
     if (!kiosk.online) {
       const reason = kiosk.problem === "server" ? " (erreur du serveur)" : " (serveur injoignable)";
       return (
-        <p className="text-xs text-amber-700 font-medium inline-flex items-center gap-1">
-          <CloudOff className="h-3 w-3" /> Hors ligne{count > 0 ? ` – ${count} pointage${plural} en attente` : ""}{count > 0 ? reason : ""}
-          {retry}
-        </p>
+        <span className="inline-flex flex-col items-center">
+          <span className="text-xs text-amber-700 font-medium inline-flex items-center gap-1">
+            <CloudOff className="h-3 w-3" /> Hors ligne{count > 0 ? ` – ${count} pointage${plural} en attente` : ""}{count > 0 ? reason : ""}
+            {retry}
+          </span>
+          {kiosk.problemDetail && <span className="text-[10px] text-gray-400">{kiosk.problemDetail}</span>}
+        </span>
       );
     }
     if (count > 0) {
