@@ -44,8 +44,8 @@ Plan :
       (« Pointage enregistré sur la tablette, envoi dès le retour du réseau »)
 - [x] Tests serveur (idempotence, heure réelle, ordre arrivée/départ, rattrapage 22 h, refus futur/ancien,
       accès sans session) + tests de la file (échec réseau, réponse perdue, renvoi, pas de doublon)
-- [ ] Vérification navigateur de bout en bout (bloquée : demande une session admin — à faire sur la tablette
-      avec `docs/test-pointage-hors-ligne.md`, ou en local si Nicolas se connecte) ; guide écrit : fait
+- [x] Vérification de bout en bout : faite par Nicolas sur la tablette le 10/11/2026 (guide
+      `docs/test-pointage-hors-ligne.md`) — « ça fonctionne bien »
 
 ## Prochaine session de travail (liste du 2026-10-24)
 
