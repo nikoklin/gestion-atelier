@@ -1258,106 +1258,6 @@ export const appRouter = router({
 
   attendances: router({
     // Version avec logs de débogage - 2026-01-27 17:28
-    checkIn: publicProcedure
-      .input(z.object({
-        residentId: z.number(),
-      }))
-      .mutation(async ({ input }) => {
-        // Vérifier si le résident existe
-        const resident = await db.getResidentById(input.residentId);
-        if (!resident || !resident.isActive) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Résident non trouvé ou inactif" });
-        }
-
-        // Vérifier s'il y a déjà un pointage ouvert
-        const openAttendance = await db.getOpenAttendance(resident.id);
-        if (openAttendance) {
-          // Si un pointage est ouvert, on fait le checkout automatiquement
-          // Utiliser la logique commune de checkout
-          const { performCheckout } = await import('./checkoutLogic');
-          const result = await performCheckout({
-            attendanceId: openAttendance.id,
-            packageId: openAttendance.packageId,
-            residentEmail: resident.email,
-            residentFirstName: resident.firstName,
-            residentId: resident.id,
-          });
-          
-          return {
-            ...result,
-            resident,
-          };
-        }
-
-        // Blocage si le solde d'heures hors-forfait en attente a déjà atteint la limite
-        if ((resident.outOfPackageMinutes ?? 0) >= OUT_OF_PACKAGE_LIMIT_MINUTES) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: "Le solde d'heures hors-forfait a atteint la limite de 5h. Il faut régulariser (nouveau forfait, ou « + Heures » sur le forfait) avant de pouvoir pointer à nouveau.",
-          });
-        }
-
-        // Récupérer le forfait actif — optionnel : un résident sans forfait
-        // valable en ce moment (aucun forfait en cours, ou seulement des
-        // forfaits expirés) peut quand même pointer, sa session sera comptée
-        // hors-forfait (voir residents.createManualSession pour la même règle).
-        const activePackage = await db.getActivePackageByResidentId(resident.id);
-        const isOutOfPackage = !activePackage;
-
-        // Heures à afficher : restant du forfait actif si valable, sinon le
-        // solde hors-forfait déjà en attente (les heures de cette session ne
-        // seront comptées qu'au recalcul déclenché par le checkout).
-        const remainingMinutes = activePackage
-          ? activePackage.totalHours - activePackage.usedHours
-          : (resident.outOfPackageMinutes ?? 0);
-
-        // Créer le pointage d'arrivée même sans forfait valable
-        await db.createAttendance({
-          residentId: resident.id,
-          packageId: activePackage?.id ?? null,
-          checkInTime: new Date(),
-          checkOutTime: null,
-          durationMinutes: null,
-        });
-
-        return {
-          success: true,
-          action: 'checkin' as const,
-          resident,
-          isOutOfPackage,
-          remainingHours: Math.floor(remainingMinutes / 60),
-          remainingMinutes: remainingMinutes % 60,
-        };
-      }),
-
-    checkOut: publicProcedure
-      .input(z.object({
-        residentId: z.number(),
-      }))
-      .mutation(async ({ input }) => {
-        // Vérifier si le résident existe
-        const resident = await db.getResidentById(input.residentId);
-        if (!resident) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Résident non trouvé" });
-        }
-
-        // Récupérer le pointage ouvert
-        const openAttendance = await db.getOpenAttendance(resident.id);
-        if (!openAttendance) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Aucun pointage en cours" });
-        }
-
-        // Utiliser la logique commune de checkout
-        const { performCheckout } = await import('./checkoutLogic');
-        return await performCheckout({
-          attendanceId: openAttendance.id,
-          packageId: openAttendance.packageId,
-          residentEmail: resident.email,
-          residentFirstName: resident.firstName,
-          residentId: resident.id,
-        });
-      }),
-
     getByResidentId: protectedProcedure
       .input(z.object({ residentId: z.number() }))
       .query(async ({ input }) => {
@@ -1398,10 +1298,6 @@ export const appRouter = router({
     kioskState: protectedProcedure.query(async () => {
       const { getKioskState } = await import("./kioskEvents");
       return await getKioskState();
-    }),
-
-    getOpenAttendances: publicProcedure.query(async () => {
-      return await db.getAllOpenAttendances();
     }),
 
     update: protectedProcedure

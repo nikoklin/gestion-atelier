@@ -131,6 +131,14 @@ describe.skipIf(!process.env.DATABASE_URL)("Pointages de la tablette", () => {
     await expect(visitor.attendances.kioskState()).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   });
 
+  it("anciennes routes publiques de pointage supprimées (checkIn, checkOut, getOpenAttendances)", () => {
+    const procedures = Object.keys((appRouter as any)._def.procedures);
+    for (const name of ["attendances.checkIn", "attendances.checkOut", "attendances.getOpenAttendances"]) {
+      expect(procedures).not.toContain(name);
+    }
+    expect(procedures).toContain("attendances.recordKioskEvent");
+  });
+
   it("données de la tablette : liste et présents, sans e-mail ni téléphone", async () => {
     const state = await tablet.attendances.kioskState();
     const a = state.residents.find((r) => r.id === A);

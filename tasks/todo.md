@@ -135,9 +135,8 @@ pointages ; en essayant 1, 2, 3… on récupère toute la base (sujet RGPD).
 - [x] `residentAuth.createManualSession` (public) : n'importe qui peut ajouter une séance sur le compte
       de n'importe quel résident et consommer ses heures → exiger la session résident ci-dessus (inclus
       dans le plan ci-dessus)
-- [ ] `attendances.checkIn` / `checkOut` (publics) : la page de pointage utilise déjà `residents.list`
-      (réservé à l'admin), donc la tablette est connectée en admin → passer ces actions en accès protégé
-      ne change rien pour la tablette ; vérifier `checkOut` et `getOpenAttendances` (qui est présent)
+- [x] `attendances.checkIn` / `checkOut` / `getOpenAttendances` (publics) : supprimés le 10/11/2026 — la
+      tablette passe par `recordKioskEvent` / `kioskState` (session admin)
 - [ ] Tablette de pointage connectée avec le compte admin (cookie d'un an) : quelqu'un devant la tablette
       peut ouvrir /residents ou /settings. À décider : compte « tablette » limité au pointage
 - [x] Clé d'API Wix régénérée (faite, puis tous les secrets changés après l'incident Railway du 22/10)
