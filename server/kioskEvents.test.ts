@@ -21,7 +21,10 @@ const visitor = appRouter.createCaller({ req: {} as any, res: {} as any, user: n
 
 let seq = 0;
 const eventId = () => `test-kiosk-${Date.now()}-${++seq}`;
-const at = (msAgo: number) => new Date(Date.now() - msAgo).toISOString();
+// Heure de référence unique, à la seconde (comme la base) : les durées attendues
+// ne dépendent pas des quelques millisecondes écoulées entre deux appels.
+const base = Math.floor(Date.now() / 1000) * 1000;
+const at = (msAgo: number) => new Date(base - msAgo).toISOString();
 const send = (id: string, residentId: number, action: "checkin" | "checkout", occurredAt: string) =>
   tablet.attendances.recordKioskEvent({ eventId: id, residentId, action, occurredAt });
 
@@ -95,8 +98,8 @@ describe.skipIf(!process.env.DATABASE_URL)("Pointages de la tablette", () => {
 
   it("départ transmis après la clôture automatique de 22 h : vraie heure de départ, alerte retirée", async () => {
     // Arrivée il y a 10 h, clôturée d'office il y a 2 h (comme à 22 h), alerte posée.
-    const checkIn = new Date(Date.now() - 10 * 60 * MIN);
-    const autoClose = new Date(Date.now() - 2 * 60 * MIN);
+    const checkIn = new Date(base - 10 * 60 * MIN);
+    const autoClose = new Date(base - 2 * 60 * MIN);
     await db.createAttendance({ id: B * 10, residentId: B, packageId: B * 10, checkInTime: checkIn, checkOutTime: autoClose,
       durationMinutes: 480, attendanceType: "normal" } as any);
     await db.updateResident(B, { hasMissedCheckout: true, missedCheckoutAttendanceId: B * 10 });

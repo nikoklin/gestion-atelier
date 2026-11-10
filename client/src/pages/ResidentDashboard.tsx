@@ -22,10 +22,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Clock, Package, Calendar, PlusCircle } from "lucide-react";
+import { Clock, Package, Calendar, PlusCircle, ArrowLeft } from "lucide-react";
 import { APP_TITLE, APP_LOGO } from "@/const";
 import { toast } from "sonner";
 import { usePackageLabel } from "@/hooks/usePackageLabel";
+import { FROM_KIOSK_KEY } from "@/lib/kioskQueue";
+
+const KIOSK_IDLE_MS = 5000;
 
 export default function ResidentDashboard() {
   const [, setLocation] = useLocation();
@@ -51,6 +54,30 @@ export default function ResidentDashboard() {
   }, []);
   
   const utils = trpc.useUtils();
+
+  // Ouvert depuis la tablette de pointage : bouton de retour, et retour automatique
+  // après 5 s sans action (en pause pendant la saisie d'une séance oubliée).
+  const [fromKiosk] = useState(() => {
+    try { return sessionStorage.getItem(FROM_KIOSK_KEY) === "1"; } catch { return false; }
+  });
+  const backToKiosk = () => {
+    try { sessionStorage.removeItem(FROM_KIOSK_KEY); } catch { /* navigation privée */ }
+    setLocation("/checkin");
+  };
+  useEffect(() => {
+    if (!fromKiosk || sessionDialogOpen) return;
+    let timer = setTimeout(backToKiosk, KIOSK_IDLE_MS);
+    const restart = () => {
+      clearTimeout(timer);
+      timer = setTimeout(backToKiosk, KIOSK_IDLE_MS);
+    };
+    const events = ["pointerdown", "keydown", "touchstart", "wheel", "scroll"] as const;
+    events.forEach((e) => window.addEventListener(e, restart, { passive: true, capture: true }));
+    return () => {
+      clearTimeout(timer);
+      events.forEach((e) => window.removeEventListener(e, restart, { capture: true }));
+    };
+  }, [fromKiosk, sessionDialogOpen]);
 
   const createSessionMutation = trpc.residentAuth.createManualSession.useMutation({
     onSuccess: (result) => {
@@ -171,6 +198,12 @@ export default function ResidentDashboard() {
       <div className="bg-white shadow">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
+            {fromKiosk && (
+              <Button variant="outline" size="lg" onClick={backToKiosk} className="shrink-0">
+                <ArrowLeft className="mr-1 h-5 w-5" />
+                Retour au pointage
+              </Button>
+            )}
             {APP_LOGO && <img src={APP_LOGO} alt={APP_TITLE} className="h-10" />}
             <div>
               <h1 className="text-xl font-bold">

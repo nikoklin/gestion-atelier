@@ -17,6 +17,10 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
   const isUnauthorized = error.message === UNAUTHED_ERR_MSG;
 
   if (!isUnauthorized) return;
+  // Page de pointage : elle reste affichée (liste gardée sur la tablette, pointages
+  // mis en file) et signale elle-même « session expirée » ; sinon plus personne
+  // ne pourrait pointer jusqu'à la reconnexion.
+  if (window.location.pathname === "/checkin") return;
 
   window.location.href = getLoginUrl();
 };

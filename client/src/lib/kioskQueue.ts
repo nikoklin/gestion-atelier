@@ -8,6 +8,10 @@
 
 export type KioskAction = "checkin" | "checkout";
 
+// « Mon espace » ouvert depuis la tablette (sessionStorage) : l'espace résident
+// affiche le retour au pointage et y revient tout seul après 5 s sans action.
+export const FROM_KIOSK_KEY = "fromKiosk";
+
 export type KioskEvent = {
   eventId: string;
   residentId: number;
