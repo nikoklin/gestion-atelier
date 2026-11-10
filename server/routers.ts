@@ -1373,6 +1373,32 @@ export const appRouter = router({
       return allAttendances.map(att => ({ ...att, isOutOfPackage: outOfPackageIds.has(att.id) }));
     }),
 
+    // Tablette de pointage (connectée en admin) : un pointage avec son heure réelle
+    // et son identifiant (voir server/kioskEvents.ts).
+    recordKioskEvent: protectedProcedure
+      .input(z.object({
+        eventId: z.string().min(8).max(64),
+        residentId: z.number().int(),
+        action: z.enum(["checkin", "checkout"]),
+        occurredAt: z.string().datetime({ offset: true }),
+      }))
+      .mutation(async ({ input }) => {
+        const { recordKioskEvent, KioskEventRejected, KioskEventInProgress } = await import("./kioskEvents");
+        try {
+          return await recordKioskEvent({ ...input, occurredAt: new Date(input.occurredAt) });
+        } catch (err) {
+          if (err instanceof KioskEventRejected) throw new TRPCError({ code: err.code, message: err.message });
+          // La tablette garde le pointage et le renverra : TIMEOUT = « réessayer plus tard ».
+          if (err instanceof KioskEventInProgress) throw new TRPCError({ code: "TIMEOUT", message: err.message });
+          throw err;
+        }
+      }),
+
+    kioskState: protectedProcedure.query(async () => {
+      const { getKioskState } = await import("./kioskEvents");
+      return await getKioskState();
+    }),
+
     getOpenAttendances: publicProcedure.query(async () => {
       return await db.getAllOpenAttendances();
     }),

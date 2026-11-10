@@ -256,3 +256,24 @@ export const wixPaymentLinks = mysqlTable("wixPaymentLinks", {
 }));
 
 export type WixPaymentLink = typeof wixPaymentLinks.$inferSelect;
+
+/**
+ * Pointages envoyés par la tablette (en direct ou depuis sa file hors connexion).
+ * eventId est généré par la tablette : un même pointage renvoyé plusieurs fois
+ * (réseau coupé, réponse perdue) n'est appliqué qu'une fois et renvoie la même
+ * réponse. result = réponse JSON mémorisée (ou { error }), null pendant le traitement.
+ */
+export const kioskEvents = mysqlTable("kioskEvents", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("eventId", { length: 64 }).notNull().unique(),
+  residentId: int("residentId").notNull().references(() => residents.id, { onDelete: 'cascade' }),
+  action: mysqlEnum("action", ["checkin", "checkout"]).notNull(),
+  occurredAt: datetime("occurredAt").notNull(), // heure réelle de l'appui sur la tablette
+  attendanceId: int("attendanceId").references(() => attendances.id, { onDelete: 'set null' }),
+  result: text("result"),
+  receivedAt: timestamp("receivedAt").defaultNow().notNull(),
+}, (table) => ({
+  residentIdIdx: index("kioskEvents_residentId_idx").on(table.residentId),
+}));
+
+export type KioskEvent = typeof kioskEvents.$inferSelect;

@@ -3,9 +3,38 @@ import react from "@vitejs/plugin-react";
 import fs from "node:fs";
 import path from "path";
 import { defineConfig } from "vite";
+import { VitePWA } from "vite-plugin-pwa";
 
 
-const plugins = [react(), tailwindcss()];
+const plugins = [
+  react(),
+  tailwindcss(),
+  // Service worker (dist/public/sw.js) : garde l'interface sur la tablette de pointage
+  // pour qu'elle reste utilisable sans réseau. Enregistré seulement par la page de
+  // pointage (client/src/pages/CheckIn.tsx). Les appels au serveur (/api) ne sont
+  // jamais mis en cache par lui : la file des pointages est gérée par la page.
+  VitePWA({
+    injectRegister: false,
+    registerType: "autoUpdate",
+    manifest: false,
+    workbox: {
+      globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2}"],
+      maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
+      navigateFallback: "/index.html",
+      navigateFallbackDenylist: [/^\/api\//],
+      cleanupOutdatedCaches: true,
+      clientsClaim: true,
+      skipWaiting: true,
+      runtimeCaching: [
+        {
+          urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\//,
+          handler: "StaleWhileRevalidate",
+          options: { cacheName: "polices", expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 } },
+        },
+      ],
+    },
+  }),
+];
 
 export default defineConfig({
   plugins,

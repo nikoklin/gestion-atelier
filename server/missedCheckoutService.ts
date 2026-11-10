@@ -83,12 +83,17 @@ export async function checkAndProcessMissedCheckouts(): Promise<{ processed: num
         continue;
       }
 
-      // Effectuer le pointage de sortie automatique à l'heure de clôture configurée
-      // (heure de Paris : le serveur tourne en UTC).
-      const checkOutTime = parisDateTimeToDate(getParisDateString(new Date()), cutoffHour, 0);
+      // Effectuer le pointage de sortie automatique à l'heure de clôture configurée,
+      // le jour de l'arrivée (heure de Paris : le serveur tourne en UTC). Une arrivée
+      // d'un jour précédent (ex. pointage hors connexion transmis en retard) est
+      // clôturée à l'heure limite de son jour, pas à celle d'aujourd'hui.
+      const checkInTime = new Date(attendance.checkInTime);
+      const cutoffOnArrivalDay = parisDateTimeToDate(getParisDateString(checkInTime), cutoffHour, 0);
+      const checkOutTime = cutoffOnArrivalDay > checkInTime
+        ? cutoffOnArrivalDay
+        : parisDateTimeToDate(getParisDateString(new Date()), cutoffHour, 0);
 
       // Calculer la durée de la session
-      const checkInTime = new Date(attendance.checkInTime);
       const durationMs = checkOutTime.getTime() - checkInTime.getTime();
       const durationMinutes = Math.floor(durationMs / (1000 * 60));
 

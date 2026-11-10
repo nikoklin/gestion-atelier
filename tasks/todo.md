@@ -13,6 +13,40 @@ forfait payé d'avance démarre dès la fin du forfait en cours ; liens de paiem
 - [x] Phase 4 : contrôle quotidien d'incohérences + alerte e-mail (poussé)
 - [x] Phase 5 : liens de paiement Wix personnels valables 15 jours, créés au rappel (poussé ; clé à régénérer)
 
+## Pointage hors connexion (tablette Fully Kiosk, wifi instable) — demandé le 10/11/2026
+
+Constat (code actuel) : un appui envoie `attendances.checkIn` ; le serveur décide arrivée/départ selon le
+pointage ouvert et prend SON heure de réception. Si le réseau coupe : (a) requête jamais arrivée → message
+d'erreur technique, rien d'enregistré, rien n'est renvoyé ; (b) requête arrivée mais réponse perdue → le
+pointage EST enregistré mais la tablette affiche une erreur ; le résident réappuie → le serveur bascule
+(arrivée suivie d'un départ immédiat de 0 min, ou départ suivi d'une nouvelle arrivée) ; (c) page rechargée
+hors ligne → page blanche (rien en cache) ; liste des résidents vide.
+
+Plan :
+- [x] Serveur : nouvelle route `attendances.recordKioskEvent({ eventId, residentId, action: checkin|checkout,
+      occurredAt })`, réservée à la tablette connectée (session admin) ; action explicite (plus de bascule) ;
+      heure réelle du pointage (pas l'heure de réception), refusée si dans le futur (> 2 min) ou > 14 jours
+- [x] Sans doublon : table `kioskEvents` (eventId unique, résultat mémorisé) → un même pointage renvoyé
+      plusieurs fois n'est appliqué qu'une fois et renvoie la même réponse (migration à lancer par Nicolas
+      AVANT le déploiement : ajout d'une table, sans risque pour le site actuel)
+- [x] Cas de rattrapage : départ en attente arrivé après la clôture auto de 22 h → corrige l'heure de départ
+      du pointage clôturé et retire l'alerte « oubli de pointage » ; arrivée en retard au-delà de la limite
+      de 5 h hors forfait → enregistrée quand même (le résident était là), signalée au contrôle de nuit ;
+      clôture auto de 22 h : à l'heure limite du JOUR d'arrivée (aujourd'hui : du jour où elle tourne)
+- [x] Tablette : arrivée/départ décidé localement (pointages ouverts connus + file en attente) ; envoi avec
+      délai max ~8 s ; échec réseau ou délai dépassé → pointage mis en file IndexedDB (heure réelle, eventId) ;
+      renvoi automatique dans l'ordre (retour du réseau, toutes les 30 s, au chargement) ; erreur métier
+      (résident inconnu…) → affichée, pas mise en file ; session expirée → gardé en file + message
+- [x] Hors ligne : service worker (vite-plugin-pwa) qui met en cache l'interface ; liste des résidents
+      (prénom/nom/id seulement) et pointages ouverts gardés sur la tablette pour s'afficher sans réseau
+- [x] Indicateur discret : « En ligne » / « Hors ligne – X pointages en attente » (+ « envoi en cours »)
+- [x] Confirmation au résident seulement si enregistré : serveur (« Pointage enregistré ») ou file locale
+      (« Pointage enregistré sur la tablette, envoi dès le retour du réseau »)
+- [x] Tests serveur (idempotence, heure réelle, ordre arrivée/départ, rattrapage 22 h, refus futur/ancien,
+      accès sans session) + tests de la file (échec réseau, réponse perdue, renvoi, pas de doublon)
+- [ ] Vérification navigateur de bout en bout (bloquée : demande une session admin — à faire sur la tablette
+      avec `docs/test-pointage-hors-ligne.md`, ou en local si Nicolas se connecte) ; guide écrit : fait
+
 ## Prochaine session de travail (liste du 2026-10-24)
 
 ### 1. Envoyer un e-mail à tous les résidents

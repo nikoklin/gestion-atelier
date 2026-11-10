@@ -22,6 +22,8 @@ export interface CheckoutOptions {
   residentEmail?: string;
   residentFirstName?: string;
   residentId: number;
+  // Heure réelle du départ (pointage arrivé en retard depuis la file de la tablette) ; par défaut maintenant.
+  checkOutTime?: Date;
 }
 
 /**
@@ -39,7 +41,7 @@ export async function performCheckout(options: CheckoutOptions): Promise<Checkou
   }
 
   // Calculer la durée
-  const checkOutTime = new Date();
+  const checkOutTime = options.checkOutTime ?? new Date();
   const checkInTime = new Date(attendance.checkInTime);
   const durationMinutes = Math.floor((checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60));
 

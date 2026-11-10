@@ -274,6 +274,13 @@
       "when": 1792776317828,
       "tag": "0038_secret_the_phantom",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "5",
+      "when": 1794321846788,
+      "tag": "0039_overjoyed_legion",
+      "breakpoints": true
     }
   ]
 }
