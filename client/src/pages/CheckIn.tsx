@@ -246,10 +246,10 @@ export default function CheckIn() {
           size={isLandscape ? "sm" : "lg"}
           onClick={() => handleResidentSelect(resident)}
           disabled={busy}
-          className={`h-auto ${isLandscape ? 'py-1.5 text-sm' : 'py-3 text-base md:py-5 md:text-2xl'} font-medium flex-1 min-w-0 whitespace-normal text-left transition-all justify-between ${btnClass}`}
+          className={`h-auto ${isLandscape ? 'py-1.5 text-sm' : 'py-3 text-base md:py-4 md:text-xl'} font-medium flex-1 min-w-0 whitespace-normal text-left transition-all justify-between ${btnClass}`}
         >
           <span className="font-semibold">{resident.firstName} {resident.lastName}</span>
-          <span className={`${isLandscape ? 'text-xs' : 'text-sm md:text-xl'} font-normal ml-2 shrink-0`}>
+          <span className={`${isLandscape ? 'text-xs' : 'text-sm md:text-lg'} font-normal ml-2 shrink-0`}>
             {isPresentWithExpiredPackage ? (
               <span className="text-red-600 font-semibold">Hors forfait • {checkInTime} →</span>
             ) : hasOpenAttendance ? (
@@ -266,7 +266,7 @@ export default function CheckIn() {
             sessionStorage.setItem(FROM_KIOSK_KEY, "1");
             window.location.href = "/resident/dashboard";
           }}
-          className={`${isLandscape ? 'px-2 py-1.5 text-xs' : 'px-3 py-3 text-sm md:px-6 md:py-5 md:text-lg'} h-auto shrink-0 border-gray-200 text-gray-500 hover:text-blue-600 hover:border-blue-300`}
+          className={`${isLandscape ? 'px-2 py-1.5 text-xs' : 'px-3 py-3 text-sm md:px-5 md:py-4 md:text-base'} h-auto shrink-0 border-gray-200 text-gray-500 hover:text-blue-600 hover:border-blue-300`}
           title="Espace personnel"
         >
           {isLandscape ? '→' : 'Mon espace'}
@@ -288,7 +288,7 @@ export default function CheckIn() {
             {isIn ? "ENTRÉE" : "SORTIE"}
           </div>
           <CheckCircle className={`${compact ? 'h-8 w-8' : 'h-10 w-10'} ${isIn ? "text-green-600" : "text-blue-600"}`} />
-          <p className={`${compact ? 'text-sm' : 'text-base md:text-2xl'} font-bold ${isIn ? "text-green-900" : "text-blue-900"}`}>
+          <p className={`${compact ? 'text-sm' : 'text-base md:text-xl'} font-bold ${isIn ? "text-green-900" : "text-blue-900"}`}>
             {isIn ? `Bienvenue ${lastScan.resident.firstName} !` : `À bientôt ${lastScan.resident.firstName} !`}
           </p>
           {lastScan.queued ? (
@@ -362,10 +362,10 @@ export default function CheckIn() {
   // ── Mode portrait / desktop : layout original ──
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-start p-3 sm:p-4 md:p-6">
-      <div className="w-full max-w-2xl md:max-w-5xl">
+      <div className="w-full max-w-2xl md:max-w-4xl">
         <div className="text-center mb-4 sm:mb-6">
-          <h1 className="text-xl sm:text-2xl md:text-4xl font-semibold text-gray-800 mb-1">Pointage Atelier</h1>
-          <p className="text-sm md:text-xl text-gray-500">Cliquez sur votre nom pour pointer</p>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold text-gray-800 mb-1">Pointage Atelier</h1>
+          <p className="text-sm md:text-lg text-gray-500">Cliquez sur votre nom pour pointer</p>
           <div className="mt-1 flex justify-center"><ConnectionStatus /></div>
         </div>
 
@@ -373,7 +373,7 @@ export default function CheckIn() {
 
         <Card className="mb-6">
           <CardContent className="pt-6">
-            <div className="flex flex-col gap-2 sm:gap-3 md:gap-4 max-h-[60vh] md:max-h-[72vh] overflow-y-auto">
+            <div className="flex flex-col gap-2 sm:gap-3 max-h-[60vh] md:max-h-[72vh] overflow-y-auto">
               {sortedResidents.map((resident) => (
                 <ResidentButton key={resident.id} resident={resident} />
               ))}
@@ -381,7 +381,7 @@ export default function CheckIn() {
           </CardContent>
         </Card>
 
-        <p className="text-sm md:text-lg text-red-600 text-center font-medium">
+        <p className="text-sm md:text-base text-red-600 text-center font-medium">
           Tu as oublié de pointer ton heure d'arrivée ? Rends-toi dans ton espace personnel en cliquant sur le bouton <strong>"Mon espace"</strong> à côté de ton nom.
         </p>
 
