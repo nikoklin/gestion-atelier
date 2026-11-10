@@ -209,14 +209,18 @@ export default function ResidentDashboard() {
               <h1 className="text-xl font-bold">
                 {resident.firstName} {resident.lastName}
               </h1>
-              <button
-                type="button"
-                className="text-sm text-muted-foreground underline-offset-2 hover:underline"
-                onClick={() => logoutMutation.mutate()}
-                disabled={logoutMutation.isPending}
-              >
-                Se déconnecter
-              </button>
+              {/* Pas sur la tablette : la déconnexion mènerait à la page de demande de lien,
+                  sans retour possible au pointage. */}
+              {!fromKiosk && (
+                <button
+                  type="button"
+                  className="text-sm text-muted-foreground underline-offset-2 hover:underline"
+                  onClick={() => logoutMutation.mutate()}
+                  disabled={logoutMutation.isPending}
+                >
+                  Se déconnecter
+                </button>
+              )}
             </div>
           </div>
             <Dialog open={sessionDialogOpen} onOpenChange={(open) => { setSessionDialogOpen(open); if (!open) { setSessionError(""); setSessionCheckInH(""); setSessionCheckInM("00"); setSessionCheckOutH(""); setSessionCheckOutM("00"); } }}>
