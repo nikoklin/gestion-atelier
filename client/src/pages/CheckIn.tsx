@@ -213,15 +213,27 @@ export default function CheckIn() {
         </p>
       );
     }
+    const retry = count > 0 && !kiosk.sending && (
+      <button type="button" className="ml-2 underline underline-offset-2" onClick={() => void flushKioskQueue()}>
+        Réessayer
+      </button>
+    );
     if (!kiosk.online) {
+      const reason = kiosk.problem === "server" ? " (erreur du serveur)" : " (serveur injoignable)";
       return (
         <p className="text-xs text-amber-700 font-medium inline-flex items-center gap-1">
-          <CloudOff className="h-3 w-3" /> Hors ligne{count > 0 ? ` – ${count} pointage${plural} en attente` : ""}
+          <CloudOff className="h-3 w-3" /> Hors ligne{count > 0 ? ` – ${count} pointage${plural} en attente` : ""}{count > 0 ? reason : ""}
+          {retry}
         </p>
       );
     }
     if (count > 0) {
-      return <p className="text-xs text-amber-700">● En ligne – envoi de {count} pointage{plural} en attente…</p>;
+      return (
+        <p className="text-xs text-amber-700">
+          ● En ligne – {kiosk.sending ? `envoi de ${count} pointage${plural} en attente…` : `${count} pointage${plural} en attente`}
+          {retry}
+        </p>
+      );
     }
     return <p className="text-xs text-green-700">● En ligne</p>;
   };

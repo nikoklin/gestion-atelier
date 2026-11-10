@@ -12,7 +12,7 @@ const store = new Map<string, string>();
   removeItem: (k: string) => store.delete(k),
 };
 
-type Mode = "ok" | "down" | "lostResponse" | "http500" | "unauth" | "busy" | "reject";
+type Mode = "ok" | "down" | "lostResponse" | "http500" | "unauth" | "busy" | "reject" | "hungBody" | "hungRequest";
 let mode: Mode = "ok";
 const applied: string[] = []; // eventId appliqués par le « serveur », dans l'ordre
 
@@ -23,6 +23,11 @@ globalThis.fetch = (async (_url: string, init: any) => {
   const apply = () => {
     if (!applied.includes(ev.eventId)) applied.push(ev.eventId);
   };
+  if (mode === "hungRequest") return new Promise(() => {}); // aucune réponse, jamais
+  if (mode === "hungBody") {
+    // Le serveur commence à répondre puis la connexion se fige (redémarrage pendant la réponse).
+    return { ok: true, status: 200, json: () => new Promise(() => {}) } as unknown as Response;
+  }
   switch (mode) {
     case "lostResponse":
       apply(); // reçu et enregistré… mais la réponse ne revient jamais
@@ -150,5 +155,28 @@ describe("File d'attente", () => {
     q.noteOutcome({ kind: "ok", result: {} as any });
     expect(status!.online).toBe(true);
     off();
+  });
+});
+
+describe("Envois bloqués (connexion figée)", () => {
+  it.each(["hungBody", "hungRequest"] as const)("« %s » : abandonné au bout du délai, la file reste et repart ensuite", async (m) => {
+    vi.useFakeTimers();
+    try {
+      const a = event(), b = event();
+      await q.enqueueKioskEvent(a);
+      await q.enqueueKioskEvent(b);
+      mode = m;
+      const flush = q.flushKioskQueue();
+      await vi.advanceTimersByTimeAsync(9000);
+      await flush; // ne reste pas bloqué
+      expect(await q.refreshPending()).toHaveLength(2);
+
+      mode = "ok";
+      await q.flushKioskQueue();
+      expect(applied).toEqual([a.eventId, b.eventId]);
+      expect(await q.refreshPending()).toHaveLength(0);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

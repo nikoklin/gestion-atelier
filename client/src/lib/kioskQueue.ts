@@ -41,6 +41,7 @@ export type KioskStatus = {
   pending: KioskEvent[];
   sending: boolean;
   authProblem: boolean; // session de la tablette expirée : les pointages restent en file
+  problem: "network" | "server" | null; // raison du dernier échec (affichée par l'indicateur)
 };
 
 const SEND_TIMEOUT_MS = 8000;
@@ -110,9 +111,21 @@ async function removeQueued(eventId: string): Promise<void> {
 
 // ── Envoi ─────────────────────────────────────────────────────────────────────
 
-export async function sendKioskEvent(ev: KioskEvent): Promise<SendOutcome> {
+// Toujours borné : au-delà du délai (pas de réponse, ou réponse coupée en cours de
+// route — redémarrage du serveur…), l'envoi est abandonné et le pointage reste en file.
+export function sendKioskEvent(ev: KioskEvent): Promise<SendOutcome> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), SEND_TIMEOUT_MS);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<SendOutcome>((resolve) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      resolve({ kind: "retry", reason: "network" });
+    }, SEND_TIMEOUT_MS);
+  });
+  return Promise.race([attemptSend(ev, controller.signal), timeout]).finally(() => clearTimeout(timer));
+}
+
+async function attemptSend(ev: KioskEvent, signal: AbortSignal): Promise<SendOutcome> {
   let res: Response;
   try {
     res = await fetch("/api/trpc/attendances.recordKioskEvent", {
@@ -122,21 +135,19 @@ export async function sendKioskEvent(ev: KioskEvent): Promise<SendOutcome> {
       body: JSON.stringify({
         json: { eventId: ev.eventId, residentId: ev.residentId, action: ev.action, occurredAt: ev.occurredAt },
       }),
-      signal: controller.signal,
+      signal,
     });
   } catch {
     // Pas de réseau, ou pas de réponse dans le délai : le pointage a peut-être été
     // reçu — le renvoi avec le même eventId ne créera pas de doublon.
     return { kind: "retry", reason: "network" };
-  } finally {
-    clearTimeout(timer);
   }
 
   let body: any = null;
   try {
-    body = await res.json();
+    body = await res.json(); // borné lui aussi par le délai (signal)
   } catch {
-    // Page d'erreur de l'hébergeur (serveur en redémarrage…)
+    // Réponse coupée, ou page d'erreur de l'hébergeur (serveur en redémarrage…)
     return { kind: "retry", reason: "server" };
   }
   if (res.ok) return { kind: "ok", result: body?.result?.data?.json as KioskEventResult };
@@ -145,7 +156,10 @@ export async function sendKioskEvent(ev: KioskEvent): Promise<SendOutcome> {
   const message: string = body?.error?.json?.message ?? "Pointage refusé";
   if (code === "UNAUTHORIZED" || code === "FORBIDDEN") return { kind: "retry", reason: "auth" };
   if (code === "TIMEOUT") return { kind: "retry", reason: "busy" }; // même pointage en cours de traitement
-  if (res.status >= 500) return { kind: "retry", reason: "server" };
+  if (res.status >= 500) {
+    console.error(`[Pointage] Erreur du serveur (${res.status}) pour ${ev.residentName} : ${message}`);
+    return { kind: "retry", reason: "server" };
+  }
   return { kind: "rejected", message };
 }
 
@@ -156,6 +170,7 @@ let status: KioskStatus = {
   pending: [],
   sending: false,
   authProblem: false,
+  problem: null,
 };
 const listeners = new Set<(s: KioskStatus) => void>();
 const sentListeners = new Set<(r: KioskEventResult, ev: KioskEvent) => void>();
@@ -178,9 +193,10 @@ export function onQueuedEventSent(listener: (r: KioskEventResult, ev: KioskEvent
 }
 
 export function noteOutcome(outcome: SendOutcome) {
-  if (outcome.kind === "ok" || outcome.kind === "rejected") setStatus({ online: true, authProblem: false });
+  if (outcome.kind === "ok" || outcome.kind === "rejected") setStatus({ online: true, authProblem: false, problem: null });
   else if (outcome.reason === "auth") setStatus({ online: true, authProblem: true });
-  else if (outcome.reason !== "busy") setStatus({ online: false });
+  else if (outcome.reason === "network") setStatus({ online: false, problem: "network" });
+  else if (outcome.reason === "server") setStatus({ online: false, problem: "server" });
 }
 
 export async function refreshPending(): Promise<KioskEvent[]> {
@@ -196,12 +212,21 @@ export async function enqueueKioskEvent(ev: KioskEvent): Promise<void> {
 }
 
 let flushing: Promise<void> | null = null;
+let flushStartedAt = 0;
+// Garde-fou : un renvoi qui n'a pas abouti au bout de ce délai est considéré comme
+// bloqué et n'empêche plus d'en relancer un (le serveur ignore les doublons).
+const FLUSH_STALL_MS = 45000;
 
 // Renvoie la file dans l'ordre ; s'arrête au premier pointage qui ne passe pas
 // encore (pour ne jamais envoyer un départ avant son arrivée).
 export function flushKioskQueue(): Promise<void> {
+  if (flushing && Date.now() - flushStartedAt > FLUSH_STALL_MS) {
+    console.warn("[Pointage] Renvoi bloqué : relancé");
+    flushing = null;
+  }
   if (!flushing) {
-    flushing = (async () => {
+    flushStartedAt = Date.now();
+    const current = (async () => {
       const pending = await refreshPending();
       if (pending.length === 0) return;
       setStatus({ sending: true });
@@ -219,8 +244,9 @@ export function flushKioskQueue(): Promise<void> {
         setStatus({ sending: false });
       }
     })().finally(() => {
-      flushing = null;
+      if (flushing === current) flushing = null;
     });
+    flushing = current;
   }
   return flushing;
 }
