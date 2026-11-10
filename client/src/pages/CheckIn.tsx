@@ -39,6 +39,8 @@ function readCachedState(): KioskState | undefined {
   }
 }
 
+const CONFIRMATION_MS = 3000;
+
 type LastScan = {
   resident: { id: number; firstName: string; lastName?: string };
   action: "checkin" | "checkout";
@@ -51,6 +53,12 @@ type LastScan = {
 
 export default function CheckIn() {
   const [lastScan, setLastScan] = useState<LastScan | null>(null);
+  // Le message de pointage s'efface après 3 s (un nouveau pointage relance le délai).
+  useEffect(() => {
+    if (!lastScan) return;
+    const timer = setTimeout(() => setLastScan(null), CONFIRMATION_MS);
+    return () => clearTimeout(timer);
+  }, [lastScan]);
   const [busy, setBusy] = useState(false);
   const [kiosk, setKiosk] = useState<KioskStatus | null>(null);
 
@@ -149,7 +157,7 @@ export default function CheckIn() {
           applyServerResult(outcome.result);
           flash(resident.id, "green");
           setLastScan({ ...outcome.result, resident: outcome.result.resident, queued: false });
-          toast.success(outcome.result.action === "checkout" ? "Pointage de départ enregistré" : "Pointage d'arrivée enregistré");
+          toast.success(outcome.result.action === "checkout" ? "Pointage de départ enregistré" : "Pointage d'arrivée enregistré", { duration: CONFIRMATION_MS });
           return;
         }
         if (outcome.kind === "rejected") {
@@ -167,7 +175,7 @@ export default function CheckIn() {
         queued: true,
         durationMinutes: since ? Math.max(0, Math.floor((Date.parse(ev.occurredAt) - Date.parse(since)) / 60000)) : undefined,
       });
-      toast.success("Pointage enregistré sur la tablette : il sera envoyé dès le retour du réseau.");
+      toast.success("Pointage enregistré sur la tablette : il sera envoyé dès le retour du réseau.", { duration: CONFIRMATION_MS });
       void flushKioskQueue();
     } catch (err) {
       console.error("[Pointage] Échec d'enregistrement :", err);
