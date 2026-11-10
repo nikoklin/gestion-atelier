@@ -16,8 +16,13 @@ type Mode = "ok" | "down" | "lostResponse" | "http500" | "unauth" | "busy" | "re
 let mode: Mode = "ok";
 const applied: string[] = []; // eventId appliqués par le « serveur », dans l'ordre
 
+let poisonResident: number | null = null; // ce résident provoque une erreur serveur
+
 globalThis.fetch = (async (_url: string, init: any) => {
   const ev = JSON.parse(init.body).json;
+  if (poisonResident !== null && ev.residentId === poisonResident) {
+    return new Response(JSON.stringify({ error: { json: { message: "Failed query: insert into kioskEvents", data: { code: "INTERNAL_SERVER_ERROR" } } } }), { status: 500 });
+  }
   if (mode === "down") throw new TypeError("Failed to fetch");
   const reply = (status: number, body: unknown) => new Response(JSON.stringify(body), { status });
   const apply = () => {
@@ -49,8 +54,8 @@ globalThis.fetch = (async (_url: string, init: any) => {
 const q = await import("./kioskQueue");
 
 let n = 0;
-const event = (action: "checkin" | "checkout" = "checkin"): q.KioskEvent => ({
-  eventId: `evt-${++n}`, residentId: 1, action, occurredAt: new Date(Date.now() - 60000).toISOString(),
+const event = (action: "checkin" | "checkout" = "checkin", residentId = 1): q.KioskEvent => ({
+  eventId: `evt-${++n}`, residentId, action, occurredAt: new Date(Date.now() - 60000).toISOString(),
   residentName: "Test", createdAt: Date.now() + n,
 });
 
@@ -58,6 +63,7 @@ beforeEach(async () => {
   store.clear();
   applied.length = 0;
   mode = "ok";
+  poisonResident = null;
   await q.refreshPending();
 });
 
@@ -178,5 +184,16 @@ describe("Envois bloqués (connexion figée)", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe("Pointage qui échoue en boucle côté serveur", () => {
+  it("ne bloque que son résident : les pointages des autres partent, ceux du même résident attendent", async () => {
+    poisonResident = 7;
+    const bad = event("checkin", 7), other = event("checkin", 8), sameResident = event("checkout", 7), other2 = event("checkout", 8);
+    for (const ev of [bad, other, sameResident, other2]) await q.enqueueKioskEvent(ev);
+    await q.flushKioskQueue();
+    expect(applied).toEqual([other.eventId, other2.eventId]);
+    expect((await q.refreshPending()).map((e) => e.eventId)).toEqual([bad.eventId, sameResident.eventId]);
   });
 });

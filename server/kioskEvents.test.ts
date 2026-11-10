@@ -121,6 +121,10 @@ describe.skipIf(!process.env.DATABASE_URL)("Pointages de la tablette", () => {
     expect(late.action).toBe("checkin");
   });
 
+  it("résident supprimé depuis (pointage resté en file) : refus définitif, pas d'erreur serveur", async () => {
+    await expect(send(eventId(), 990159, "checkin", at(5 * MIN))).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
   it("sans session (pas la tablette connectée) : refusé", async () => {
     await expect(visitor.attendances.recordKioskEvent({ eventId: eventId(), residentId: A, action: "checkin", occurredAt: at(0) }))
       .rejects.toMatchObject({ code: "UNAUTHORIZED" });

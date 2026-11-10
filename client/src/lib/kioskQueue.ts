@@ -232,10 +232,19 @@ export function flushKioskQueue(): Promise<void> {
       const pending = await refreshPending();
       if (pending.length === 0) return;
       setStatus({ sending: true });
+      // Un pointage qui échoue côté serveur ne bloque que son résident (ordre arrivée →
+      // départ préservé pour lui) ; les autres résidents continuent de partir. Sans
+      // réseau, session expirée ou serveur occupé : on arrête tout et on réessaie plus tard.
+      const blockedResidents = new Set<number>();
       try {
         for (const ev of pending) {
+          if (blockedResidents.has(ev.residentId)) continue;
           const outcome = await sendKioskEvent(ev);
           noteOutcome(outcome);
+          if (outcome.kind === "retry" && outcome.reason === "server") {
+            blockedResidents.add(ev.residentId);
+            continue;
+          }
           if (outcome.kind === "retry") break;
           await removeQueued(ev.eventId);
           if (outcome.kind === "ok") sentListeners.forEach((l) => l(outcome.result, ev));

@@ -51,6 +51,13 @@ export async function recordKioskEvent(input: KioskEventInput, now: Date = new D
   const database = await getDb();
   if (!database) throw new Error("Database not available");
 
+  // Résident supprimé entre-temps (ex. pointage resté en file) : refus définitif,
+  // sinon la ligne ci-dessous serait rejetée par la base à chaque renvoi et
+  // bloquerait la file de la tablette.
+  if (!(await db.getResidentByIdAnyStatus(input.residentId))) {
+    throw new KioskEventRejected("Résident introuvable (supprimé ?) : pointage ignoré.", "NOT_FOUND");
+  }
+
   // Réserver l'identifiant avant de traiter : un second envoi du même pointage
   // trouve la ligne et ne l'applique pas une deuxième fois.
   try {
@@ -61,6 +68,9 @@ export async function recordKioskEvent(input: KioskEventInput, now: Date = new D
       occurredAt: input.occurredAt,
     });
   } catch (err: any) {
+    if (isMissingResident(err)) {
+      throw new KioskEventRejected("Résident introuvable (supprimé ?) : pointage ignoré.", "NOT_FOUND");
+    }
     if (!isDuplicateKey(err)) throw err;
     const [existing] = await database.select().from(kioskEvents).where(eq(kioskEvents.eventId, input.eventId)).limit(1);
     if (!existing?.result) throw new KioskEventInProgress("Pointage en cours de traitement");
@@ -87,6 +97,12 @@ export async function recordKioskEvent(input: KioskEventInput, now: Date = new D
     }
     throw err;
   }
+}
+
+// Clé étrangère : le résident n'existe pas (supprimé au même moment).
+function isMissingResident(err: any): boolean {
+  const e = err?.cause ?? err;
+  return e?.code === "ER_NO_REFERENCED_ROW_2" || e?.errno === 1452;
 }
 
 function isDuplicateKey(err: any): boolean {
