@@ -26,6 +26,37 @@ export interface CheckoutOptions {
   checkOutTime?: Date;
 }
 
+// Résumé de séance envoyé au résident, en arrière-plan (la borne n'attend pas
+// l'envoi). Aussi pour une séance hors forfait (aucun forfait valable) : il y
+// trouve ses heures hors forfait et les liens pour prendre un forfait.
+async function sendSessionSummaryInBackground(
+  options: CheckoutOptions,
+  durationMinutes: number,
+  remainingMinutes: number,
+  packageId: number | null,
+  outOfPackageMinutes: number
+) {
+  const { residentEmail, residentFirstName, residentId } = options;
+  if (!residentEmail || !residentFirstName) return;
+  const { hours, minutes } = minutesToHoursAndMinutes(remainingMinutes);
+  const { sendSessionSummaryEmail, dashboardUrlFor } = await import('./emailService');
+  const dashboardUrl = await dashboardUrlFor(residentId);
+  void sendSessionSummaryEmail(
+    residentEmail,
+    residentFirstName,
+    durationMinutes,
+    hours,
+    minutes,
+    dashboardUrl,
+    false,
+    residentId,
+    packageId ?? undefined,
+    outOfPackageMinutes
+  ).catch(err => {
+    console.error('[Email] Failed to send session summary:', err);
+  });
+}
+
 /**
  * Effectue le checkout d'un pointage et met à jour le forfait
  * @param options Options de checkout
@@ -58,6 +89,7 @@ export async function performCheckout(options: CheckoutOptions): Promise<Checkou
     await db.fullRecalculateResident(residentId);
     const resident = await db.getResidentById(residentId);
     const outOfPackageMinutes = resident?.outOfPackageMinutes ?? 0;
+    await sendSessionSummaryInBackground(options, durationMinutes, 0, null, outOfPackageMinutes);
     return {
       success: true,
       action: 'checkout',
@@ -73,6 +105,7 @@ export async function performCheckout(options: CheckoutOptions): Promise<Checkou
     await db.fullRecalculateResident(residentId);
     const resident = await db.getResidentById(residentId);
     const outOfPackageMinutes = resident?.outOfPackageMinutes ?? 0;
+    await sendSessionSummaryInBackground(options, durationMinutes, 0, null, outOfPackageMinutes);
     return {
       success: true,
       action: 'checkout',
@@ -107,27 +140,8 @@ export async function performCheckout(options: CheckoutOptions): Promise<Checkou
   // Préparer les mises à jour supplémentaires du forfait (emails, isActive)
   const packageUpdates: Partial<InsertPackage> = {};
 
-  // Envoyer l'e-mail de fin de session avec conversion via helper
-  if (residentEmail && residentFirstName) {
-    const { hours, minutes } = minutesToHoursAndMinutes(remainingMinutes);
-    const { sendSessionSummaryEmail, dashboardUrlFor } = await import('./emailService');
-    const dashboardUrl = await dashboardUrlFor(residentId);
-    // Envoyé en arrière-plan : la borne n'attend pas l'envoi de l'e-mail.
-    void sendSessionSummaryEmail(
-      residentEmail,
-      residentFirstName,
-      durationMinutes,
-      hours,
-      minutes,
-      dashboardUrl,
-      false,
-      residentId,
-      pkg.id,
-      recalc.outOfPackageMinutes
-    ).catch(err => {
-      console.error('[Email] Failed to send session summary:', err);
-    });
-  }
+  // Envoyer l'e-mail de fin de session
+  await sendSessionSummaryInBackground(options, durationMinutes, remainingMinutes, pkg.id, recalc.outOfPackageMinutes);
 
   // Vérifier si le forfait vient d'être épuisé et envoyer un e-mail d'expiration,
   // sauf si le forfait suivant est déjà payé et attend la validation de l'atelier.

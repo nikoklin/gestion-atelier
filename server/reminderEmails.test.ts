@@ -49,6 +49,7 @@ describe("Sélection de la tâche quotidienne (rappel / forfait terminé)", () =
 
 const RID_NEXT = 990080;
 const RID_NONE = 990081;
+const RID_NO_PACKAGE = 990082;
 let mails: { to: string; subject: string }[] = [];
 globalThis.fetch = (async (_url: string, init: any) => {
   const body = JSON.parse(init.body);
@@ -59,7 +60,7 @@ globalThis.fetch = (async (_url: string, init: any) => {
 async function cleanup() {
   const database = await getDb();
   if (!database) return;
-  for (const id of [RID_NEXT, RID_NONE]) {
+  for (const id of [RID_NEXT, RID_NONE, RID_NO_PACKAGE]) {
     await database.delete(attendances).where(eq(attendances.residentId, id));
     await database.delete(packages).where(eq(packages.residentId, id));
     await database.delete(residents).where(eq(residents.id, id));
@@ -110,5 +111,28 @@ describe.skipIf(!process.env.DATABASE_URL)("Départ qui épuise le forfait", () 
   it("sans forfait suivant : l'e-mail « terminé » part toujours", async () => {
     const sent = await exhaustOnCheckout(RID_NONE, "rappel-none@example.invalid", false);
     expect(sent.some((m) => m.subject.includes("terminé"))).toBe(true);
+  });
+});
+
+describe.skipIf(!process.env.DATABASE_URL)("Séance hors forfait (aucun forfait valable)", () => {
+  beforeAll(async () => {
+    await cleanup();
+    delete process.env.WIX_API_KEY; // liens de secours, pas d'appel Wix
+  });
+  afterAll(cleanup);
+  beforeEach(() => {
+    mails = [];
+  });
+
+  it("le résumé de séance part quand même, avec les heures hors forfait", async () => {
+    const email = "hors-forfait@example.invalid";
+    const t = Date.now();
+    await db.createResident({ id: RID_NO_PACKAGE, firstName: "TEST", lastName: "SansForfait", email, isActive: true } as any);
+    const attendanceId = RID_NO_PACKAGE * 10;
+    await db.createAttendance({ id: attendanceId, residentId: RID_NO_PACKAGE, packageId: null,
+      checkInTime: new Date(t - 45 * 60000), attendanceType: "normal" } as any);
+    await performCheckout({ attendanceId, packageId: null, residentEmail: email, residentFirstName: "TEST", residentId: RID_NO_PACKAGE });
+    const sent = await waitForMails(email);
+    expect(sent.some((m) => m.subject.includes("Résumé"))).toBe(true);
   });
 });
