@@ -1,5 +1,5 @@
 import { eq, isNull } from "drizzle-orm";
-import { getDb, getAtelierSettings } from "./db";
+import { getDb, getAtelierSettings, fullRecalculateResident } from "./db";
 import { attendances, residents } from "../drizzle/schema";
 import { sendEmail, wrapEmailHtml } from "./emailService";
 import { createFixCheckoutToken } from "./actionTokenService";
@@ -38,6 +38,38 @@ export function renderMissedCheckoutEmail(params: {
  * 22h par défaut).
  * Envoie un email au résident et marque le résident comme ayant oublié de pointer
  */
+// Clôture un départ oublié : départ à l'heure limite du jour d'arrivée (heure de
+// Paris : le serveur tourne en UTC), résident marqué « oubli de pointage », heures
+// du forfait recalculées tout de suite. Une arrivée d'un jour précédent (ex.
+// pointage hors connexion transmis en retard) est clôturée à l'heure limite de son
+// jour, pas à celle d'aujourd'hui.
+export async function closeMissedCheckout(
+  attendance: { id: number; residentId: number; checkInTime: Date | string },
+  cutoffHour: number,
+  now: Date = new Date()
+): Promise<{ checkInTime: Date; checkOutTime: Date; durationMinutes: number }> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const checkInTime = new Date(attendance.checkInTime);
+  const cutoffOnArrivalDay = parisDateTimeToDate(getParisDateString(checkInTime), cutoffHour, 0);
+  const checkOutTime = cutoffOnArrivalDay > checkInTime
+    ? cutoffOnArrivalDay
+    : parisDateTimeToDate(getParisDateString(now), cutoffHour, 0);
+  const durationMinutes = Math.floor((checkOutTime.getTime() - checkInTime.getTime()) / 60000);
+
+  await db.update(attendances).set({ checkOutTime, durationMinutes }).where(eq(attendances.id, attendance.id));
+  await db.update(residents)
+    .set({ hasMissedCheckout: true, missedCheckoutAttendanceId: attendance.id })
+    .where(eq(residents.id, attendance.residentId));
+
+  // Les heures de la séance clôturée comptent tout de suite sur le forfait (sinon le
+  // compteur reste faux jusqu'au recalcul de nuit, qui le signale comme une incohérence).
+  await fullRecalculateResident(attendance.residentId);
+
+  return { checkInTime, checkOutTime, durationMinutes };
+}
+
 export async function checkAndProcessMissedCheckouts(): Promise<{ processed: number }> {
   const db = await getDb();
   if (!db) {
@@ -83,36 +115,7 @@ export async function checkAndProcessMissedCheckouts(): Promise<{ processed: num
         continue;
       }
 
-      // Effectuer le pointage de sortie automatique à l'heure de clôture configurée,
-      // le jour de l'arrivée (heure de Paris : le serveur tourne en UTC). Une arrivée
-      // d'un jour précédent (ex. pointage hors connexion transmis en retard) est
-      // clôturée à l'heure limite de son jour, pas à celle d'aujourd'hui.
-      const checkInTime = new Date(attendance.checkInTime);
-      const cutoffOnArrivalDay = parisDateTimeToDate(getParisDateString(checkInTime), cutoffHour, 0);
-      const checkOutTime = cutoffOnArrivalDay > checkInTime
-        ? cutoffOnArrivalDay
-        : parisDateTimeToDate(getParisDateString(new Date()), cutoffHour, 0);
-
-      // Calculer la durée de la session
-      const durationMs = checkOutTime.getTime() - checkInTime.getTime();
-      const durationMinutes = Math.floor(durationMs / (1000 * 60));
-
-      await db
-        .update(attendances)
-        .set({
-          checkOutTime: checkOutTime,
-          durationMinutes: durationMinutes,
-        })
-        .where(eq(attendances.id, attendance.id));
-
-      // Marquer le résident comme ayant oublié de pointer et stocker l'ID du pointage
-      await db
-        .update(residents)
-        .set({
-          hasMissedCheckout: true,
-          missedCheckoutAttendanceId: attendance.id,
-        })
-        .where(eq(residents.id, attendance.residentId));
+      const { checkInTime, checkOutTime, durationMinutes } = await closeMissedCheckout(attendance, cutoffHour);
 
       // Générer un token de correction
       const baseUrl = getPublicSiteUrl();
