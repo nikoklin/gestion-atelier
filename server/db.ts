@@ -1096,13 +1096,18 @@ export function setQueuedActivationListener(
 // forfait précédent (date de fin, ou dernier pointage s'il a été épuisé
 // avant), pour qu'il n'y ait ni trou ni heures hors forfait entre les deux.
 // Fin réelle d'un forfait : sa date de fin, ou plus tôt le moment où ses heures
-// se sont épuisées (dernier pointage ou ajustement qui lui est rattaché).
+// se sont épuisées (dernier pointage ou ajustement qui lui est rattaché, ou dès
+// son démarrage si le report des heures hors forfait l'a absorbé en entier).
 export function packageEffectiveEnd(
-  pkg: { id: number; totalHours: number; usedHours: number; endDate: Date | string },
+  pkg: { id: number; totalHours: number; usedHours: number; endDate: Date | string;
+    startDate?: Date | string; deductedMinutes?: number | null },
   residentAttendances: { packageId: number | null; checkInTime: Date | string; checkOutTime: Date | string | null }[]
 ): Date {
   const endDate = new Date(pkg.endDate);
   if (pkg.totalHours - pkg.usedHours > 0) return endDate;
+  if (pkg.startDate && (pkg.deductedMinutes ?? 0) >= pkg.totalHours) {
+    return new Date(Math.min(endDate.getTime(), new Date(pkg.startDate).getTime()));
+  }
   const outs = residentAttendances
     .filter((a) => a.packageId === pkg.id && a.checkOutTime)
     .map((a) => new Date(a.checkOutTime!).getTime());

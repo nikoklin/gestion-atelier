@@ -33,6 +33,12 @@ describe("Fin réelle d'un forfait", () => {
     expect(db.packageEffectiveEnd({ id: 1, totalHours: 60, usedHours: 30, endDate: "2026-11-17T16:00:00Z" }, atts))
       .toEqual(new Date("2026-11-17T16:00:00Z"));
   });
+  it("absorbé en entier par le report d'heures hors forfait : s'arrête dès son démarrage", () => {
+    // Cas réel du 16/11 : forfait de 1 h payé avec 1 h 07 hors forfait en attente.
+    expect(db.packageEffectiveEnd({ id: 2, totalHours: 60, usedHours: 60, deductedMinutes: 67,
+      startDate: "2026-11-16T08:29:34Z", endDate: "2026-11-23T08:29:34Z" }, atts))
+      .toEqual(new Date("2026-11-16T08:29:34Z"));
+  });
 });
 
 describe.skipIf(!process.env.DATABASE_URL)("Démarrage d'un forfait en file", () => {
