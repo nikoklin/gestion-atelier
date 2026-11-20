@@ -28,7 +28,7 @@ async function cleanup() {
 async function setup(withCurrent: boolean) {
   await cleanup();
   const t = Date.now();
-  await db.createResident({ id: RID, firstName: "TEST", lastName: "Verrou", email: "", isActive: true } as any);
+  await db.createResident({ id: RID, firstName: "TEST", lastName: "Verrou", email: "", isActive: false } as any);
   await db.createPackage({ id: 9909001, residentId: RID, packageType: "custom_1", totalHours: 60, usedHours: 60,
     startDate: new Date(t - 60 * DAY), endDate: new Date(t - 30 * DAY), isActive: false, status: "active" } as any);
   await db.createAttendance({ id: 9909001, residentId: RID, packageId: 9909001, checkInTime: new Date(t - 40 * DAY),
@@ -110,7 +110,7 @@ describe.skipIf(!process.env.DATABASE_URL)("Modification et suppression des poin
     });
 
     it("« Effacer tous les pointages » : refusé, rien n'est effacé", async () => {
-      await expect(caller.attendances.deleteAllByResident({ residentId: RID })).rejects.toThrow(/forfait est en cours/);
+      await expect(caller.attendances.deleteAllByResident({ residentId: RID })).rejects.toThrow(/forfaits terminés/);
       expect(await db.getAttendancesByResidentId(RID)).toHaveLength(3);
     });
   });
@@ -139,6 +139,18 @@ describe.skipIf(!process.env.DATABASE_URL)("Modification et suppression des poin
       await caller.packages.extendDate({ packageId: 9909002, days: 3 });
       await caller.packages.addHours({ packageId: 9909002, hours: 1, minutes: 0 });
     });
+  });
+
+  it("sans forfait en cours : les forfaits plus anciens que le dernier restent figés", async () => {
+    await setup(false);
+    // Dernier forfait, épuisé lui aussi (cas réel : forfait de 1 h payé puis dépassé).
+    await db.createPackage({ id: 9909003, residentId: RID, packageType: "custom_1", totalHours: 60, usedHours: 60,
+      startDate: new Date(Date.now() - 5 * DAY), endDate: new Date(Date.now() + 2 * DAY), isActive: false, status: "active" } as any);
+    await expect(caller.packages.addHours({ packageId: 9909001, hours: 1, minutes: 0 })).rejects.toThrow(/ne peuvent plus être modifiées/);
+    await expect(caller.attendances.delete({ id: 9909001 })).rejects.toThrow(/forfait terminé/);
+    await caller.attendances.delete({ id: 9909002 }); // pointage hors forfait : corrigeable
+    expect(await exists(9909002)).toBe(false);
+    await caller.packages.addHours({ packageId: 9909003, hours: 1, minutes: 0 }); // régularisation possible
   });
 
   it("sans forfait en cours : la suppression reste possible", async () => {

@@ -18,6 +18,7 @@ import { eq } from "drizzle-orm";
 import { attendances } from "../drizzle/schema";
 
 import { OUT_OF_PACKAGE_LIMIT_MINUTES } from "./limits";
+import { isAttendanceLocked, isPackageLocked } from "@shared/packageLock";
 
 // Helper pour calculer la date de fin selon le type de forfait
 function calculateEndDate(startDate: Date, packageType: string): Date {
@@ -71,30 +72,31 @@ function overflowWarning(totalMinutes: number, excessMinutes: number): string {
   return `Pointage enregistré, mais il dépasse le total du forfait (${fmt(totalMinutes)}). Dépassement : ${fmt(excessMinutes)}, comptabilisé en heures hors forfait.`;
 }
 
-// Un nouveau forfait est en cours : les forfaits terminés gardent leurs heures et
-// leurs dates (le forfait en cours a été calculé à partir d'eux).
+// Forfaits terminés figés : seul le forfait en cours (à défaut le dernier forfait)
+// reste modifiable — les plus anciens ont servi à calculer les suivants.
 async function assertPackageNotLocked(pkg: { id: number; residentId: number; status: string }) {
   if (pkg.status === "pending") return;
-  const current = await db.getActivePackageByResidentId(pkg.residentId);
-  if (current && current.id !== pkg.id) {
+  const all = await db.getPackagesByResidentId(pkg.residentId);
+  const target = all.find((p) => p.id === pkg.id);
+  if (target && isPackageLocked(target, all)) {
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
-      message: "Ce forfait est terminé et un autre forfait est en cours : ses heures et ses dates ne peuvent plus être modifiées.",
+      message: "Ce forfait est terminé et un forfait plus récent existe : ses heures et ses dates ne peuvent plus être modifiées.",
     });
   }
 }
 
-// Un forfait est en cours : les pointages antérieurs (forfaits terminés, heures
-// hors forfait reportées) ont servi à le calculer, on n'y touche plus.
+// Les pointages des forfaits terminés (et, si un forfait est en cours, les heures
+// hors forfait qu'il a reprises) ont servi au calcul : on n'y touche plus.
 async function assertAttendanceNotLocked(
   attendance: { residentId: number; packageId: number | null },
   action: "supprimé" | "modifié"
 ) {
-  const current = await db.getActivePackageByResidentId(attendance.residentId);
-  if (current && attendance.packageId !== current.id) {
+  const all = await db.getPackagesByResidentId(attendance.residentId);
+  if (isAttendanceLocked(attendance, all)) {
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
-      message: `Ce pointage appartient à un forfait terminé : il ne peut pas être ${action} tant qu'un autre forfait est en cours.`,
+      message: `Ce pointage appartient à un forfait terminé : il ne peut pas être ${action}.`,
     });
   }
 }
@@ -1423,16 +1425,14 @@ export const appRouter = router({
           throw new TRPCError({ code: "NOT_FOUND", message: "Résident non trouvé" });
         }
 
-        // Même règle que la suppression d'un pointage : rien d'antérieur au forfait en cours.
-        const current = await db.getActivePackageByResidentId(input.residentId);
-        if (current) {
-          const all = await db.getAttendancesByResidentId(input.residentId);
-          if (all.some((a) => a.packageId !== current.id)) {
-            throw new TRPCError({
-              code: "PRECONDITION_FAILED",
-              message: "Un forfait est en cours : les pointages des forfaits terminés ne peuvent pas être supprimés.",
-            });
-          }
+        // Même règle que la suppression d'un pointage : rien qui appartienne à un forfait terminé.
+        const pkgs = await db.getPackagesByResidentId(input.residentId);
+        const all = await db.getAttendancesByResidentId(input.residentId);
+        if (all.some((a) => isAttendanceLocked(a, pkgs))) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "Des pointages appartiennent à des forfaits terminés : ils ne peuvent pas être supprimés.",
+          });
         }
 
         await db.deleteAllAttendancesByResidentId(input.residentId);

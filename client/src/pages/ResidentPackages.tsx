@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRoute, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { isAttendanceLocked, isPackageLocked } from "@shared/packageLock";
 import { usePackageLabel } from "@/hooks/usePackageLabel";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -114,12 +115,12 @@ export default function ResidentPackages() {
   );
   const hasValidPackage = !!validPackage;
   const attendances = pkgData?.attendances;
-  // Pointages antérieurs au forfait en cours (forfaits terminés, hors forfait reporté) : ni modifiables ni supprimables.
-  const isLockedAttendance = (a: any) => !!validPackage && a.packageId !== validPackage.id;
-  // Forfait terminé alors qu'un autre est en cours : heures et dates figées.
-  const isLockedPackage = (pkg: any) => !!validPackage && pkg.status !== 'pending' && pkg.id !== validPackage.id;
-  const lockedPackageTitle = "Forfait terminé : heures et dates non modifiables tant qu'un autre forfait est en cours";
-  const lockedTitle = "Pointage d'un forfait terminé : modification et suppression impossibles tant qu'un autre forfait est en cours";
+  // Forfaits terminés figés : seul le forfait en cours (à défaut le dernier) reste modifiable,
+  // ainsi que ses pointages (règle partagée avec le serveur, shared/packageLock.ts).
+  const isLockedAttendance = (a: any) => isAttendanceLocked(a, packages ?? []);
+  const isLockedPackage = (pkg: any) => isPackageLocked(pkg, packages ?? []);
+  const lockedPackageTitle = "Forfait terminé : heures et dates non modifiables, un forfait plus récent existe";
+  const lockedTitle = "Pointage d'un forfait terminé : modification et suppression impossibles";
   
   // Les heures hors forfait sont maintenant stockées directement dans resident.outOfPackageMinutes
   const totalOutOfPackageMinutesFromBackend = resident?.outOfPackageMinutes || 0;
@@ -800,7 +801,7 @@ export default function ResidentPackages() {
                   size="sm"
                   variant="destructive"
                   disabled={attendances.some(isLockedAttendance)}
-                  title={attendances.some(isLockedAttendance) ? "Un forfait est en cours : les pointages des forfaits terminés ne peuvent pas être supprimés" : undefined}
+                  title={attendances.some(isLockedAttendance) ? "Des pointages appartiennent à des forfaits terminés : ils ne peuvent pas être supprimés" : undefined}
                   onClick={() => setIsDeleteAllAttendancesDialogOpen(true)}
                 >
                   <Trash2 className="mr-1 h-4 w-4" />
