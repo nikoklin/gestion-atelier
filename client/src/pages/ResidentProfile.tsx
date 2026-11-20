@@ -1,6 +1,7 @@
 import { useParams, useLocation, useSearch } from "wouter";
 import SignaturePad from "@/components/SignaturePad";
 import { trpc } from "@/lib/trpc";
+import { isAttendanceLocked } from "@shared/packageLock";
 import { usePackageLabel } from "@/hooks/usePackageLabel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -326,6 +327,19 @@ const utils = trpc.useUtils();
       toast.error(error.message, { duration: 8000 });
     },
   });
+
+  const dismissMissedCheckoutMutation = trpc.residents.dismissMissedCheckout.useMutation({
+    onSuccess: () => {
+      toast.success("Alerte de pointage oublié retirée");
+      invalidateAttendanceRelated();
+      setShowEditAttendanceDialog(false);
+      setSelectedAttendance(null);
+    },
+    onError: (error) => toast.error(error.message, { duration: 8000 }),
+  });
+  const isFlaggedAttendance = !!resident?.hasMissedCheckout && !!selectedAttendance
+    && selectedAttendance.id === resident?.missedCheckoutAttendanceId;
+  const selectedAttendanceLocked = !!selectedAttendance && isAttendanceLocked(selectedAttendance, packages ?? []);
 
   const handleEditAttendance = (attendance: any) => {
     setSelectedAttendance(attendance);
@@ -945,11 +959,27 @@ const utils = trpc.useUtils();
               </div>
             </div>
           </div>
-          <DialogFooter>
+          {selectedAttendanceLocked && (
+            <p className="text-sm text-muted-foreground">
+              Ce pointage appartient à un forfait terminé : il ne peut plus être modifié.
+              {isFlaggedAttendance && " Vous pouvez seulement retirer l'alerte « pointage oublié »."}
+            </p>
+          )}
+          <DialogFooter className="gap-2">
+            {isFlaggedAttendance && (
+              <Button
+                variant="outline"
+                className="sm:mr-auto"
+                disabled={dismissMissedCheckoutMutation.isPending}
+                onClick={() => dismissMissedCheckoutMutation.mutate({ residentId })}
+              >
+                Retirer l'alerte
+              </Button>
+            )}
             <Button variant="outline" onClick={() => setShowEditAttendanceDialog(false)}>
               Annuler
             </Button>
-            <Button onClick={confirmEditAttendance}>
+            <Button onClick={confirmEditAttendance} disabled={selectedAttendanceLocked}>
               Enregistrer
             </Button>
           </DialogFooter>

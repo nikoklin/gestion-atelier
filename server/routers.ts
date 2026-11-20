@@ -653,6 +653,18 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    // Retirer à la main l'alerte « pointage oublié » (« ! » rouge), par exemple quand
+    // l'heure de clôture automatique convient ou que le pointage appartient à un
+    // forfait terminé et ne peut plus être corrigé.
+    dismissMissedCheckout: protectedProcedure
+      .input(z.object({ residentId: z.number() }))
+      .mutation(async ({ input }) => {
+        return withUndo(input.residentId, "retrait de l'alerte de pointage oublié", async () => {
+          await db.updateResident(input.residentId, { hasMissedCheckout: false, missedCheckoutAttendanceId: null });
+          return { success: true };
+        });
+      }),
+
     // Étagère vidée par l'atelier : elle redevient non occupée, le résident en est informé par
     // e-mail puis il est archivé (récupérable depuis la page des résidents archivés).
     releaseShelf: protectedProcedure
