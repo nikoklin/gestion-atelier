@@ -11,3 +11,5 @@
 - **Règles :** une erreur serveur sur un pointage ne bloque que son résident ; un résident introuvable est un
   refus définitif (pas une erreur). Ne pas lancer la suite de tests pendant que l'atelier pointe ; à terme,
   une base de test séparée (voir « intégration continue » dans todo.md).
+
+- **Aperçu navigateur (20/11/2026)** : ne jamais lancer `gestion-atelier-dev` pour vérifier une page — le serveur de dev démarre le scheduler (rappels, clôtures, sauvegarde) sur la VRAIE base. `preview_start` lit `~/Developer/.claude/launch.json` (dossier parent) et retombe sur la seule config connue si le nom est absent. Pour voir une page : `pnpm build` puis config `checkin-static` (serve de `dist/public`, port 4173, sans API), état simulé dans localStorage, puis nettoyer localStorage/IndexedDB.

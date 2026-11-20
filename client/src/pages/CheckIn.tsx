@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { CheckCircle, CloudOff } from "lucide-react";
+import { CloudOff } from "lucide-react";
 import { toast } from "sonner";
 import { useIsMobileLandscape } from "@/hooks/useMobile";
 import {
@@ -41,8 +41,8 @@ function readCachedState(): KioskState | undefined {
 }
 
 const CONFIRMATION_MS = 3000;
-// Durée pendant laquelle le temps passé reste affiché dans la case du résident après son départ.
-const CHECKOUT_TILE_MS = 30000;
+// Durée pendant laquelle le dernier pointage reste affiché dans la case du résident.
+const SCAN_TILE_MS = 30000;
 
 // Heure de l'atelier, mise à jour toutes les 10 s. Composant séparé pour que la
 // liste des résidents ne soit pas redessinée à chaque tic (un appui en cours ne se perd pas).
@@ -64,37 +64,30 @@ function KioskClock({ compact }: { compact: boolean }) {
 }
 
 
-type LastScan = {
-  resident: { id: number; firstName: string; lastName?: string };
+// Dernier pointage d'un résident, affiché dans sa case pendant SCAN_TILE_MS.
+type RecentScan = {
   action: "checkin" | "checkout";
-  queued: boolean; // enregistré sur la tablette, envoi au retour du réseau
+  at: string;
+  durationMinutes?: number;
   remainingHours?: number;
   remainingMinutes?: number;
-  durationMinutes?: number;
   isOutOfPackage?: boolean;
 };
 
 export default function CheckIn() {
-  const [lastScan, setLastScan] = useState<LastScan | null>(null);
-  // Le message de pointage s'efface après 3 s (un nouveau pointage relance le délai).
-  useEffect(() => {
-    if (!lastScan) return;
-    const timer = setTimeout(() => setLastScan(null), CONFIRMATION_MS);
-    return () => clearTimeout(timer);
-  }, [lastScan]);
   const [busy, setBusy] = useState(false);
-  // Départs récents : heure de départ et temps passé, affichés dans la case du résident.
-  const [recentCheckouts, setRecentCheckouts] = useState<Map<number, { at: string; durationMinutes?: number }>>(new Map());
-  const noteCheckout = (residentId: number, at: string, durationMinutes?: number) => {
-    setRecentCheckouts((old) => new Map(old).set(residentId, { at, durationMinutes }));
+  // Derniers pointages : heure, temps passé et solde, affichés dans la case du résident.
+  const [recentScans, setRecentScans] = useState<Map<number, RecentScan>>(new Map());
+  const noteScan = (residentId: number, scan: RecentScan) => {
+    setRecentScans((old) => new Map(old).set(residentId, scan));
     setTimeout(() => {
-      setRecentCheckouts((old) => {
-        if (old.get(residentId)?.at !== at) return old; // un pointage plus récent l'a remplacé
+      setRecentScans((old) => {
+        if (old.get(residentId)?.at !== scan.at) return old; // un pointage plus récent l'a remplacé
         const next = new Map(old);
         next.delete(residentId);
         return next;
       });
-    }, CHECKOUT_TILE_MS);
+    }, SCAN_TILE_MS);
   };
   const [kiosk, setKiosk] = useState<KioskStatus | null>(null);
 
@@ -196,8 +189,14 @@ export default function CheckIn() {
         if (outcome.kind === "ok") {
           applyServerResult(outcome.result);
           flash(resident.id, "green");
-          setLastScan({ ...outcome.result, resident: outcome.result.resident, queued: false });
-          if (outcome.result.action === "checkout") noteCheckout(resident.id, ev.occurredAt, outcome.result.durationMinutes);
+          noteScan(resident.id, {
+            action: outcome.result.action,
+            at: ev.occurredAt,
+            durationMinutes: outcome.result.durationMinutes,
+            remainingHours: outcome.result.remainingHours,
+            remainingMinutes: outcome.result.remainingMinutes,
+            isOutOfPackage: outcome.result.isOutOfPackage,
+          });
           toast.success(outcome.result.action === "checkout" ? "Pointage de départ enregistré" : "Pointage d'arrivée enregistré", { duration: CONFIRMATION_MS });
           return;
         }
@@ -210,14 +209,11 @@ export default function CheckIn() {
       // Réseau indisponible : enregistré sur la tablette (confirmé seulement une fois écrit).
       await enqueueKioskEvent(ev);
       flash(resident.id, "green");
-      const queuedDuration = since ? Math.max(0, Math.floor((Date.parse(ev.occurredAt) - Date.parse(since)) / 60000)) : undefined;
-      setLastScan({
-        resident,
+      noteScan(resident.id, {
         action: ev.action,
-        queued: true,
-        durationMinutes: queuedDuration,
+        at: ev.occurredAt,
+        durationMinutes: since ? Math.max(0, Math.floor((Date.parse(ev.occurredAt) - Date.parse(since)) / 60000)) : undefined,
       });
-      if (ev.action === "checkout") noteCheckout(resident.id, ev.occurredAt, queuedDuration);
       toast.success("Pointage enregistré sur la tablette : il sera envoyé dès le retour du réseau.", { duration: CONFIRMATION_MS });
       void flushKioskQueue();
     } catch (err) {
@@ -233,6 +229,12 @@ export default function CheckIn() {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return `${hours}h${mins.toString().padStart(2, "0")}`;
+  };
+  // Solde après le pointage : heures restantes du forfait, ou heures hors forfait dues.
+  const balance = (scan: RecentScan) => {
+    if (scan.remainingHours === undefined) return null;
+    const mins = Math.abs(scan.remainingHours) * 60 + Math.abs(scan.remainingMinutes ?? 0);
+    return scan.isOutOfPackage ? ` • hors forfait ${formatDuration(mins)}` : ` • reste ${formatDuration(mins)}`;
   };
   const formatTime = (iso: string) => new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 
@@ -286,7 +288,9 @@ export default function CheckIn() {
     const hasExpiredPackage = residentsWithExpiredPackage.has(resident.id);
     const isPresentWithExpiredPackage = hasOpenAttendance && hasExpiredPackage && !hasValidPackage;
     const checkInTime = since ? formatTime(since) : null;
-    const recentCheckout = !hasOpenAttendance ? recentCheckouts.get(resident.id) : undefined;
+    const scan = recentScans.get(resident.id);
+    const recentCheckin = hasOpenAttendance && scan?.action === "checkin" ? scan : undefined;
+    const recentCheckout = !hasOpenAttendance && scan?.action === "checkout" ? scan : undefined;
     let btnClass = 'bg-white border-gray-200 text-gray-800 hover:bg-gray-50 hover:border-gray-300';
     if (flashingRedResidentId === resident.id) btnClass = 'animate-flash-red';
     else if (flashingGreenResidentId === resident.id) btnClass = 'animate-flash-green';
@@ -303,14 +307,19 @@ export default function CheckIn() {
         >
           <span className="font-semibold">{resident.firstName} {resident.lastName}</span>
           <span className={`${isLandscape ? 'text-xs' : 'text-sm md:text-lg'} font-normal ml-2 shrink-0`}>
-            {isPresentWithExpiredPackage ? (
+            {recentCheckin ? (
+              <span className={`font-semibold ${recentCheckin.isOutOfPackage ? "text-red-600" : "text-green-700"}`}>
+                Arrivée {formatTime(recentCheckin.at)}{balance(recentCheckin)}
+              </span>
+            ) : isPresentWithExpiredPackage ? (
               <span className="text-red-600 font-semibold">Hors forfait • {checkInTime} →</span>
             ) : hasOpenAttendance ? (
               <span className="text-green-700">{checkInTime} →</span>
             ) : recentCheckout ? (
-              <span className="text-blue-700 font-semibold">
+              <span className={`font-semibold ${recentCheckout.isOutOfPackage ? "text-red-600" : "text-blue-700"}`}>
                 Départ {formatTime(recentCheckout.at)}
                 {recentCheckout.durationMinutes !== undefined && <> • {formatDuration(recentCheckout.durationMinutes)} passées</>}
+                {balance(recentCheckout)}
               </span>
             ) : null}
           </span>
@@ -335,56 +344,6 @@ export default function CheckIn() {
 
   const sortedResidents = state?.residents ?? [];
 
-  // Confirmation affichée après un pointage (enregistré sur le serveur ou dans la file de la tablette)
-  const Confirmation = ({ compact }: { compact: boolean }) => {
-    if (!lastScan) return null;
-    const isIn = lastScan.action === "checkin";
-    return (
-      <div className={`rounded-lg border-2 ${compact ? 'p-3' : 'p-4'} ${isIn ? "border-green-500 bg-green-50" : "border-blue-500 bg-blue-50"}`}>
-        <div className="flex flex-col items-center gap-1 text-center">
-          <div className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold text-white ${isIn ? "bg-green-600" : "bg-blue-600"}`}>
-            {isIn ? "ENTRÉE" : "SORTIE"}
-          </div>
-          <CheckCircle className={`${compact ? 'h-8 w-8' : 'h-10 w-10'} ${isIn ? "text-green-600" : "text-blue-600"}`} />
-          <p className={`${compact ? 'text-sm' : 'text-base md:text-xl'} font-bold ${isIn ? "text-green-900" : "text-blue-900"}`}>
-            {isIn ? `Bienvenue ${lastScan.resident.firstName} !` : `À bientôt ${lastScan.resident.firstName} !`}
-          </p>
-          {lastScan.queued ? (
-            <p className="text-xs text-amber-800">
-              Pointage enregistré sur la tablette.<br />Il sera envoyé dès le retour du réseau.
-            </p>
-          ) : (
-            <p className="text-xs text-gray-600">Pointage enregistré</p>
-          )}
-          {!isIn && lastScan.durationMinutes !== undefined && (
-            <p className="text-xs text-blue-800 font-semibold">{formatDuration(lastScan.durationMinutes)}</p>
-          )}
-          {lastScan.remainingHours !== undefined && (
-            lastScan.isOutOfPackage ? (
-              <p className="text-xs font-semibold text-red-600">
-                Hors forfait : {lastScan.remainingHours}h
-                {lastScan.remainingMinutes! > 0 ? lastScan.remainingMinutes!.toString().padStart(2, "0") : "00"}
-              </p>
-            ) : (
-              <p className={`text-xs font-semibold ${isIn ? "text-green-800" : "text-blue-800"}`}>
-                Restant : {lastScan.remainingHours < 0 ? "-" : ""}{Math.abs(lastScan.remainingHours)}h
-                {Math.abs(lastScan.remainingMinutes!) > 0 ? Math.abs(lastScan.remainingMinutes!).toString().padStart(2, "0") : ""}
-              </p>
-            )
-          )}
-          {compact && (
-            <button
-              onClick={() => { localStorage.setItem("residentId", lastScan.resident.id.toString()); sessionStorage.setItem(FROM_KIOSK_KEY, "1"); window.location.href = "/resident/dashboard"; }}
-              className="mt-1 text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              Mon espace
-            </button>
-          )}
-        </div>
-      </div>
-    );
-  };
-
   // ── Mode paysage mobile : layout horizontal côte à côte ──
   if (isLandscape) {
     return (
@@ -404,16 +363,6 @@ export default function CheckIn() {
           </div>
         </div>
 
-        {/* Colonne droite : confirmation */}
-        <div className="w-52 shrink-0 flex flex-col justify-center">
-          {lastScan ? (
-            <Confirmation compact />
-          ) : (
-            <div className="rounded-lg border border-dashed border-gray-300 p-4 text-center">
-              <p className="text-xs text-gray-400">Confirmation ici</p>
-            </div>
-          )}
-        </div>
       </div>
     );
   }
@@ -432,8 +381,6 @@ export default function CheckIn() {
           <p className="text-sm md:text-lg text-gray-500">Cliquez sur votre nom pour pointer</p>
           <div className="mt-1 flex justify-center"><ConnectionStatus /></div>
         </div>
-
-        {lastScan && <div className="mb-3 shrink-0"><Confirmation compact={false} /></div>}
 
         <Card className="flex-1 min-h-0 py-0 overflow-hidden">
           <CardContent className="h-full p-3 sm:p-4">
