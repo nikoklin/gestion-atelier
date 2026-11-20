@@ -42,7 +42,7 @@ function readCachedState(): KioskState | undefined {
 
 const CONFIRMATION_MS = 3000;
 // Durée pendant laquelle le dernier pointage reste affiché dans la case du résident.
-const SCAN_TILE_MS = 30000;
+const SCAN_TILE_MS = 10000;
 
 // Heure de l'atelier, mise à jour toutes les 10 s. Composant séparé pour que la
 // liste des résidents ne soit pas redessinée à chaque tic (un appui en cours ne se perd pas).
