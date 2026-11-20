@@ -41,6 +41,27 @@ function readCachedState(): KioskState | undefined {
 }
 
 const CONFIRMATION_MS = 3000;
+// Durée pendant laquelle le temps passé reste affiché dans la case du résident après son départ.
+const CHECKOUT_TILE_MS = 30000;
+
+// Heure de l'atelier, mise à jour toutes les 10 s. Composant séparé pour que la
+// liste des résidents ne soit pas redessinée à chaque tic (un appui en cours ne se perd pas).
+function KioskClock({ compact }: { compact: boolean }) {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 10000);
+    return () => clearInterval(timer);
+  }, []);
+  const time = now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  if (compact) return <span className="text-sm font-semibold text-gray-700 tabular-nums">{time}</span>;
+  const date = now.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+  return (
+    <div className="flex flex-col items-center leading-tight">
+      <span className="text-3xl md:text-5xl font-bold text-gray-800 tabular-nums">{time}</span>
+      <span className="text-xs md:text-sm text-gray-500 first-letter:uppercase">{date}</span>
+    </div>
+  );
+}
 
 
 type LastScan = {
@@ -62,6 +83,19 @@ export default function CheckIn() {
     return () => clearTimeout(timer);
   }, [lastScan]);
   const [busy, setBusy] = useState(false);
+  // Départs récents : heure de départ et temps passé, affichés dans la case du résident.
+  const [recentCheckouts, setRecentCheckouts] = useState<Map<number, { at: string; durationMinutes?: number }>>(new Map());
+  const noteCheckout = (residentId: number, at: string, durationMinutes?: number) => {
+    setRecentCheckouts((old) => new Map(old).set(residentId, { at, durationMinutes }));
+    setTimeout(() => {
+      setRecentCheckouts((old) => {
+        if (old.get(residentId)?.at !== at) return old; // un pointage plus récent l'a remplacé
+        const next = new Map(old);
+        next.delete(residentId);
+        return next;
+      });
+    }, CHECKOUT_TILE_MS);
+  };
   const [kiosk, setKiosk] = useState<KioskStatus | null>(null);
 
   // États pour les animations clignotantes
@@ -163,6 +197,7 @@ export default function CheckIn() {
           applyServerResult(outcome.result);
           flash(resident.id, "green");
           setLastScan({ ...outcome.result, resident: outcome.result.resident, queued: false });
+          if (outcome.result.action === "checkout") noteCheckout(resident.id, ev.occurredAt, outcome.result.durationMinutes);
           toast.success(outcome.result.action === "checkout" ? "Pointage de départ enregistré" : "Pointage d'arrivée enregistré", { duration: CONFIRMATION_MS });
           return;
         }
@@ -175,12 +210,14 @@ export default function CheckIn() {
       // Réseau indisponible : enregistré sur la tablette (confirmé seulement une fois écrit).
       await enqueueKioskEvent(ev);
       flash(resident.id, "green");
+      const queuedDuration = since ? Math.max(0, Math.floor((Date.parse(ev.occurredAt) - Date.parse(since)) / 60000)) : undefined;
       setLastScan({
         resident,
         action: ev.action,
         queued: true,
-        durationMinutes: since ? Math.max(0, Math.floor((Date.parse(ev.occurredAt) - Date.parse(since)) / 60000)) : undefined,
+        durationMinutes: queuedDuration,
       });
+      if (ev.action === "checkout") noteCheckout(resident.id, ev.occurredAt, queuedDuration);
       toast.success("Pointage enregistré sur la tablette : il sera envoyé dès le retour du réseau.", { duration: CONFIRMATION_MS });
       void flushKioskQueue();
     } catch (err) {
@@ -249,6 +286,7 @@ export default function CheckIn() {
     const hasExpiredPackage = residentsWithExpiredPackage.has(resident.id);
     const isPresentWithExpiredPackage = hasOpenAttendance && hasExpiredPackage && !hasValidPackage;
     const checkInTime = since ? formatTime(since) : null;
+    const recentCheckout = !hasOpenAttendance ? recentCheckouts.get(resident.id) : undefined;
     let btnClass = 'bg-white border-gray-200 text-gray-800 hover:bg-gray-50 hover:border-gray-300';
     if (flashingRedResidentId === resident.id) btnClass = 'animate-flash-red';
     else if (flashingGreenResidentId === resident.id) btnClass = 'animate-flash-green';
@@ -269,6 +307,11 @@ export default function CheckIn() {
               <span className="text-red-600 font-semibold">Hors forfait • {checkInTime} →</span>
             ) : hasOpenAttendance ? (
               <span className="text-green-700">{checkInTime} →</span>
+            ) : recentCheckout ? (
+              <span className="text-blue-700 font-semibold">
+                Départ {formatTime(recentCheckout.at)}
+                {recentCheckout.durationMinutes !== undefined && <> • {formatDuration(recentCheckout.durationMinutes)} passées</>}
+              </span>
             ) : null}
           </span>
         </Button>
@@ -350,6 +393,7 @@ export default function CheckIn() {
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           <div className="flex items-baseline justify-between gap-2 mb-1 shrink-0">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Cliquez sur votre nom</p>
+            <KioskClock compact />
             <ConnectionStatus />
           </div>
           <div className="flex flex-col gap-1 overflow-y-auto flex-1">
@@ -383,7 +427,8 @@ export default function CheckIn() {
     >
       <div className="w-full max-w-2xl md:max-w-4xl flex flex-col flex-1 min-h-0">
         <div className="text-center mb-3 sm:mb-4 shrink-0">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold text-gray-800 mb-1">Pointage Atelier</h1>
+          <KioskClock compact={false} />
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold text-gray-800 mb-1 mt-1">Pointage Atelier</h1>
           <p className="text-sm md:text-lg text-gray-500">Cliquez sur votre nom pour pointer</p>
           <div className="mt-1 flex justify-center"><ConnectionStatus /></div>
         </div>
