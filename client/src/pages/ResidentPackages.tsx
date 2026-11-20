@@ -29,7 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, ArrowLeft, Clock, Trash2, RefreshCw, CalendarPlus, Pencil, Undo2 } from "lucide-react";
+import { Plus, ArrowLeft, Clock, Trash2, RefreshCw, CalendarPlus, Pencil, Undo2, Lock } from "lucide-react";
 import { toast } from "sonner";
 
 export default function ResidentPackages() {
@@ -622,12 +622,18 @@ export default function ResidentPackages() {
             <TableBody>
               {packages?.map((pkg) => {
                 const color = packageColorMap.get(pkg.id);
+                const locked = isLockedPackage(pkg);
                 return (
-                <TableRow key={pkg.id} className={color?.bg}>
+                <TableRow
+                  key={pkg.id}
+                  className={locked ? "bg-muted text-muted-foreground hover:bg-muted" : color?.bg}
+                  title={locked ? lockedPackageTitle : undefined}
+                >
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
-                      <span className={`inline-block w-3 h-3 rounded-full flex-shrink-0 ${color?.dot}`} />
+                      <span className={`inline-block w-3 h-3 rounded-full flex-shrink-0 ${color?.dot} ${locked ? "opacity-50" : ""}`} />
                       {getPackageLabel(pkg.packageType)}
+                      {locked && <Lock className="h-3.5 w-3.5 flex-shrink-0" aria-label="Forfait figé" />}
                     </div>
                   </TableCell>
                   <TableCell>{formatDate(pkg.startDate)}</TableCell>
@@ -679,8 +685,8 @@ export default function ResidentPackages() {
                       <Button
                         variant="outline"
                         size="sm"
-                        disabled={isLockedPackage(pkg)}
-                        title={isLockedPackage(pkg) ? lockedPackageTitle : undefined}
+                        disabled={locked}
+                        title={locked ? lockedPackageTitle : undefined}
                         onClick={() => {
                           setSelectedPackageId(pkg.id);
                           setIsAddHoursDialogOpen(true);
@@ -691,8 +697,8 @@ export default function ResidentPackages() {
                       <Button
                         variant="outline"
                         size="sm"
-                        disabled={isLockedPackage(pkg)}
-                        title={isLockedPackage(pkg) ? lockedPackageTitle : undefined}
+                        disabled={locked}
+                        title={locked ? lockedPackageTitle : undefined}
                         onClick={() => {
                           setSelectedPackageId(pkg.id);
                           setIsSubtractHoursDialogOpen(true);
@@ -703,8 +709,8 @@ export default function ResidentPackages() {
                       <Button
                         variant="outline"
                         size="sm"
-                        disabled={isLockedPackage(pkg)}
-                        title={isLockedPackage(pkg) ? lockedPackageTitle : undefined}
+                        disabled={locked}
+                        title={locked ? lockedPackageTitle : undefined}
                         onClick={() => {
                           setSelectedPackageId(pkg.id);
                           setEditStartDateValue(new Date(pkg.startDate).toISOString().split('T')[0]);
@@ -716,8 +722,8 @@ export default function ResidentPackages() {
                       <Button
                         variant="outline"
                         size="sm"
-                        disabled={isLockedPackage(pkg)}
-                        title={isLockedPackage(pkg) ? lockedPackageTitle : undefined}
+                        disabled={locked}
+                        title={locked ? lockedPackageTitle : undefined}
                         onClick={() => {
                           setSelectedPackageId(pkg.id);
                           setIsExtendDateDialogOpen(true);
@@ -728,8 +734,8 @@ export default function ResidentPackages() {
                       <Button
                         variant="outline"
                         size="sm"
-                        disabled={isLockedPackage(pkg)}
-                        title={isLockedPackage(pkg) ? lockedPackageTitle : undefined}
+                        disabled={locked}
+                        title={locked ? lockedPackageTitle : undefined}
                         onClick={() => {
                           setSelectedPackageId(pkg.id);
                           setIsSubtractDaysDialogOpen(true);
