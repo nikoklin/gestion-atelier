@@ -1,5 +1,6 @@
 import { eq, and, desc, gte, lte, isNull, isNotNull, inArray, ne, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import { randomUUID } from "crypto";
 import mysql from "mysql2";
 import { 
   InsertUser, 
@@ -140,6 +141,35 @@ export async function getUserByEmail(email: string) {
   const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
 
   return result.length > 0 ? result[0] : undefined;
+}
+
+// ============= COMPTE DE LA TABLETTE =============
+// Un seul compte de rôle « user » (TABLET_ROLE) avec mot de passe : la tablette de l'atelier.
+
+export async function getTabletUser() {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(users)
+    .where(and(eq(users.role, "user"), eq(users.loginMethod, "password"))).limit(1);
+  return rows[0];
+}
+
+export async function saveTabletUser(email: string, passwordHash: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const existing = await getTabletUser();
+  if (existing) {
+    await db.update(users).set({ email, passwordHash }).where(eq(users.id, existing.id));
+  } else {
+    await db.insert(users).values({
+      openId: `tablet-${randomUUID()}`,
+      name: "Tablette de l'atelier",
+      email,
+      passwordHash,
+      loginMethod: "password",
+      role: "user",
+    });
+  }
 }
 
 // ============= RESIDENTS =============

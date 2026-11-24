@@ -23,7 +23,7 @@ import { APP_LOGO, APP_TITLE, getLoginUrl } from "@/const";
 import { useIsMobile, useIsMobileLandscape } from "@/hooks/useMobile";
 import { LayoutDashboard, LogOut, PanelLeft, Users, Mail, Settings, Fingerprint, BarChart3, Archive } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
-import { useLocation } from "wouter";
+import { Redirect, useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -60,6 +60,11 @@ export default function DashboardLayout({
 
   if (loading) {
     return <DashboardLayoutSkeleton />
+  }
+
+  // Compte de la tablette : pas d'accès aux pages de gestion, retour au pointage.
+  if (user && user.role !== "admin") {
+    return <Redirect to="/checkin" />;
   }
 
   if (!user) {

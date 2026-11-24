@@ -698,6 +698,9 @@ export default function Settings() {
         </CardContent>
       </Card>
 
+      {/* ── Compte de la tablette ── */}
+      <TabletAccountCard />
+
       {/* ── Forfait automatique sur paiement Wix ── */}
       <Card className="mb-6">
         <CardHeader>
@@ -880,5 +883,64 @@ export default function Settings() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+// Compte de la tablette : accès au seul pointage et à « Mon espace » des résidents.
+function TabletAccountCard() {
+  const utils = trpc.useUtils();
+  const { data: tablet } = trpc.atelierSettings.getTabletAccount.useQuery();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  useEffect(() => {
+    if (tablet?.email) setEmail(tablet.email);
+  }, [tablet?.email]);
+  const save = trpc.atelierSettings.setTabletAccount.useMutation({
+    onSuccess: () => {
+      toast.success(tablet ? "Compte de la tablette mis à jour" : "Compte de la tablette créé");
+      setPassword("");
+      utils.atelierSettings.getTabletAccount.invalidate();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+  return (
+    <Card className="mb-6">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <ShieldCheck className="h-5 w-5" />
+          Compte de la Tablette
+        </CardTitle>
+        <CardDescription className="mt-1">
+          Un compte qui n'ouvre que la page de pointage et « Mon espace » des résidents : la gestion
+          (fiches, forfaits, e-mails, paramètres) reste inaccessible depuis la tablette.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          {tablet
+            ? <>Compte créé : <strong>{tablet.email}</strong>. Tu peux changer l'adresse ou le mot de passe ci-dessous.</>
+            : "Aucun compte tablette pour l'instant : la tablette utilise un compte administrateur."}
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2 max-w-xl">
+          <div className="space-y-1">
+            <Label htmlFor="tablet-email">Adresse e-mail (réservée à la tablette)</Label>
+            <Input id="tablet-email" type="email" autoComplete="off" value={email} onChange={(e) => setEmail(e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="tablet-password">{tablet ? "Nouveau mot de passe" : "Mot de passe"} (8 caractères min.)</Label>
+            <Input id="tablet-password" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          </div>
+        </div>
+        <Button
+          onClick={() => save.mutate({ email: email.trim(), password })}
+          disabled={save.isPending || !email.trim() || password.length < 8}
+        >
+          {tablet ? "Mettre à jour" : "Créer le compte tablette"}
+        </Button>
+        <p className="text-xs text-muted-foreground">
+          Ensuite, sur la tablette : se déconnecter, puis se reconnecter avec ce compte. Elle arrive directement sur le pointage.
+        </p>
+      </CardContent>
+    </Card>
   );
 }

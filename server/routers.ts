@@ -5,7 +5,7 @@ import { signSession } from "./_core/session";
 import { RESIDENT_COOKIE_NAME, residentSpaceUrl, signResidentSession, verifyResidentLink } from "./_core/residentSession";
 import type { TrpcContext } from "./_core/context";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, kioskProcedure, router } from "./_core/trpc";
 import { emailRouter } from "./emailRouter";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
@@ -327,7 +327,11 @@ export const appRouter = router({
       }),
   }),
   auth: router({
-    me: publicProcedure.query(opts => opts.ctx.user),
+    me: publicProcedure.query(opts => {
+      if (!opts.ctx.user) return null;
+      const { passwordHash: _hash, ...user } = opts.ctx.user;
+      return user;
+    }),
     login: publicProcedure
       .input(
         z.object({
@@ -1318,7 +1322,7 @@ export const appRouter = router({
 
     // Tablette de pointage (connectée en admin) : un pointage avec son heure réelle
     // et son identifiant (voir server/kioskEvents.ts).
-    recordKioskEvent: protectedProcedure
+    recordKioskEvent: kioskProcedure
       .input(z.object({
         eventId: z.string().min(8).max(64),
         residentId: z.number().int(),
@@ -1338,7 +1342,7 @@ export const appRouter = router({
         }
       }),
 
-    kioskState: protectedProcedure.query(async () => {
+    kioskState: kioskProcedure.query(async () => {
       const { getKioskState } = await import("./kioskEvents");
       return await getKioskState();
     }),
@@ -1651,6 +1655,24 @@ export const appRouter = router({
   }),
 
   atelierSettings: router({
+    // Compte de la tablette (pointage et « Mon espace » seulement).
+    getTabletAccount: protectedProcedure.query(async () => {
+      const tablet = await db.getTabletUser();
+      return tablet ? { email: tablet.email, lastSignedIn: tablet.lastSignedIn } : null;
+    }),
+    setTabletAccount: protectedProcedure
+      .input(z.object({ email: z.string().email().max(320), password: z.string().min(8).max(200) }))
+      .mutation(async ({ input }) => {
+        const email = input.email.trim().toLowerCase();
+        const sameEmail = await db.getUserByEmail(email);
+        const tablet = await db.getTabletUser();
+        if (sameEmail && sameEmail.id !== tablet?.id) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Cette adresse est déjà celle d'un autre compte : choisis une adresse réservée à la tablette." });
+        }
+        await db.saveTabletUser(email, await bcrypt.hash(input.password, 10));
+        return { success: true };
+      }),
+
     // Connexion Wix pour les liens de paiement automatiques (lecture seule).
     getPaymentLinksStatus: protectedProcedure.query(async () => {
       const { checkWixPaymentLinksConnection } = await import("./wixPaymentLinkService");

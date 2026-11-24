@@ -24,7 +24,9 @@ export default function Login() {
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: async () => {
       await utils.auth.me.invalidate();
-      setLocation("/");
+      // Compte de la tablette : directement sur la page de pointage.
+      const me = await utils.auth.me.fetch();
+      setLocation(me && me.role !== "admin" ? "/checkin" : "/");
     },
     onError: error => {
       toast.error(error.message || "Connexion impossible");
