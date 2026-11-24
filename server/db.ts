@@ -1115,6 +1115,21 @@ export function packageEffectiveEnd(
   return new Date(Math.min(endDate.getTime(), Math.max(...outs)));
 }
 
+// Pointage hors forfait (sans forfait rattaché) repris plus tard par un nouveau
+// forfait : c'est le premier forfait démarré après lui, s'il a bien reporté des
+// heures hors forfait (deductedMinutes > 0 ; sinon elles ont été abandonnées).
+export function carriedOverPackageId(
+  attendance: { packageId: number | null; checkInTime: Date | string; attendanceType?: string | null },
+  pkgs: { id: number; status: string; startDate: Date | string; deductedMinutes?: number | null }[]
+): number | null {
+  if (attendance.packageId !== null || (attendance.attendanceType && attendance.attendanceType !== "normal")) return null;
+  const at = new Date(attendance.checkInTime).getTime();
+  const next = pkgs
+    .filter((p) => p.status !== "pending" && new Date(p.startDate).getTime() >= at)
+    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())[0];
+  return next && (next.deductedMinutes ?? 0) > 0 ? next.id : null;
+}
+
 export async function activateNextQueuedPackage(residentId: number): Promise<boolean> {
   const db = await getDb();
   if (!db) return false;

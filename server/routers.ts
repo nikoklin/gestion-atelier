@@ -725,9 +725,11 @@ export const appRouter = router({
         );
 
         // Enrichir les attendances avec isOutOfPackage
+        // carriedOverPackageId : forfait qui a repris ce pointage hors forfait (affiché à sa couleur).
         const enrichedAttendances = attendances.map(att => ({
           ...att,
           isOutOfPackage: outOfPackageAttendanceIds.has(att.id),
+          carriedOverPackageId: db.carriedOverPackageId(att, packages),
         }));
 
         // Les valeurs usedHours et totalHours en base sont maintenues à jour par fullRecalculateResident.

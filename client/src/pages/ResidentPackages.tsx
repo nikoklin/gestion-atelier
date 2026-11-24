@@ -849,7 +849,10 @@ export default function ResidentPackages() {
 
                     // Couleur du forfait associé — TOUJOURS garder la couleur du forfait, même hors forfait
                     // et pour les ajouts/retraits de l'atelier (rattachés au forfait qu'ils modifient)
-                    const attColor = attendance.packageId ? packageColorMap.get(attendance.packageId) : undefined;
+                    // Pointage hors forfait repris par un forfait suivant : couleur de ce forfait.
+                    const colorPackageId = attendance.packageId ?? attendance.carriedOverPackageId;
+                    const attColor = colorPackageId ? packageColorMap.get(colorPackageId) : undefined;
+                    const carriedOver = !attendance.packageId && !!attendance.carriedOverPackageId;
                     const rowBg = attColor ? attColor.bg : '';
                     
                     return (
@@ -897,6 +900,11 @@ export default function ResidentPackages() {
                             }`}>
                               {isAdjustAdd && '+'}{isAdjustSubtract && '-'}{formatDuration(attendance.durationMinutes)}
                               {isOutOfPackage && !isAdjustment && <span className="ml-1 text-xs">(Hors forfait)</span>}
+                              {carriedOver && !isOutOfPackage && (
+                                <span className="ml-1 text-xs font-normal text-muted-foreground" title="Heures hors forfait reportées sur le forfait suivant">
+                                  (hors forfait, reporté)
+                                </span>
+                              )}
                             </span>
                           ) : (
                             <span className="text-muted-foreground">-</span>
