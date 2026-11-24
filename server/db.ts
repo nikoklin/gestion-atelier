@@ -30,8 +30,9 @@ let _db: ReturnType<typeof drizzle> | null = null;
  * de fournir un DATABASE_URL simple, sans le paramètre `?ssl={...}` (dont les
  * guillemets passent mal dans certaines interfaces d'hébergeur, ex. Railway).
  */
-function createPool() {
-  const url = process.env.DATABASE_URL!;
+// `url` : la base de l'application par défaut ; une autre base pour la restauration
+// d'une sauvegarde (scripts/restore-backup.ts).
+export function createPool(url: string = process.env.DATABASE_URL!) {
   const m = url.match(/^mysql:\/\/([^:]+):([^@]+)@([^:/]+):(\d+)\/([^?]+)/);
   const needsSsl = /tidbcloud\.com/i.test(url) || process.env.DB_SSL === "1";
 

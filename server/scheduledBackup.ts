@@ -32,6 +32,20 @@ export async function performDailyBackup() {
 
     console.log(`[Backup] Backup uploaded to Drive: ${filename} (fileId=${result.fileId})`);
 
+    // Sauvegarde complète restaurable (toutes les tables, valeurs brutes) : l'Excel
+    // est fait pour être lu, ce fichier pour être restauré (scripts/restore-backup.ts).
+    try {
+      const { generateJsonBackup } = await import("./jsonBackup");
+      const json = Buffer.from(JSON.stringify(await generateJsonBackup()));
+      const jsonName = filename.replace(/\.xlsx$/, ".json");
+      const jsonResult = await uploadToAtelierDrive(jsonName, json, "application/json");
+      console.log(jsonResult.uploaded
+        ? `[Backup] Full JSON backup uploaded to Drive: ${jsonName} (${Math.round(json.length / 1024)} Ko)`
+        : `[Backup] JSON backup upload skipped: ${jsonResult.reason}`);
+    } catch (error) {
+      console.error("[Backup] Full JSON backup failed:", error);
+    }
+
     return { success: true, filename, fileId: result.fileId };
   } catch (error) {
     console.error("[Backup] Error during backup:", error);
