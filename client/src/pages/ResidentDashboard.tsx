@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Clock, Package, Calendar, PlusCircle, ArrowLeft } from "lucide-react";
+import { Clock, Package, Calendar, PlusCircle, ArrowLeft, CreditCard } from "lucide-react";
 import { APP_TITLE, APP_LOGO } from "@/const";
 import { toast } from "sonner";
 import { usePackageLabel } from "@/hooks/usePackageLabel";
@@ -124,6 +124,11 @@ export default function ResidentDashboard() {
       checkOutTime: checkOutDate.toISOString(),
     });
   };
+
+  const preparePaymentLinksMutation = trpc.residentAuth.preparePaymentLinks.useMutation({
+    onError: (err) => toast.error(err.message),
+  });
+  const paymentLinks = preparePaymentLinksMutation.data;
 
   const { data, isLoading, error } = trpc.residentAuth.getInfo.useQuery(
     residentId > 0 ? { residentId } : undefined,
@@ -354,7 +359,52 @@ export default function ResidentDashboard() {
               <div className="text-center py-8 text-muted-foreground">
                 <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>Aucun forfait actif</p>
-                <p className="text-sm mt-2">Contactez l'atelier pour souscrire à un forfait</p>
+                <p className="text-sm mt-2">Tu peux régler un nouveau forfait ci-dessous.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Régler un nouveau forfait en ligne (liens de paiement Wix) */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5" />
+              Régler un nouveau forfait
+            </CardTitle>
+            <CardDescription>
+              Paiement en ligne sécurisé. Si ton forfait actuel n'est pas terminé, le nouveau
+              démarrera automatiquement à sa fin ; les heures hors forfait éventuelles y seront reportées.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {!paymentLinks ? (
+              <Button
+                onClick={() => preparePaymentLinksMutation.mutate(residentId > 0 ? { residentId } : undefined)}
+                disabled={preparePaymentLinksMutation.isPending}
+              >
+                {preparePaymentLinksMutation.isPending ? "Préparation…" : "Voir les forfaits disponibles"}
+              </Button>
+            ) : paymentLinks.links.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Le paiement en ligne n'est pas disponible pour le moment : adresse-toi à l'atelier.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2">
+                  {paymentLinks.links.map((link) => (
+                    <Button key={link.url} asChild variant="outline" className="justify-between sm:justify-center">
+                      <a href={link.url} target="_blank" rel="noopener noreferrer">
+                        <span>Forfait {link.label}</span>
+                        {link.price !== null && <span className="ml-3 font-semibold">{link.price} €</span>}
+                      </a>
+                    </Button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Le forfait apparaît ici dès que le paiement est confirmé.
+                  {paymentLinks.validUntil && ` Liens personnels valables jusqu'au ${formatDate(paymentLinks.validUntil)}.`}
+                </p>
               </div>
             )}
           </CardContent>

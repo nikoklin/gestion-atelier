@@ -415,6 +415,33 @@ export const appRouter = router({
       return { success: true } as const;
     }),
 
+    // Liens de paiement d'un nouveau forfait pour « Mon espace » : liens personnels Wix
+    // (créés ou réutilisés, comme dans les e-mails de rappel), sinon liens fixes des
+    // Paramètres. Mutation : appelée au clic, elle peut créer des liens chez Wix.
+    preparePaymentLinks: publicProcedure
+      .input(z.object({ residentId: z.number().optional() }).optional())
+      .mutation(async ({ ctx, input }) => {
+        const residentId = residentIdForSpace(ctx, input?.residentId);
+        const resident = await db.getResidentById(residentId);
+        if (!resident) throw new TRPCError({ code: "NOT_FOUND", message: "Résident non trouvé" });
+
+        const { getPaymentLinksForResident } = await import("./wixPaymentLinkService");
+        const personal = await getPaymentLinksForResident(resident);
+        if (personal && personal.length > 0) {
+          const until = new Date(Math.min(...personal.map((l) => l.expiresAt.getTime())));
+          return {
+            links: personal.map((l) => ({ label: l.label, price: l.price as number | null, url: l.url })),
+            validUntil: until.toISOString() as string | null,
+          };
+        }
+        const settings = await db.getAtelierSettings();
+        let fixed: { label: string; url: string }[] = [];
+        try {
+          fixed = settings?.paymentLinks ? (JSON.parse(settings.paymentLinks).links ?? []) : [];
+        } catch { /* réglage illisible : aucun lien */ }
+        return { links: fixed.map((l) => ({ label: l.label, price: null as number | null, url: l.url })), validUntil: null as string | null };
+      }),
+
     getInfo: publicProcedure
       .input(z.object({ residentId: z.number().optional() }).optional())
       .query(async ({ ctx, input }) => {
