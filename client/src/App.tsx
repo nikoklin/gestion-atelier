@@ -1,13 +1,12 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Redirect, Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import DashboardLayout from "./components/DashboardLayout";
 import Dashboard from "./pages/Dashboard";
 import Residents from "./pages/Residents";
-import ResidentPackages from "./pages/ResidentPackages";
 import CheckIn from "./pages/CheckIn";
 import EmailSettings from "./pages/EmailSettings";
 import ResidentLogin from "./pages/ResidentLogin";
@@ -46,9 +45,7 @@ function Router() {
         </DashboardLayout>
       </Route>
       <Route path="/residents/:id/packages">
-        <DashboardLayout>
-          <ResidentPackages />
-        </DashboardLayout>
+        {(params) => <Redirect to={`/residents/${params.id}?tab=forfaits`} />}
       </Route>
       <Route path="/settings/email">
         <DashboardLayout>

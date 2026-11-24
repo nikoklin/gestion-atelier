@@ -350,7 +350,7 @@ export default function Residents() {
                                 if (attendanceId) {
                                   setLocation(`/residents/${resident.id}?openAttendance=${attendanceId}`);
                                 } else {
-                                  setLocation(`/residents/${resident.id}?tab=pointages`);
+                                  setLocation(`/residents/${resident.id}?tab=forfaits`);
                                 }
                               }}
                               className="inline-flex items-center hover:opacity-70 transition-opacity"

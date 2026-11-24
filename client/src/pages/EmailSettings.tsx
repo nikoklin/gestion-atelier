@@ -181,7 +181,7 @@ export default function EmailSettings() {
                   <div className="mt-3 space-y-1">
                     {expiringPackages.map((pkg: any) => (
                       <div key={pkg.id} className="text-sm">
-                        • <Link href={`/residents/${pkg.residentId}/packages`} className="text-blue-600 hover:underline">
+                        • <Link href={`/residents/${pkg.residentId}?tab=forfaits`} className="text-blue-600 hover:underline">
                           {pkg.residentFirstName} {pkg.residentLastName}
                         </Link>
                       </div>
@@ -205,7 +205,7 @@ export default function EmailSettings() {
                   <div className="mt-3 space-y-1">
                     {expiredPackages.map((pkg: any) => (
                       <div key={pkg.id} className="text-sm">
-                        • <Link href={`/residents/${pkg.residentId}/packages`} className="text-blue-600 hover:underline">
+                        • <Link href={`/residents/${pkg.residentId}?tab=forfaits`} className="text-blue-600 hover:underline">
                           {pkg.residentFirstName && pkg.residentLastName
                             ? `${pkg.residentFirstName} ${pkg.residentLastName}`
                             : `${pkg.resident?.firstName} ${pkg.resident?.lastName}`}

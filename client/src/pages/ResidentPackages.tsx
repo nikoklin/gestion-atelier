@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from "react";
-import { useRoute, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { isAttendanceLocked, isPackageLocked } from "@shared/packageLock";
 import { usePackageLabel } from "@/hooks/usePackageLabel";
@@ -29,13 +28,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, ArrowLeft, Clock, Trash2, RefreshCw, CalendarPlus, Pencil, Undo2, Lock } from "lucide-react";
+import { Plus, Clock, Trash2, RefreshCw, CalendarPlus, Pencil, Undo2, Lock } from "lucide-react";
 import { toast } from "sonner";
 
-export default function ResidentPackages() {
-  const [, params] = useRoute("/residents/:id/packages");
-  const [, setLocation] = useLocation();
-  const residentId = params?.id ? parseInt(params.id) : 0;
+// Forfaits et pointages d'un résident. Affiché dans l'onglet « Forfaits » de la fiche
+// (embedded) ; l'ancienne adresse /residents/:id/packages redirige vers cet onglet.
+export default function ResidentPackages({ residentId, embedded = false }: { residentId: number; embedded?: boolean }) {
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [packageType, setPackageType] = useState<"15h_8w" | "30h_8w" | "30h_4w" | "180h_6m" | "">("15h_8w"); // "" = type dynamique sélectionné
@@ -535,19 +533,15 @@ export default function ResidentPackages() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className={`flex items-center justify-center ${embedded ? "py-12" : "min-h-screen"}`}>
         <div className="text-lg">Chargement...</div>
       </div>
     );
   }
 
   return (
-    <div className="container py-4 md:py-8">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <Button variant="outline" size="sm" onClick={() => setLocation(`/residents/${residentId}`)}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Retour au profil
-        </Button>
+    <div className={embedded ? "" : "container py-4 md:py-8"}>
+      <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
         <Button
           variant="outline"
           size="sm"
@@ -563,15 +557,6 @@ export default function ResidentPackages() {
           {lastUndo ? `Annuler : ${lastUndo.label}` : "Annuler"}
         </Button>
       </div>
-
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>
-            {resident?.firstName} {resident?.lastName}
-          </CardTitle>
-          <CardDescription>{resident?.email}</CardDescription>
-        </CardHeader>
-      </Card>
 
       <Card className="mb-6">
         <CardHeader>

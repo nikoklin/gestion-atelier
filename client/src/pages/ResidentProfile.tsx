@@ -1,12 +1,13 @@
 import { useParams, useLocation, useSearch } from "wouter";
 import SignaturePad from "@/components/SignaturePad";
 import { trpc } from "@/lib/trpc";
+import ResidentPackages from "./ResidentPackages";
 import { isAttendanceLocked } from "@shared/packageLock";
 import { usePackageLabel } from "@/hooks/usePackageLabel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Edit, Trash2, Package, Pencil } from "lucide-react";
+import { ArrowLeft, Edit, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { useState, useMemo, useEffect } from "react";
 import {
@@ -64,7 +65,8 @@ export default function ResidentProfile() {
   const searchString = useSearch();
   const searchParams = new URLSearchParams(searchString);
   const openAttendanceId = searchParams.get("openAttendance") ? parseInt(searchParams.get("openAttendance")!) : null;
-  const initialTab = searchParams.get("tab") || "informations";
+  const requestedTab = searchParams.get("tab");
+  const initialTab = requestedTab === "pointages" ? "forfaits" : requestedTab || "informations";
   const [activeTab, setActiveTab] = useState(initialTab);
 
   // Récupérer les informations du résident
@@ -80,7 +82,6 @@ export default function ResidentProfile() {
   );
   const packages = pkgData?.packages;
   const attendances = pkgData?.attendances;
-  const isLoadingAttendances = isLoadingPackages;
   // Utiliser le dernier forfait (actif ou expiré) pour l'affichage
   const latestPackage = packages && packages.length > 0 
     ? packages.reduce((latest: any, pkg: any) => pkg.id > latest.id ? pkg : latest, packages[0])
@@ -122,7 +123,7 @@ const utils = trpc.useUtils();
     if (openAttendanceId && attendances && attendances.length > 0 && !showEditAttendanceDialog) {
       const attendance = attendances.find((a: any) => a.id === openAttendanceId);
       if (attendance) {
-        setActiveTab("pointages");
+        setActiveTab("forfaits");
         handleEditAttendance(attendance);
         // Retirer le paramètre de l'URL pour ne pas rouvrir le dialog après
         // le refetch déclenché par la validation (attendances change de référence).
@@ -514,14 +515,6 @@ const utils = trpc.useUtils();
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setLocation(`/residents/${residentId}/packages`)}
-          >
-            <Package className="mr-1 h-4 w-4" />
-            <span className="hidden sm:inline">Gérer les </span>Forfaits
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
             onClick={handleOpenEditDialog}
           >
             <Edit className="mr-1 h-4 w-4" />
@@ -538,7 +531,7 @@ const utils = trpc.useUtils();
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="informations">Informations</TabsTrigger>
-          <TabsTrigger value="pointages"><span className="hidden sm:inline">Historique des </span>Pointages</TabsTrigger>
+          <TabsTrigger value="forfaits">Forfaits<span className="hidden sm:inline">&nbsp;et pointages</span></TabsTrigger>
           <TabsTrigger value="emails"><span className="hidden sm:inline">Historique des </span>E-mails</TabsTrigger>
         </TabsList>
 
@@ -829,13 +822,9 @@ const utils = trpc.useUtils();
           </div>
         </TabsContent>
 
-        {/* Onglet Historique des Pointages */}
-        <TabsContent value="pointages">
-          <AttendanceTab
-            attendances={attendances || []}
-            packages={packages || []}
-            isLoading={isLoadingAttendances}
-          />
+        {/* Onglet Forfaits et pointages (ancienne page « Gérer les forfaits ») */}
+        <TabsContent value="forfaits">
+          <ResidentPackages residentId={residentId} embedded />
         </TabsContent>
 
         {/* Onglet Historique des E-mails */}
@@ -1155,189 +1144,5 @@ const utils = trpc.useUtils();
 
 
     </div>
-  );
-}
-
-// Palette de couleurs pour les forfaits (identique à ResidentPackages)
-const PROFILE_PACKAGE_COLORS = [
-  { bg: 'bg-blue-50',    border: 'border-blue-300',    dot: 'bg-blue-400',    label: 'text-blue-700'    },
-  { bg: 'bg-emerald-50', border: 'border-emerald-300', dot: 'bg-emerald-400', label: 'text-emerald-700' },
-  { bg: 'bg-violet-50',  border: 'border-violet-300',  dot: 'bg-violet-400',  label: 'text-violet-700'  },
-  { bg: 'bg-amber-50',   border: 'border-amber-300',   dot: 'bg-amber-400',   label: 'text-amber-700'   },
-  { bg: 'bg-rose-50',    border: 'border-rose-300',    dot: 'bg-rose-400',    label: 'text-rose-700'    },
-  { bg: 'bg-cyan-50',    border: 'border-cyan-300',    dot: 'bg-cyan-400',    label: 'text-cyan-700'    },
-  { bg: 'bg-orange-50',  border: 'border-orange-300',  dot: 'bg-orange-400',  label: 'text-orange-700'  },
-  { bg: 'bg-teal-50',    border: 'border-teal-300',    dot: 'bg-teal-400',    label: 'text-teal-700'    },
-];
-
-function AttendanceTab({
-  attendances,
-  packages,
-  isLoading,
-}: {
-  attendances: any[];
-  packages: any[];
-  isLoading: boolean;
-}) {
-  // Associer chaque forfait (trié par id croissant) à une couleur
-  const packageColorMap = useMemo(() => {
-    const sorted = [...packages].sort((a, b) => a.id - b.id);
-    const map = new Map<number, typeof PROFILE_PACKAGE_COLORS[0]>();
-    sorted.forEach((pkg, i) => {
-      map.set(pkg.id, PROFILE_PACKAGE_COLORS[i % PROFILE_PACKAGE_COLORS.length]);
-    });
-    return map;
-  }, [packages]);
-
-  const formatDate = (date: Date | string) =>
-    new Date(date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  const formatTime = (date: Date | string) =>
-    new Date(date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-  const formatDuration = (minutes: number | null) => {
-    if (!minutes) return '-';
-    return `${Math.floor(minutes / 60)}h${(minutes % 60).toString().padStart(2, '0')}`;
-  };
-
-  const sorted = [...attendances].sort(
-    (a, b) => new Date(b.checkInTime).getTime() - new Date(a.checkInTime).getTime()
-  );
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Historique des Pointages</CardTitle>
-        <CardDescription>Tous les pointages passés et actuels</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <p>Chargement...</p>
-        ) : sorted.length > 0 ? (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Arrivée</TableHead>
-                  <TableHead>Départ</TableHead>
-                  <TableHead>Durée</TableHead>
-                  <TableHead>Statut</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sorted.map((att) => {
-                  const isAdjustAdd = att.attendanceType === 'adjustment_add';
-                  const isAdjustSubtract = att.attendanceType === 'adjustment_subtract';
-                  const isAdjustment = isAdjustAdd || isAdjustSubtract;
-                  const isOutOfPackage = !isAdjustment && !!att.isOutOfPackage;
-                  const attColor = att.packageId ? packageColorMap.get(att.packageId) : undefined;
-                  // Ajouts/retraits de l'atelier : couleur du forfait auquel ils s'appliquent
-                  const rowBg = attColor ? attColor.bg : '';
-
-                  const today = new Date();
-                  const isToday =
-                    new Date(att.checkInTime).toDateString() === today.toDateString();
-
-                  return (
-                    <TableRow key={att.id} className={rowBg}>
-                      {/* Date */}
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`inline-block w-2.5 h-2.5 rounded-full flex-shrink-0 ${
-                              attColor?.dot ?? 'bg-gray-300'
-                            }`}
-                          />
-                          <span className={isAdjustment ? 'italic' : ''}>
-                            {formatDate(att.checkInTime)}
-                            {isToday && (
-                              <span className="ml-2 text-xs font-semibold text-gray-600">
-                                Aujourd'hui
-                              </span>
-                            )}
-                          </span>
-                        </div>
-                      </TableCell>
-
-                      {/* Arrivée */}
-                      <TableCell>
-                        {isAdjustment ? (
-                          <span className="text-muted-foreground text-xs italic">—</span>
-                        ) : (
-                          formatTime(att.checkInTime)
-                        )}
-                      </TableCell>
-
-                      {/* Départ */}
-                      <TableCell>
-                        {isAdjustment ? (
-                          <span className="text-muted-foreground text-xs italic">—</span>
-                        ) : att.checkOutTime ? (
-                          formatTime(att.checkOutTime)
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-
-                      {/* Durée */}
-                      <TableCell>
-                        {att.durationMinutes ? (
-                          <span
-                            className={`font-medium ${
-                              isAdjustAdd
-                                ? 'text-purple-700'
-                                : isAdjustSubtract
-                                ? 'text-orange-700'
-                                : isOutOfPackage
-                                ? 'text-red-600'
-                                : ''
-                            }`}
-                          >
-                            {isAdjustAdd && '+'}
-                            {isAdjustSubtract && '-'}
-                            {formatDuration(att.durationMinutes)}
-                            {isOutOfPackage && !isAdjustment && (
-                              <span className="ml-1 text-xs">(Hors forfait)</span>
-                            )}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-
-                      {/* Statut */}
-                      <TableCell>
-                        {isAdjustment ? (
-                          <span
-                            className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset ${
-                              isAdjustAdd
-                                ? 'bg-purple-50 text-purple-700 ring-purple-600/20'
-                                : 'bg-orange-50 text-orange-700 ring-orange-600/20'
-                            }`}
-                          >
-                            {isAdjustAdd ? '+ Ajout atelier' : '- Retrait atelier'}
-                          </span>
-                        ) : att.checkOutTime ? (
-                          <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-                            Terminé
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-600/20">
-                            En cours
-                          </span>
-                        )}
-                      </TableCell>
-
-
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        ) : (
-          <p className="text-muted-foreground">Aucun pointage trouvé</p>
-        )}
-      </CardContent>
-    </Card>
   );
 }
