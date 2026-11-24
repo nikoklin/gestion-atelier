@@ -300,6 +300,13 @@ export async function runNightlyMaintenance(): Promise<{ residents: number; anom
   } catch (error) {
     console.error("[Integrity] Le contrôle d'incohérences a échoué:", error);
   }
+  // Paiements Wix de forfaits reçus sans forfait créé (webhook en panne, payeur inconnu…).
+  try {
+    const { checkWixPaymentsProcessed } = await import("./wixPaymentCheck");
+    anomalies.push(...(await checkWixPaymentsProcessed()));
+  } catch (error) {
+    console.error("[Integrity] Le contrôle des paiements Wix a échoué:", error);
+  }
 
   const email = buildIntegrityEmail(anomalies);
   let emailSent = false;
