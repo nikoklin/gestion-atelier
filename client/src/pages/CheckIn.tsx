@@ -351,7 +351,7 @@ export default function CheckIn() {
         {/* Colonne gauche : liste résidents */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           <div className="flex items-baseline justify-between gap-2 mb-1 shrink-0">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Cliquez sur votre nom</p>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Clique sur ton nom pour indiquer ta présence</p>
             <KioskClock compact />
             <ConnectionStatus />
           </div>
@@ -377,8 +377,7 @@ export default function CheckIn() {
       <div className="w-full max-w-2xl md:max-w-4xl flex flex-col flex-1 min-h-0">
         <div className="text-center mb-3 sm:mb-4 shrink-0">
           <KioskClock compact={false} />
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold text-gray-800 mb-1 mt-1">Pointage Atelier</h1>
-          <p className="text-sm md:text-lg text-gray-500">Cliquez sur votre nom pour pointer</p>
+          <p className="mt-2 text-sm md:text-lg text-gray-500">Clique sur ton nom pour indiquer ta présence</p>
           <div className="mt-1 flex justify-center"><ConnectionStatus /></div>
         </div>
 
