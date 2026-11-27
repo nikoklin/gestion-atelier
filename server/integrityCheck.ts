@@ -4,7 +4,7 @@ import { attendances, emailLogs, packages, residents } from "../drizzle/schema";
 import { OUT_OF_PACKAGE_LIMIT_MINUTES } from "./limits";
 import { getParisDateString, formatParisDate } from "./_core/timezone";
 import { getPublicSiteUrl } from "./_core/publicSiteUrl";
-import { sendEmail, wrapEmailHtml, getAtelierNotificationEmail } from "./emailService";
+import { sendAtelierAlert, wrapEmailHtml, getAtelierNotificationEmail } from "./emailService";
 
 // « error » = incohérence des données à corriger ; « todo » = situation à traiter
 // (pas forcément anormale, mais qui demande une action de l'atelier).
@@ -311,7 +311,7 @@ export async function runNightlyMaintenance(): Promise<{ residents: number; anom
   const email = buildIntegrityEmail(anomalies);
   let emailSent = false;
   const to = getAtelierNotificationEmail();
-  if (email && to) emailSent = await sendEmail(to, email.subject, email.html);
+  if (email && to) emailSent = await sendAtelierAlert(email.subject, email.html);
 
   console.log(`[Integrity] ${count} résidents recalculés, ${anomalies.length} point(s) à vérifier, e-mail ${emailSent ? "envoyé" : "non envoyé"}.`);
   return { residents: count, anomalies: anomalies.length, emailSent };

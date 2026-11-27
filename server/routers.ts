@@ -1688,7 +1688,7 @@ export const appRouter = router({
     get: protectedProcedure
       .query(async () => {
         const settings = await db.getAtelierSettings();
-        return settings ?? { id: 0, totalShelves: 0, reminderDaysBeforeExpiry: 7, guideEmailEnabled: true, paymentLinks: null as string | null, wixAutoActivatePackage: true, reminderSendHour: 9, missedCheckoutCutoffHour: 22, autoPaymentLinksEnabled: true, paymentLinkValidityDays: 15, paymentLinkPackageTypeIds: null as string | null, updatedAt: new Date() };
+        return settings ?? { id: 0, totalShelves: 0, reminderDaysBeforeExpiry: 7, guideEmailEnabled: true, paymentLinks: null as string | null, wixAutoActivatePackage: true, reminderSendHour: 9, missedCheckoutCutoffHour: 22, autoPaymentLinksEnabled: true, paymentLinkValidityDays: 15, paymentLinkPackageTypeIds: null as string | null, ticktickEmail: null as string | null, updatedAt: new Date() };
       }),
 
     // Retourne les numéros d'étagères disponibles (non occupées par un résident actif)
@@ -1733,6 +1733,7 @@ export const appRouter = router({
         autoPaymentLinksEnabled: z.boolean().optional(),
         paymentLinkValidityDays: z.number().int().min(1).max(90).optional(),
         paymentLinkPackageTypeIds: z.array(z.number().int()).nullable().optional(), // null = tous les forfaits en vente
+        ticktickEmail: z.string().trim().email().max(320).nullable().optional(), // null = pas de copie vers TickTick
       }))
       .mutation(async ({ input }) => {
         const { paymentLinkPackageTypeIds, ...rest } = input;

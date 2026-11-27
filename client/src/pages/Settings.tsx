@@ -701,6 +701,9 @@ export default function Settings() {
       {/* ── Compte de la tablette ── */}
       <TabletAccountCard />
 
+      {/* ── Alertes de l'atelier en tâches TickTick ── */}
+      <TickTickCard />
+
       {/* ── Forfait automatique sur paiement Wix ── */}
       <Card className="mb-6">
         <CardHeader>
@@ -940,6 +943,55 @@ function TabletAccountCard() {
         <p className="text-xs text-muted-foreground">
           Ensuite, sur la tablette : se déconnecter, puis se reconnecter avec ce compte. Elle arrive directement sur le pointage.
         </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Copie des alertes de l'atelier vers TickTick (adresse « ajouter des tâches par e-mail »).
+function TickTickCard() {
+  const utils = trpc.useUtils();
+  const { data: settings } = trpc.atelierSettings.get.useQuery();
+  const [address, setAddress] = useState("");
+  useEffect(() => {
+    setAddress(settings?.ticktickEmail ?? "");
+  }, [settings?.ticktickEmail]);
+  const save = trpc.atelierSettings.update.useMutation({
+    onSuccess: () => {
+      toast.success(address.trim() ? "Les alertes seront aussi envoyées à TickTick" : "Copie vers TickTick désactivée");
+      utils.atelierSettings.get.invalidate();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+  const current = settings?.ticktickEmail ?? "";
+  return (
+    <Card className="mb-6">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Check className="h-5 w-5" />
+          Alertes dans TickTick
+        </CardTitle>
+        <CardDescription className="mt-1">
+          Les alertes de l'atelier (étagère à vider, contrôle quotidien, paiement d'un résident archivé)
+          deviennent aussi des tâches TickTick : le sujet de l'alerte est le titre de la tâche, son contenu
+          (avec le lien vers la fiche) la description. Tu continues de recevoir les e-mails.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="space-y-1 max-w-md">
+          <Label htmlFor="ticktick-email">Adresse TickTick « ajouter des tâches par e-mail »</Label>
+          <Input id="ticktick-email" type="email" autoComplete="off" placeholder="laisser vide pour désactiver"
+            value={address} onChange={(e) => setAddress(e.target.value)} />
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Où la trouver : TickTick sur le web → ton avatar → Paramètres → Intégrations et import → « Ajouter des tâches par e-mail ».
+        </p>
+        <Button
+          onClick={() => save.mutate({ ticktickEmail: address.trim() || null })}
+          disabled={save.isPending || address.trim() === current}
+        >
+          Enregistrer
+        </Button>
       </CardContent>
     </Card>
   );

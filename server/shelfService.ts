@@ -3,6 +3,7 @@ import { getPublicSiteUrl } from "./_core/publicSiteUrl";
 import { formatParisDate } from "./_core/timezone";
 import {
   sendEmail,
+  sendAtelierAlert,
   wrapEmailHtml,
   getAtelierNotificationEmail,
 } from "./emailService";
@@ -58,7 +59,7 @@ export async function sendShelfReleaseNotice(c: db.ShelfSituation): Promise<bool
   if (!atelierEmail) return false;
 
   const { subject, html } = renderShelfNoticeForAtelier(c);
-  const sent = await sendEmail(atelierEmail, subject, html);
+  const sent = await sendAtelierAlert(subject, html);
   await db
     .createEmailLog({ residentId: c.residentId, packageId: c.packageId, emailType: "shelf_release", recipientEmail: atelierEmail, subject, success: sent })
     .catch(() => {});

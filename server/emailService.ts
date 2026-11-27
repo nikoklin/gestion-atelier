@@ -173,6 +173,63 @@ export function getAtelierNotificationEmail(): string | null {
   return process.env.ATELIER_NOTIFICATION_EMAIL || process.env.EMAIL_USER || null;
 }
 
+// Texte brut d'un e-mail HTML (pour la tâche TickTick) : liens gardés en clair.
+export function htmlToText(html: string): string {
+  return html
+    .replace(/<a\b[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi, (_m, href, label) => {
+      const text = label.replace(/<[^>]+>/g, "").trim();
+      return text && text !== href ? `${text} : ${href}` : href;
+    })
+    .replace(/<li[^>]*>/gi, "\n• ")
+    .replace(/<(br|\/p|\/div|\/ul|\/h\d)[^>]*>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&#39;/g, "'").replace(/&quot;/g, '"')
+    .split("\n").map((line) => line.trim()).join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+// Description de la tâche TickTick : le corps de l'alerte seulement (sans l'en-tête
+// et le pied de page communs à tous les e-mails, voir wrapEmailHtml).
+export function alertTaskText(html: string): string {
+  const body = html.match(/<!-- Corps -->([\s\S]*?)<!-- Pied de page -->/)?.[1] ?? html;
+  return htmlToText(body);
+}
+
+/**
+ * Alerte destinée à l'atelier (étagère à vider, contrôle quotidien, paiement d'un
+ * résident archivé) : e-mail habituel, plus une copie en texte vers l'adresse
+ * « ajouter des tâches par e-mail » de TickTick si elle est réglée dans Paramètres
+ * (le sujet devient le titre de la tâche, le texte sa description).
+ * Renvoie le résultat de l'e-mail à l'atelier.
+ */
+export async function sendAtelierAlert(subject: string, html: string): Promise<boolean> {
+  const to = getAtelierNotificationEmail();
+  const sent = to ? await sendEmail(to, subject, html) : false;
+  try {
+    const settings = await db.getAtelierSettings();
+    const ticktick = settings?.ticktickEmail?.trim();
+    if (ticktick) await sendTextEmail(ticktick, subject, alertTaskText(html));
+  } catch (error) {
+    console.error("[Email] Copie TickTick en échec:", error);
+  }
+  return sent;
+}
+
+// E-mail en texte seul (copie TickTick : la description de la tâche reste lisible).
+async function sendTextEmail(to: string, subject: string, text: string): Promise<boolean> {
+  const apiKey = process.env.BREVO_API_KEY;
+  const senderEmail = process.env.EMAIL_USER;
+  if (!apiKey || !senderEmail) return false;
+  const response = await fetch(BREVO_API_URL, {
+    method: "POST",
+    headers: { accept: "application/json", "content-type": "application/json", "api-key": apiKey },
+    body: JSON.stringify({ sender: { name: "Atelier À Tour de Bras", email: senderEmail }, to: [{ email: to }], subject, textContent: text }),
+  });
+  if (!response.ok) console.error(`[Email] Copie TickTick refusée (${response.status})`);
+  return response.ok;
+}
+
 // Les modèles modifiables (reminder, expiration, session_summary) sont enregistrés
 // avec leur propre <div style="font-family: Arial…"> extérieur : on le retire à
 // l'envoi pour ne garder que le contenu, et on passe les liens en doré.
@@ -581,7 +638,7 @@ export async function sendArchivedResidentPaymentAlert(
       <p>Pour traiter le paiement : ouvre la page des résidents archivés, restaure ce résident, puis crée son forfait (et réattribue-lui une étagère).</p>
       <p style="color: #7a6040; font-size: 13px;">Référence du paiement Wix : ${wixPaymentId}</p>
     `, { closing: false, actionButton: { href: `${getPublicSiteUrl()}/archived`, label: "Ouvrir les résidents archivés" } });
-  const sent = await sendEmail(to, subject, html);
+  const sent = await sendAtelierAlert(subject, html);
   await db.createEmailLog({ residentId: resident.id, packageId: null, emailType: 'payment_queued', recipientEmail: to, subject, success: sent }).catch(() => {});
   return sent;
 }

@@ -1415,7 +1415,7 @@ export async function getAtelierSettings() {
   return created[0] ?? null;
 }
 
-export async function updateAtelierSettings(data: Partial<{ totalShelves: number; reminderDaysBeforeExpiry: number; guideEmailEnabled: boolean; paymentLinks: string | null; wixAutoActivatePackage: boolean; reminderSendHour: number; missedCheckoutCutoffHour: number; autoPaymentLinksEnabled: boolean; paymentLinkValidityDays: number; paymentLinkPackageTypeIds: string | null }>) {
+export async function updateAtelierSettings(data: Partial<{ totalShelves: number; reminderDaysBeforeExpiry: number; guideEmailEnabled: boolean; paymentLinks: string | null; wixAutoActivatePackage: boolean; reminderSendHour: number; missedCheckoutCutoffHour: number; autoPaymentLinksEnabled: boolean; paymentLinkValidityDays: number; paymentLinkPackageTypeIds: string | null; ticktickEmail: string | null }>) {
   const db = await getDb();
   if (!db) return;
   const existing = await getAtelierSettings();

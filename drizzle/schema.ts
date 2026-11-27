@@ -176,6 +176,7 @@ export const atelierSettings = mysqlTable("atelierSettings", {
   autoPaymentLinksEnabled: boolean("autoPaymentLinksEnabled").default(true).notNull(), // Liens de paiement Wix personnels dans les e-mails
   paymentLinkValidityDays: int("paymentLinkValidityDays").default(15).notNull(), // Durée de validité de ces liens (jours)
   paymentLinkPackageTypeIds: text("paymentLinkPackageTypeIds"), // JSON : ids des forfaits proposés ; null = tous les forfaits en vente
+  ticktickEmail: varchar("ticktickEmail", { length: 320 }), // Adresse « ajouter des tâches par e-mail » de TickTick : copie des alertes de l'atelier ; null = désactivé
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 export type AtelierSettings = typeof atelierSettings.$inferSelect;

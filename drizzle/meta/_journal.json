@@ -281,6 +281,13 @@
       "when": 1794321846788,
       "tag": "0039_overjoyed_legion",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "5",
+      "when": 1795792868671,
+      "tag": "0040_regular_hellfire_club",
+      "breakpoints": true
     }
   ]
 }
