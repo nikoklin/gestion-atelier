@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
+import { kioskDisplayNames } from "@/lib/kioskNames";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { CloudOff } from "lucide-react";
@@ -106,6 +107,8 @@ export default function CheckIn() {
     if (stateError?.data?.code === "UNAUTHORIZED") noteOutcome({ kind: "retry", reason: "auth" });
   }, [stateError]);
   const state: KioskState | undefined = liveState ?? cachedState;
+  // Premier prénom + initiale du nom (discret sur une tablette vue de tous).
+  const displayNames = useMemo(() => kioskDisplayNames(state?.residents ?? []), [state?.residents]);
 
   useEffect(() => {
     if (!liveState) return;
@@ -177,7 +180,7 @@ export default function CheckIn() {
       residentId: resident.id,
       action: since ? "checkout" : "checkin",
       occurredAt: new Date().toISOString(),
-      residentName: `${resident.firstName} ${resident.lastName}`,
+      residentName: displayNames.get(resident.id) ?? resident.firstName,
       createdAt: Date.now(),
     };
     try {
@@ -305,7 +308,7 @@ export default function CheckIn() {
           disabled={busy}
           className={`h-auto ${isLandscape ? 'py-1.5 text-sm' : 'py-3 text-base md:py-4 md:text-xl'} font-medium flex-1 min-w-0 whitespace-normal text-left transition-all justify-between ${btnClass}`}
         >
-          <span className="font-semibold">{resident.firstName} {resident.lastName}</span>
+          <span className="font-semibold">{displayNames.get(resident.id) ?? resident.firstName}</span>
           <span className={`${isLandscape ? 'text-xs' : 'text-sm md:text-lg'} font-normal ml-2 shrink-0`}>
             {recentCheckin ? (
               <span className={`font-semibold ${recentCheckin.isOutOfPackage ? "text-red-600" : "text-green-700"}`}>
