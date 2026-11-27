@@ -1,8 +1,8 @@
 /**
- * Noms affichés sur la tablette de pointage : premier prénom + initiale du nom
- * (« Jean Patrick Martin » → « Jean M. »). Un prénom composé avec un trait d'union
- * (« Marie-Claire ») est un seul prénom. Si deux résidents donneraient le même nom
- * court, on ajoute des lettres du nom jusqu'à les distinguer (« Jean Ma. » / « Jean Mo. »).
+ * Noms affichés sur la tablette de pointage : le premier prénom seul (« Jean Patrick
+ * Martin » → « Jean » ; « Marie-Claire » reste entier). Quand plusieurs résidents ont
+ * le même prénom, on ajoute pour eux seuls l'initiale du nom (« Jean M. » / « Jean D. »),
+ * puis d'autres lettres si elle ne suffit pas (« Jean Ma. » / « Jean Mo. »).
  */
 export function kioskDisplayNames(residents: { id: number; firstName: string; lastName: string }[]): Map<number, string> {
   const parts = residents.map((r) => ({
@@ -11,7 +11,7 @@ export function kioskDisplayNames(residents: { id: number; firstName: string; la
     last: (r.lastName ?? "").trim(),
   }));
   const label = (first: string, last: string, letters: number) => {
-    if (!last) return first;
+    if (!last || letters === 0) return first;
     if (letters >= last.length) return `${first} ${last}`;
     const start = last.slice(0, letters);
     return `${first} ${start.charAt(0).toLocaleUpperCase("fr-FR")}${start.slice(1).toLocaleLowerCase("fr-FR")}.`;
@@ -19,7 +19,7 @@ export function kioskDisplayNames(residents: { id: number; firstName: string; la
   const key = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
   const names = new Map<number, string>();
-  const letters = new Map(parts.map((p) => [p.id, 1]));
+  const letters = new Map(parts.map((p) => [p.id, 0]));
   // Allonge le nom des seuls résidents en conflit, jusqu'à ce que tous soient distincts.
   for (let round = 0; round < 50; round++) {
     const groups = new Map<string, typeof parts>();
